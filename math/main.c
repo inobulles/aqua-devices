@@ -1,25 +1,41 @@
-#include <math.h>
 
-extern uint64_t* kos_bda;
+#include <math.h>
+#include <stdint.h>
+
 #define PRECISION 1000000.0
 
-inline double root(double index, double x) {
+double root(double index, double x) {
 	if (index == 2.0) return sqrt(x);
 	return pow(x, 1.0 / index);
 }
 
-inline double log_base(double base, double x) {
+double log_base(double base, double x) {
 	if (base == 2.718282) return log(x);
 	if (base == 10.0) return log10(x);
 	return log(x) / log(base);
 }
 
-inline double sigmoid(double x) {
+double sigmoid(double x) {
 	return 1.0 / (1.0 + exp(-x));
 }
 
-void device_handle_math(uint64_t** result_pointer, uint64_t* data) {
-	*result_pointer = &kos_bda[0];
+void load(void) {
+	
+}
+
+void flip(void) {
+	
+}
+
+void quit(void) {
+	
+}
+
+uint64_t** kos_bda_pointer = (uint64_t**) 0;
+
+void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
+	uint64_t* kos_bda = *kos_bda_pointer;
+	*result_pointer_pointer = &kos_bda[0];
 	
 	switch (data[0]) {
 		case 0x6E6973         /* sin     */: kos_bda[0] = (int64_t) (sin     ((double) data[1] / PRECISION                              ) * PRECISION); break;

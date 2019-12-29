@@ -1,9 +1,25 @@
+
 #include <time.h>
+#include <stdint.h>
+#include <string.h>
 
-extern uint64_t* kos_bda;
+void load(void) {
+	
+}
 
-void device_handle_clock(uint64_t** result_pointer, const char* data) {
-	*result_pointer = &kos_bda[0];
+void flip(void) {
+	
+}
+
+void quit(void) {
+	
+}
+
+uint64_t** kos_bda_pointer = (uint64_t**) 0;
+
+void handle(uint64_t** result_pointer_pointer, char* data) {
+	uint64_t* kos_bda = *kos_bda_pointer;
+	*result_pointer_pointer = &kos_bda[0];
 	time_t _time = time(NULL);
 	
 	if (strcmp(data, "unix") == 0) {
@@ -24,3 +40,4 @@ void device_handle_clock(uint64_t** result_pointer, const char* data) {
 		kos_bda[7] = (uint64_t) tm_struct->tm_yday;
 	}
 }
+
