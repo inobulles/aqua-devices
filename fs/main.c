@@ -23,7 +23,7 @@ void quit(void) {
 
 uint64_t** kos_bda_pointer = (uint64_t**) 0;
 
-#define FS_TYPE_INEXISTANT 0x00
+#define FS_TYPE_INEXISTENT 0x00
 #define FS_TYPE_UNKNOWN    0x01
 #define FS_TYPE_DIRECTORY  0x02
 #define FS_TYPE_FILE       0x03
@@ -215,7 +215,7 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		
 		DIR* dp = opendir(path);
 		if (!dp) {
-			kos_bda[0] = FS_TYPE_INEXISTANT; // failure
+			kos_bda[0] = FS_TYPE_INEXISTENT; // failure
 			return;
 		}
 		
