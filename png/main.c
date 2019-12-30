@@ -6,18 +6,6 @@
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
 
-void load(void) {
-	
-}
-
-void flip(void) {
-	
-}
-
-void quit(void) {
-	
-}
-
 uint64_t** kos_bda_pointer = (uint64_t**) 0;
 
 void handle(uint64_t** result_pointer_pointer, uint64_t* data) {

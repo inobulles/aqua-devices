@@ -25,7 +25,7 @@ static uint64_t __attribute__((unused)) joystick_button_count(int fd) {
 	return ioctl(fd, JSIOCGBUTTONS, &count) < 0 ? -1 : count;
 }
 
-void flip(void) {
+void after_flip(void) {
 	joystick_count = 0;
 	
 	for (int i = 0; i < MAX_JOYSTICK_COUNT; i++) {
@@ -83,7 +83,7 @@ void load(void) {
 		joysticks[i].fd = -1;
 	}
 	
-	flip();
+	after_flip();
 }
 
 void quit(void) {

@@ -9,18 +9,6 @@
 #include <dirent.h>
 #include <string.h>
 
-void load(void) {
-	
-}
-
-void flip(void) {
-	
-}
-
-void quit(void) {
-	
-}
-
 uint64_t** kos_bda_pointer = (uint64_t**) 0;
 
 #define FS_TYPE_INEXISTENT 0x00

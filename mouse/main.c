@@ -2,18 +2,6 @@
 #include <stdint.h>
 #include <string.h>
 
-void load(void) {
-	
-}
-
-void flip(void) {
-	
-}
-
-void quit(void) {
-	
-}
-
 uint8_t* window_based_mouse_pointer;
 
 int64_t* mouse_x_pointer;
