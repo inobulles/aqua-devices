@@ -120,6 +120,12 @@ void quit(void) {
 	glDeleteProgram(shader_program);
 }
 
+static float offset;
+
+void before_flip(void) {
+	offset = 0.f;
+}
+
 uint64_t** kos_bda_pointer = (uint64_t**) 0;
 
 void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
@@ -159,10 +165,11 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 	} else if (data[0] == 0x64) { // draw
 		surface_t* surface = (surface_t*) data[1];
 		
-		int64_t x = data[2];
-		int64_t y = data[3];
+		float x = (float) (int64_t) data[2] / PRECISION;
+		float y = (float) (int64_t) data[3] / PRECISION;
 		
-		int64_t layer = data[4];
+		offset += 0.01;
+		float layer = -offset - data[4];
 		
 		use_shader(surface->has_texture, surface->texture);
 		
@@ -170,7 +177,7 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		
 		float vertices[sizeof(default_vertices) / sizeof(*default_vertices)];
 		for (int i = 0; i < 4; i++) {
-			vertices[i * 3 + 2] = default_vertices[i * 3 + 2] * (float) layer;
+			vertices[i * 3 + 2] = default_vertices[i * 3 + 2] * layer / 256;
 			
 			vertices[i * 3 + 0] = default_vertices[i * 3 + 0] * surface->width  + x;
 			vertices[i * 3 + 1] = default_vertices[i * 3 + 1] * surface->height + y;
