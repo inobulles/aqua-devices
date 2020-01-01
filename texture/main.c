@@ -2,7 +2,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define GL_GLEXT_PROTOTYPES
+
 #include <GL/gl.h>
+#include <GL/glext.h>
 
 #define FILTER_MAG_NONE             0x01
 #define FILTER_MAG_BILINEAR         0x02

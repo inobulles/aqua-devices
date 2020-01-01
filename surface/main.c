@@ -12,14 +12,14 @@
 #define PRECISION 1000000
 
 typedef struct {
-	float width; float height;
-	float red; float green; float blue; float alpha;
+	float width, height;
+	float red, green, blue, alpha;
 	
 	uint8_t has_texture;
 	uint64_t texture;
 	
-	float scroll_x1; float scroll_y1;
-	float scroll_x2; float scroll_y2;
+	float scroll_x1, scroll_y1;
+	float scroll_x2, scroll_y2;
 	
 	float coords [4 * 2];
 	float colours[4 * 4];
@@ -176,13 +176,13 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 			vertices[i * 3 + 1] = default_vertices[i * 3 + 1] * surface->height + y;
 		}
 		
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), vertices);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), surface->coords);
-		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), surface->colours);
-		
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
+		
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), vertices);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), surface->coords);
+		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), surface->colours);
 		
 		glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(*indices), GL_UNSIGNED_BYTE, indices);
 		
