@@ -98,6 +98,8 @@ _exit:
 }
 
 void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
+	chdir("root"); // go into root as per specification
+	
 	uint64_t* kos_bda = *kos_bda_pointer;
 	*result_pointer_pointer = &kos_bda[0];
 	kos_bda[0] = 0; // be optimistic about the success of the program
@@ -224,5 +226,7 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 			else if (entry->d_type == DT_DIR) kos_bda[0] = FS_TYPE_DIRECTORY;
 		}
 	}
+	
+	chdir(".."); // get out of root so the kos doesn't get confused
 }
 
