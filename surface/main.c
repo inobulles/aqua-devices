@@ -96,7 +96,7 @@ uniform int has_texture;
 
 void main(void) {
 	gl_FragColor = interpolated_vertex_colour;
-	if (has_texture) gl_FragColor *= texture2D(texture_sampler, interpolated_texture_coord);
+	if (has_texture == 1) gl_FragColor *= texture2D(texture_sampler, interpolated_texture_coord);
 }
 )shader-code";
 
