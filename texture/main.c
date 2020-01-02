@@ -2,10 +2,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define GL_GLEXT_PROTOTYPES
+#if KOS_PLATFORM == KOS_PLATFORM_DESKTOP
+	#define GL_GLEXT_PROTOTYPES
 
-#include <GL/gl.h>
-#include <GL/glext.h>
+	#include <GL/gl.h>
+	#include <GL/glext.h>
+#elif KOS_PLATFORM == KOS_PLATFORM_BROADCOM
+	#include "GLES2/gl2.h"
+#endif
 
 #define FILTER_MAG_NONE             0x01
 #define FILTER_MAG_BILINEAR         0x02

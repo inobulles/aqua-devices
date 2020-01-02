@@ -1,1 +1,1 @@
-gcc -shared -lGL -fPIC main.c -o device
+gcc -shared -fPIC main.c -o device "$@"
