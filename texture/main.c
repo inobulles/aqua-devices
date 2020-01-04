@@ -20,11 +20,10 @@
 #define FILTER_MIN_BILINEAR_MIPMAPS 0x40
 #define FILTER_MIN_TRILINEAR        0x50
 
-static uint64_t filtering_mode;
+#define TYPE_COLOUR 0x00
+#define TYPE_DEPTH  0x01
 
-static void filter(uint64_t filtering_mode) {
-	
-}
+static uint64_t filtering_mode;
 
 void load(void) {
 	filtering_mode = FILTER_MAG_BILINEAR | FILTER_MIN_TRILINEAR;
@@ -38,20 +37,65 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 	
 	if (data[0] == 0x63) { // create
 		void* _bitmap = (void*) data[1];
-		uint64_t bit_depth = data[2];
 		
-		uint64_t width  = data[3];
-		uint64_t height = data[4];
+		uint64_t type = data[2];
+		uint64_t bit_depth = data[3];
 		
-		uint8_t alpha = bit_depth % 32;;
+		uint64_t width  = data[4];
+		uint64_t height = data[5];
 		
 		void* bitmap = _bitmap;
-		if (bit_depth > 32) { // assuming > 32 BPP's are unsupported by the HW ...
-			uint64_t data_bytes = width * height * (bit_depth >> 4);
-			bitmap = (uint64_t*) malloc(data_bytes);
+		//~ if (bit_depth > 32) { // assuming > 32 BPP's are unsupported by the HW ...
+			//~ bit_depth /= 2;
+			//~ uint64_t data_bytes = width * height * (bit_depth / 8);
+			//~ bitmap = (uint64_t*) malloc(data_bytes);
 			
-			for (uint64_t i = 0; i < data_bytes; i++) {
-				((uint8_t*) bitmap)[i] = ((uint8_t*) _bitmap)[i << 1];
+			//~ for (uint64_t i = 0; i < data_bytes; i++) {
+				//~ ((uint8_t*) bitmap)[i] = ((uint8_t*) _bitmap)[i << 1];
+			//~ }
+		//~ }
+		
+		GLenum format = GL_RGBA;
+		GLint internal_format = GL_RGBA8;
+		
+		if (type == TYPE_COLOUR) {
+			if (bit_depth == 8) {
+				format = GL_RED;
+				internal_format = GL_R8;
+				
+			} else if (bit_depth == 16) {
+				format = GL_RG;
+				internal_format = GL_RG8;
+				
+			} else if (bit_depth == 24) {
+				format = GL_RGB;
+				internal_format = GL_RGB8;
+				
+			} else if (bit_depth == 32) {
+				format = GL_RGBA;
+				internal_format = GL_RGBA8;
+				
+			} else if (bit_depth == 48) {
+				format = GL_RGB;
+				internal_format = GL_RGB16;
+				
+			} else if (bit_depth == 64) {
+				format = GL_RGBA;
+				internal_format = GL_RGBA16;
+			}
+			
+		} else if (type == TYPE_DEPTH) {
+			if (bit_depth == 16) {
+				format = GL_DEPTH_COMPONENT;
+				internal_format = GL_DEPTH_COMPONENT16;
+				
+			} else if (bit_depth == 24) {
+				format = GL_DEPTH_COMPONENT;
+				internal_format = GL_DEPTH_COMPONENT24;
+				
+			} else if (bit_depth == 32) {
+				format = GL_DEPTH_COMPONENT;
+				internal_format = GL_DEPTH_COMPONENT32;
 			}
 		}
 		
@@ -59,21 +103,27 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		glGenTextures(1, (GLuint*) &texture_id);
 		
 		glBindTexture(GL_TEXTURE_2D, (GLuint) texture_id);
-		glTexImage2D(GL_TEXTURE_2D, 0, alpha ? GL_RGB : GL_RGBA, (GLuint) width, (GLuint) height, 0, alpha ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, bitmap);
-		glGenerateMipmap(GL_TEXTURE_2D);
+		glTexImage2D(GL_TEXTURE_2D, 0, internal_format, (GLuint) width, (GLuint) height, 0, format, GL_UNSIGNED_BYTE, bitmap);
 		
 		if (bit_depth > 32) {
 			free(bitmap);
 		}
 		
-		if      ((filtering_mode & 0x0F) == FILTER_MAG_NONE            ) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		else if ((filtering_mode & 0x0F) == FILTER_MAG_BILINEAR        ) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		uint64_t mag_filtering_mode = filtering_mode & 0x0F;
+		uint64_t min_filtering_mode = filtering_mode & 0xF0;
 		
-		if      ((filtering_mode & 0xF0) == FILTER_MIN_NONE            ) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		else if ((filtering_mode & 0xF0) == FILTER_MIN_MIPMAPS         ) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-		else if ((filtering_mode & 0xF0) == FILTER_MIN_BILINEAR        ) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		else if ((filtering_mode & 0xF0) == FILTER_MIN_BILINEAR_MIPMAPS) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-		else if ((filtering_mode & 0xF0) == FILTER_MIN_TRILINEAR       ) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		if      (mag_filtering_mode == FILTER_MAG_NONE            ) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		else if (mag_filtering_mode == FILTER_MAG_BILINEAR        ) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		
+		if      (min_filtering_mode == FILTER_MIN_NONE            ) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		else if (min_filtering_mode == FILTER_MIN_MIPMAPS         ) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+		else if (min_filtering_mode == FILTER_MIN_BILINEAR        ) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		else if (min_filtering_mode == FILTER_MIN_BILINEAR_MIPMAPS) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+		else if (min_filtering_mode == FILTER_MIN_TRILINEAR       ) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		
+		if (min_filtering_mode == FILTER_MIN_MIPMAPS || min_filtering_mode == FILTER_MIN_BILINEAR_MIPMAPS || min_filtering_mode == FILTER_MIN_TRILINEAR) { // which filtering modes require mipmaps?
+			glGenerateMipmap(GL_TEXTURE_2D);
+		}
 		
 		// make sure textures are set to mirror
 		

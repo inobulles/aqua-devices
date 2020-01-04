@@ -15,9 +15,9 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 	void* image_data = (void*) data[1];
 	uint64_t bytes = data[2];
 	
-	uint64_t bit_depth;
-	uint64_t width;
-	uint64_t height;
+	int bit_depth;
+	int width;
+	int height;
 	
 	if (data[0] == 0x64) { // decode
 		stbi_set_flip_vertically_on_load(0);
@@ -29,8 +29,8 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 	}
 	
 	kos_bda[0] = (uint64_t) image_data;
-	kos_bda[1] = bit_depth;
-	kos_bda[2] = width;
-	kos_bda[3] = height;
+	kos_bda[1] = (uint64_t) bit_depth;
+	kos_bda[2] = (uint64_t) width;
+	kos_bda[3] = (uint64_t) height;
 }
 

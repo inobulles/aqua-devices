@@ -127,7 +127,7 @@ void quit(void) {
 static float offset;
 
 void before_flip(void) {
-	offset = 0.f;
+	offset = 0.0f;
 }
 
 uint64_t** kos_bda_pointer = (uint64_t**) 0;
