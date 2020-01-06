@@ -27,8 +27,8 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		glGenFramebuffers(1, &framebuffer_id);
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id);
 		
-		if (colour_texture_id) glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colour_texture_id, 0);
-		if  (depth_texture_id) glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,   depth_texture_id, 0);
+		if (colour_texture_id) glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colour_texture_id, 0);
+		if  (depth_texture_id) glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,  GL_TEXTURE_2D,  depth_texture_id, 0);
 		
 		kos_bda[0] = framebuffer_id;
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
