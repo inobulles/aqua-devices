@@ -152,13 +152,13 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		matrix_t frustum_matrix;
 		memset(&frustum_matrix, 0, sizeof(matrix_t));
 		
-		float left   = (float) (int64_t) data[2] / PRECISION;
-		float right  = (float) (int64_t) data[3] / PRECISION;
-		float bottom = (float) (int64_t) data[4] / PRECISION;
-		float top    = (float) (int64_t) data[5] / PRECISION;
-		
 		float near   = (float) (int64_t) data[6] / PRECISION;
 		float far    = (float) (int64_t) data[7] / PRECISION;
+		
+		float left   = (float) (int64_t) data[2] / PRECISION * near;
+		float right  = (float) (int64_t) data[3] / PRECISION * near;
+		float bottom = (float) (int64_t) data[4] / PRECISION * near;
+		float top    = (float) (int64_t) data[5] / PRECISION * near;
 		
 		float deltax = right - left;
 		float deltay = top - bottom;
@@ -182,13 +182,13 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		matrix_t ortho_matrix;
 		load_identity(&ortho_matrix);
 		
+		float near   = (float) (int64_t) data[6] / PRECISION;
+		float far    = (float) (int64_t) data[7] / PRECISION;
+		
 		float left   = (float) (int64_t) data[2] / PRECISION;
 		float right  = (float) (int64_t) data[3] / PRECISION;
 		float bottom = (float) (int64_t) data[4] / PRECISION;
 		float top    = (float) (int64_t) data[5] / PRECISION;
-		
-		float near   = (float) (int64_t) data[6] / PRECISION;
-		float far    = (float) (int64_t) data[7] / PRECISION;
 		
 		float deltax = right - left;
 		float deltay = top - bottom;
