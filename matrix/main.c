@@ -70,8 +70,6 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		matrix_t* y_matrix = (matrix_t*) data[3];
 		
 		multiply_matrices(output_matrix, x_matrix, y_matrix);
-		printf("\n");
-		for (int y = 0; y < 4; y++) {for (int x = 0; x < 4; x++) printf("%f ", output_matrix->matrix[y][x]);  printf("\n");}
 		
 	} else if (data[0] == 0x73) { // scale
 		matrix_t* output_matrix = (matrix_t*) data[1];

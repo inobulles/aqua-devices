@@ -1,5 +1,6 @@
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #if KOS_PLATFORM == KOS_PLATFORM_DESKTOP
 	#define GL_GLEXT_PROTOTYPES
@@ -42,7 +43,11 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		if (colour_pointer)         glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), colour_pointer);
 		if (normal_pointer)         glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), normal_pointer);
 		
-		glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_SHORT, (uint16_t*) index_pointer);
+		uint16_t* index_pointer_16bit = (uint16_t*) malloc(index_count * sizeof(uint16_t));
+		for (uint32_t i = 0; i < index_count; i++) index_pointer_16bit[i] = (uint16_t) ((uint32_t*) index_pointer)[i];
+		
+		glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_SHORT, index_pointer_16bit);
+		free(index_pointer_16bit);
 		
 		if (vertex_pointer)         glDisableVertexAttribArray(0);
 		if (texture_coords_pointer) glDisableVertexAttribArray(1);
