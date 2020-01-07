@@ -69,11 +69,11 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 				
 			} else if (bit_depth == 24) {
 				format = GL_RGB;
-				internal_format = GL_RGB8;
+				internal_format = GL_RGB;
 				
 			} else if (bit_depth == 32) {
 				format = GL_RGBA;
-				internal_format = GL_RGBA8;
+				internal_format = GL_RGBA;
 				
 			} else if (bit_depth == 48) {
 				format = GL_RGB;
