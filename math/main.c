@@ -26,17 +26,17 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 	*result_pointer_pointer = &kos_bda[0];
 	
 	switch (data[0]) {
-		case 0x6E6973         /* sin     */: kos_bda[0] = (int64_t) (sin     ((double) data[1] / PRECISION                              ) * PRECISION); break;
-		case 0x6E6174         /* tan     */: kos_bda[0] = (int64_t) (tan     ((double) data[1] / PRECISION                              ) * PRECISION); break;
-		case 0x6E697361       /* asin    */: kos_bda[0] = (int64_t) (asin    ((double) data[1] / PRECISION                              ) * PRECISION); break;
-		case 0x6E617461       /* atan    */: kos_bda[0] = (int64_t) (atan    ((double) data[1] / PRECISION                              ) * PRECISION); break;
-		case 0x326E617461     /* atan2   */: kos_bda[0] = (int64_t) (atan2   ((double) data[1] / PRECISION, (double) data[2] / PRECISION) * PRECISION); break;
-		case 0x686E6973       /* sinh    */: kos_bda[0] = (int64_t) (sinh    ((double) data[1] / PRECISION                              ) * PRECISION); break;
-		case 0x68736973       /* cosh    */: kos_bda[0] = (int64_t) (cosh    ((double) data[1] / PRECISION                              ) * PRECISION); break;
-		case 0x686E6174       /* tanh    */: kos_bda[0] = (int64_t) (tanh    ((double) data[1] / PRECISION                              ) * PRECISION); break;
-		case 0x746F6F72       /* root    */: kos_bda[0] = (int64_t) (root    ((double) data[1] / PRECISION, (double) data[2] / PRECISION) * PRECISION); break;
-		case 0x707865         /* exp     */: kos_bda[0] = (int64_t) (exp     ((double) data[1] / PRECISION                              ) * PRECISION); break;
-		case 0x676F6C         /* log     */: kos_bda[0] = (int64_t) (log_base((double) data[1] / PRECISION, (double) data[2] / PRECISION) * PRECISION); break;
-		case 0x64696F6D676973 /* sigmoid */: kos_bda[0] = (int64_t) (sigmoid ((double) data[1] / PRECISION                              ) * PRECISION); break;
+		case 0x6E6973         /* sin     */: kos_bda[0] = (int64_t) (sin     ((double) (int64_t) data[1] / PRECISION                                        ) * PRECISION); break;
+		case 0x6E6174         /* tan     */: kos_bda[0] = (int64_t) (tan     ((double) (int64_t) data[1] / PRECISION                                        ) * PRECISION); break;
+		case 0x6E697361       /* asin    */: kos_bda[0] = (int64_t) (asin    ((double) (int64_t) data[1] / PRECISION                                        ) * PRECISION); break;
+		case 0x6E617461       /* atan    */: kos_bda[0] = (int64_t) (atan    ((double) (int64_t) data[1] / PRECISION                                        ) * PRECISION); break;
+		case 0x326E617461     /* atan2   */: kos_bda[0] = (int64_t) (atan2   ((double) (int64_t) data[1] / PRECISION, (double) (int64_t) data[2] / PRECISION) * PRECISION); break;
+		case 0x686E6973       /* sinh    */: kos_bda[0] = (int64_t) (sinh    ((double) (int64_t) data[1] / PRECISION                                        ) * PRECISION); break;
+		case 0x68736973       /* cosh    */: kos_bda[0] = (int64_t) (cosh    ((double) (int64_t) data[1] / PRECISION                                        ) * PRECISION); break;
+		case 0x686E6174       /* tanh    */: kos_bda[0] = (int64_t) (tanh    ((double) (int64_t) data[1] / PRECISION                                        ) * PRECISION); break;
+		case 0x746F6F72       /* root    */: kos_bda[0] = (int64_t) (root    ((double) (int64_t) data[1] / PRECISION, (double) (int64_t) data[2] / PRECISION) * PRECISION); break;
+		case 0x707865         /* exp     */: kos_bda[0] = (int64_t) (exp     ((double) (int64_t) data[1] / PRECISION                                        ) * PRECISION); break;
+		case 0x676F6C         /* log     */: kos_bda[0] = (int64_t) (log_base((double) (int64_t) data[1] / PRECISION, (double) (int64_t) data[2] / PRECISION) * PRECISION); break;
+		case 0x64696F6D676973 /* sigmoid */: kos_bda[0] = (int64_t) (sigmoid ((double) (int64_t) data[1] / PRECISION                                        ) * PRECISION); break;
 	}
 }
