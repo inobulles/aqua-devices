@@ -156,7 +156,7 @@ static char* asl_to_glsl(char** attribute_list, uint32_t* attribute_count, uint8
 			
 			// type stuff
 			
-			else if (strcmp(keyword, "freeze") == 0) add_string(section, "const");
+			else if (strcmp(keyword, "frozen") == 0) add_string(section, "const");
 			else if (strcmp(keyword, "tex2") == 0) add_string(section, "sampler2D");
 			else if (strcmp(keyword, "flt") == 0) add_string(section, "float");
 			
@@ -301,7 +301,7 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 			glUniformMatrix4fv(uniform_location, 1, GL_FALSE, __data);
 			
 		} else {
-			int count = size + 1; // get the element count
+			int count = (size >> 4) + 1; // get the element count
 			
 			for (int i = 0; i < count; i++) {
 				if (type == UNIFORM_TYPE_FLOAT) float_buffer[i] = (GLfloat) ((int64_t*) __data)[i] / PRECISION;

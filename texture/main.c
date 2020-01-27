@@ -36,9 +36,9 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 	*result_pointer_pointer = &kos_bda[0];
 	
 	if (data[0] == 0x63) { // create
-		void* _bitmap = (void*) data[1];
+		uint64_t type = data[1];
 		
-		uint64_t type = data[2];
+		void* _bitmap = (void*) data[2];
 		uint64_t bit_depth = data[3];
 		
 		uint64_t width  = data[4];

@@ -26,11 +26,13 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		
 	} else if (data[0] == 0x61) { // attribute
 		uint64_t attribute_slot = data[1];
-		uint64_t attribute_components = data[2];
+		uint64_t attribute_dimensions = data[2];
 		void* attribute_pointer = (void*) data[3];
 		
-		glEnableVertexAttribArray(attribute_slot);
-		glVertexAttribPointer(attribute_slot, attribute_components, GL_FLOAT, GL_FALSE, attribute_components * sizeof(float), attribute_pointer);
+		if (attribute_dimensions) { // does attribute exist?
+			glEnableVertexAttribArray(attribute_slot);
+			glVertexAttribPointer(attribute_slot, attribute_dimensions, GL_FLOAT, GL_FALSE, attribute_dimensions * sizeof(float), attribute_pointer);
+		}
 		
 	} else if (data[0] == 0x64) { // draw
 		uint64_t index_count = data[1];
@@ -41,6 +43,12 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		
 		glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_SHORT, index_pointer_16bit);
 		free(index_pointer_16bit);
+		
+	} else if (data[0] == 0x68) { // depth
+		uint64_t enabled = data[1];
+		
+		if (enabled) glEnable(GL_DEPTH_TEST);
+		else glDisable(GL_DEPTH_TEST);
 	}
 }
 
