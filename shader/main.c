@@ -162,7 +162,7 @@ static char* asl_to_glsl(char** attribute_list, uint32_t* attribute_count, uint8
 			
 			// function stuff
 			
-			else if (strcmp(keyword, "sample") == 0) add_string(section, "texture");
+			else if (strcmp(keyword, "sample") == 0) add_string(section, "texture2D");
 			
 			// input stuff
 			
