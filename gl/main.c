@@ -41,6 +41,7 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		uint16_t* index_pointer_16bit = (uint16_t*) malloc(index_count * sizeof(uint16_t));
 		for (uint32_t i = 0; i < index_count; i++) index_pointer_16bit[i] = (uint16_t) ((uint32_t*) index_pointer)[i];
 		
+		//~ glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, index_pointer);
 		glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_SHORT, index_pointer_16bit);
 		free(index_pointer_16bit);
 		

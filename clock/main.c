@@ -13,6 +13,13 @@ void handle(uint64_t** result_pointer_pointer, char* data) {
 	if (strcmp(data, "unix") == 0) {
 		kos_bda[0] = _time;
 		
+	} else if (strcmp(data, "now") == 0) {
+		struct timespec spec;
+		clock_gettime(CLOCK_REALTIME, &spec);
+		
+		kos_bda[0] = (spec.tv_sec * 1000000 + spec.tv_nsec / 1000) & 0xFFFFFFFF;
+		if (spec.tv_nsec % 1000 >= 500) kos_bda[0]++; // round up
+		
 	} else if (strcmp(data, "current") == 0) {
 		struct tm* tm_struct = localtime(&_time);
 		
