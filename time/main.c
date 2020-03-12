@@ -27,12 +27,11 @@ void handle(uint64_t** result_pointer_pointer, char* data) {
 		kos_bda[1] = (uint64_t) tm_struct->tm_min;
 		kos_bda[2] = (uint64_t) tm_struct->tm_sec;
 		
-		kos_bda[3] = (uint64_t) tm_struct->tm_mday;
-		kos_bda[4] = (uint64_t) tm_struct->tm_mon;
-		kos_bda[5] = (uint64_t) tm_struct->tm_year;
+		kos_bda[3] = (uint64_t) tm_struct->tm_wday;
+		kos_bda[4] = (uint64_t) tm_struct->tm_mday;
+		kos_bda[5] = (uint64_t) tm_struct->tm_yday;
 		
-		kos_bda[6] = (uint64_t) tm_struct->tm_wday;
-		kos_bda[7] = (uint64_t) tm_struct->tm_yday;
+		kos_bda[6] = (uint64_t) tm_struct->tm_mon;
+		kos_bda[7] = (uint64_t) tm_struct->tm_year;
 	}
 }
-
