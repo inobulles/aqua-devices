@@ -16,138 +16,169 @@ uint64_t** kos_bda_pointer = (uint64_t**) 0;
 #define FS_TYPE_DIRECTORY  0x02
 #define FS_TYPE_FILE       0x03
 
-int copy_file(const char* destination_path, const char* source_path) {
-	int input;
-	if ((input = open(source_path, O_RDONLY)) == -1) {
-		return 1;
-	}
-	
-	int output;
-	if ((output = creat(destination_path, 0600)) == -1) {
-		close(input);
-		return 1;
-	}
-	
-	struct stat info = { 0 };
-	fstat(input, &info);
-	
-	off_t bytes_copied = 0;
-	int error = sendfile(output, input, &bytes_copied, info.st_size) != -1;
-	
-	close(output);
-	close(input);
-	
-	return error;
-}
-
-int copy_recursive(const char* destination_name, const char* source_name) {
-	mkdir(destination_name, 0700);
-	int error = 0;
-	
-	DIR* dp = opendir(source_name);
-	if (!dp) {
-		goto _exit;
-	}
-	
-	char source_path[4096];
-	char destination_path[4096];
-	
-	struct dirent* entry;
-	while ((entry = readdir(dp)) != NULL) {
-		if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
-			snprintf(source_path, sizeof(source_path), "%s/%s", source_name, entry->d_name);
-			snprintf(destination_path, sizeof(destination_path), "%s/%s", destination_name, entry->d_name);
-			
-			if (entry->d_type == DT_DIR) error += copy_recursive(destination_path, source_path);
-			else error += copy_file(destination_path, source_path);
-		}
-	}
-	
-	closedir(dp);
-	
-_exit:
-	error += copy_file(destination_name, source_name);
-	return error;
-}
-
-int remove_recursive(const char* name) {
-	int error = 0;
-	
-	DIR* dp = opendir(name);
-	if (!dp) {
-		goto _exit;
-	}
-	
-	char path[4096];
-	
-	struct dirent* entry;
-	while ((entry = readdir(dp)) != NULL) {
-		if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
-			snprintf(path, sizeof(path), "%s/%s", name, entry->d_name);
-			
-			if (entry->d_type == DT_DIR) error += remove_recursive(path);
-			else error += remove(path) == -1;
-		}
-	}
-	
-	closedir(dp);
-	
-_exit:
-	error += remove(name) == -1;
-	return error;
-}
+#include "utility.h"
+#include "drives.h"
 
 void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
-	chdir("root"); // go into root as per specification
-	
 	uint64_t* kos_bda = *kos_bda_pointer;
 	*result_pointer_pointer = &kos_bda[0];
 	kos_bda[0] = 0; // be optimistic about the success of the program
 	
 	if (data[0] == 0x72) { // read
-		const char* path = (const char*) data[1];
-		char** data_pointer = (char**) data[2];
-		uint64_t* bytes_pointer = (uint64_t*) data[3];
-		
-		FILE* file = fopen(path, "rb");
-		if (!file) {
+		path_t path;
+		if (setup_path(&path, (const char*) data[1])) {
 			kos_bda[0] = 1; // failure
 			return;
 		}
 		
-		fseek(file, 0L, SEEK_END);
-		*bytes_pointer = ftell(file);
-		rewind(file);
+		if (!path.read_access) {
+			printf("WARNING Read access denied\n");
+			kos_bda[0] = 1; // failure
+			return;
+		}
 		
-		*data_pointer = (char*) malloc(*bytes_pointer);
-		fread(*data_pointer, 1, *bytes_pointer, file);
-		fclose(file);
+		if (create_path(&path)) {
+			kos_bda[0] = 1; // failure
+			return;
+		}
+		
+		char** data_pointer = (char**) data[2];
+		uint64_t* bytes_pointer = (uint64_t*) data[3];
+		
+		if (path.drive != FS_DRIVE_ASSETS) {
+			free_path(&path);
+			
+			FILE* file = fopen(path.path, "rb");
+			if (!file) {
+				printf("WARNING File not found\n");
+				kos_bda[0] = 1; // failure
+				return;
+			}
+			
+			fseek(file, 0L, SEEK_END);
+			*bytes_pointer = ftell(file);
+			rewind(file);
+			
+			*data_pointer = (char*) malloc(*bytes_pointer);
+			fread(*data_pointer, 1, *bytes_pointer, file);
+			
+			fclose(file);
+			return;
+		}
+		
+		iar_node_t parent_node;
+		memcpy(&parent_node, &path.assets_node, sizeof(parent_node));
+		
+		for (int i = 0; i < path.list_index; i++) {
+			iar_node_t temp_node;
+			if (iar_find_node(boot_package_pointer, &temp_node, path.list[i], &parent_node) == -1) {
+				printf("WARNING File not found\n");
+				kos_bda[0] = 1; // failure
+				
+				free_path(&path);
+				return;
+			}
+			
+			if (i >= path.list_index - 1) { // at the end of the list (presumably, this is the file node)
+				if (!temp_node.data_bytes) {
+					printf("WARNING File is empty\n");
+					kos_bda[0] = 1; // failure
+					
+					free_path(&path);
+					return;
+				}
+				
+				*bytes_pointer = temp_node.data_bytes;
+				*data_pointer = (char*) malloc(*bytes_pointer);
+				
+				if (iar_read_node_contents(boot_package_pointer, &temp_node, *data_pointer)) {
+					printf("WARNING Node is not a file\n");
+					kos_bda[0] = 1;
+					
+					free(*data_pointer);
+					free_path(&path);
+					return;
+				}
+				
+				break;
+			}
+		}
+		
+		free_path(&path);
+		return;
 		
 	} else if (data[0] == 0x77) { // write
-		const char* path = (const char*) data[1];
+		path_t path;
+		if (setup_path(&path, (const char*) data[1])) {
+			kos_bda[0] = 1; // failure
+			return;
+		}
+		
+		if (!path.write_access) {
+			printf("WARNING Write access denied\n");
+			kos_bda[0] = 1; // failure
+			return;
+		}
+		
+		if (create_path(&path)) {
+			kos_bda[0] = 1; // failure
+			return;
+		}
+		
+		free_path(&path);
+		
 		char* write_data = (char*) data[2];
 		uint64_t bytes = data[3];
 		
-		FILE* file = fopen(path, "wb");
+		FILE* file = fopen(path.path, "wb");
 		if (!file) {
+			printf("WARNING File not found\n");
 			kos_bda[0] = 1; // failure
 			return;
 		}
 		
 		fwrite(write_data, 1, bytes, file);
 		fclose(file);
-				
-	} else if (data[0] == 0x6D) { // create_directory
-		const char* path = (const char*) data[1];
 		
-		if (mkdir(path, 0700) < 0) {
+	} else if (data[0] == 0x6D) { // create_directory
+		path_t path;
+		if (setup_path(&path, (const char*) data[1])) {
+			kos_bda[0] = 1; // failure
+			return;
+		}
+		
+		if (!path.write_access) {
+			printf("WARNING Write access denied\n");
+			kos_bda[0] = 1; // failure
+			return;
+		}
+		
+		if (create_path(&path)) {
+			kos_bda[0] = 1; // failure
+			return;
+		}
+		
+		free_path(&path);
+		if (mkdir(path.path, 0700) < 0) {
+			printf("WARNING Directory probably already exists\n");
 			kos_bda[0] = 1; // failure (directory probably already exists)
 		}
 		
-	} else if (data[0] == 0x76) { // move / copy
+	} /*else if (data[0] == 0x76) { // move / copy
 		uint64_t copy = data[1];
-		const char* destination_path = (const char*) data[2];
-		const char* source_path = (const char*) data[3];
+		
+		char* destination_path;
+		if (filter_path(&destination_path, (const char*) data[2])) {
+			kos_bda[0] = 1; // failure
+			return;
+		}
+		
+		char* source_path;
+		if (filter_path(&source_path, (const char*) data[2])) {
+			kos_bda[0] = 1; // failure
+			free(destination_path);
+			return;
+		}
 		
 		if (copy) { // copy
 			kos_bda[0] = copy_recursive(destination_path, source_path);
@@ -156,12 +187,26 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 			kos_bda[0] = 1; // failure
 		}
 		
+		free(source_path);
+		free(destination_path);
+		
 	} else if (data[0] == 0x64) { // remove
-		const char* path = (const char*) data[1];
+		char* path;
+		if (filter_path(&path, (const char*) data[1])) {
+			kos_bda[0] = 1; // failure
+			return;
+		}
+		
 		kos_bda[0] = remove_recursive(path);
+		free(path);
 		
 	} else if (data[0] == 0x6C) { // list
-		const char* path = (const char*) data[1];
+		char* path;
+		if (filter_path(&path, (const char*) data[1])) {
+			kos_bda[0] = 1; // failure
+			return;
+		}
+		
 		char*** list_pointer = (char***) data[2];
 		uint64_t** list_bytes_pointer = (uint64_t**) data[3];
 		uint64_t* list_size_pointer = (uint64_t*) data[4];
@@ -172,6 +217,7 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		DIR* dp = opendir(path);
 		if (!dp) {
 			kos_bda[0] = 1; // failure
+			free(path);
 			return;
 		}
 		
@@ -199,13 +245,19 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		}
 		
 		closedir(dp);
+		free(path);
 		
 	} else if (data[0] == 0x74) { // type
-		const char* path = (const char*) data[1];
+		char* path;
+		if (filter_path(&path, (const char*) data[1])) {
+			kos_bda[0] = 1; // failure
+			return;
+		}
 		
 		DIR* dp = opendir(path);
 		if (!dp) {
 			kos_bda[0] = FS_TYPE_INEXISTENT; // failure
+			free(path);
 			return;
 		}
 		
@@ -225,8 +277,8 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 			else if (entry->d_type == DT_REG) kos_bda[0] = FS_TYPE_FILE;
 			else if (entry->d_type == DT_DIR) kos_bda[0] = FS_TYPE_DIRECTORY;
 		}
-	}
-	
-	chdir(".."); // get out of root so the kos doesn't get confused
+		
+		free(path);
+	}*/
 }
 

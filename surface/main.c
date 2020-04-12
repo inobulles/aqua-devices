@@ -132,6 +132,9 @@ void before_flip(void) {
 
 uint64_t** kos_bda_pointer = (uint64_t**) 0;
 
+uint64_t* video_width_pointer;
+uint64_t* video_height_pointer;
+
 void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 	uint64_t* kos_bda = *kos_bda_pointer;
 	*result_pointer_pointer = &kos_bda[0];
@@ -179,12 +182,27 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		
 		// draw surface
 		
+		#define vertex_pixel_align 0
+		
+		int half_vwidth;
+		int half_vheight;
+		
+		if (vertex_pixel_align) {
+			half_vwidth  = *video_width_pointer  >> 1;
+			half_vheight = *video_height_pointer >> 1;
+		}
+		
 		float vertices[sizeof(default_vertices) / sizeof(*default_vertices)];
 		for (int i = 0; i < 4; i++) {
 			vertices[i * 3 + 2] = default_vertices[i * 3 + 2] * layer / 256;
 			
 			vertices[i * 3 + 0] = default_vertices[i * 3 + 0] * surface->width  + x;
 			vertices[i * 3 + 1] = default_vertices[i * 3 + 1] * surface->height + y;
+			
+			if (vertex_pixel_align) {
+				vertices[i * 3 + 0] = (float) (int) (vertices[i * 3 + 0] * half_vwidth ) / half_vwidth;
+				vertices[i * 3 + 1] = (float) (int) (vertices[i * 3 + 1] * half_vheight) / half_vheight;
+			}
 		}
 		
 		glEnableVertexAttribArray(0);
