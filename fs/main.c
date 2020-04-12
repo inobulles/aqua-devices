@@ -46,8 +46,6 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		uint64_t* bytes_pointer = (uint64_t*) data[3];
 		
 		if (path.drive != FS_DRIVE_ASSETS) {
-			free_path(&path);
-			
 			FILE* file = fopen(path.path, "rb");
 			if (!file) {
 				printf("WARNING File not found\n");
@@ -125,8 +123,6 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 			return;
 		}
 		
-		free_path(&path);
-		
 		char* write_data = (char*) data[2];
 		uint64_t bytes = data[3];
 		
@@ -158,7 +154,6 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 			return;
 		}
 		
-		free_path(&path);
 		if (mkdir(path.path, 0700) < 0) {
 			printf("WARNING Directory probably already exists\n");
 			kos_bda[0] = 1; // failure (directory probably already exists)
