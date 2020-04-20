@@ -4,6 +4,7 @@ typedef struct {
 	uint64_t magic;
 	uint64_t version;
 	uint64_t root_node_offset;
+	uint64_t page_bytes;
 } iar_header_t;
 
 typedef struct {
@@ -24,32 +25,6 @@ typedef struct {
 	iar_header_t header;
 	iar_node_t root_node;
 } iar_file_t;
-
-static int iar_open(iar_file_t* self, const char* path) {
-	self->fp = fopen(path, "r");
-	if (!self->fp) {
-		printf("ERROR Failed to read %s\n", path);
-		return 1;
-	}
-	
-	self->fd = fileno(self->fp);
-	pread(self->fd, &self->header, sizeof(self->header), 0);
-	
-	if (self->header.magic != IAR_MAGIC) {
-		printf("ERROR %s is not a valid IAR file\n", path);
-		fclose(self->fp);
-		return 1;
-	}
-	
-	if (self->header.version != 0) {
-		printf("ERROR %s is of an invalid version (%lu) (AQUA only supports IAR version 0)\n", path, self->header.version);
-		fclose(self->fp);
-		return 1;
-	}
-	
-	pread(self->fd, &self->root_node, sizeof(self->root_node), self->header.root_node_offset);
-	return 0;
-}
 
 static uint64_t iar_find_node(iar_file_t* self, iar_node_t* node, const char* name, iar_node_t* parent) { // return file index of found file or -1 if nothing found, 
 	uint64_t node_offsets_bytes = parent->node_count * sizeof(uint64_t);
@@ -78,13 +53,28 @@ static uint64_t iar_find_node(iar_file_t* self, iar_node_t* node, const char* na
 	return found;
 }
 
-static int iar_read_node_contents(iar_file_t* self, iar_node_t* node, char* buffer) {
+int iar_read_node_contents(iar_file_t* self, iar_node_t* node, char* buffer) {
 	if (node->data_offset) {
 		pread(self->fd, buffer, node->data_bytes, node->data_offset);
 		return 0;
 		
 	} else {
-		printf("ERROR Provided node is not a file and thus contains no data\n");
+		printf("WARNING Provided node is not a file and thus contains no data\n");
+		return 1;
+	}
+}
+
+static int iar_map_node_contents(iar_file_t* self, iar_node_t* node, void* address) {
+	if (node->data_offset) {
+		if (mmap(address, node->data_bytes, PROT_READ, MAP_PRIVATE | MAP_FIXED, self->fd, node->data_offset) == MAP_FAILED) {
+			printf("WARNING Couldn't map file to memory (%d)\n", errno);
+			return 1;
+		}
+		
+		return 0;
+		
+	} else {
+		printf("WARNING Provided node is not a file and thus contains no data\n");
 		return 1;
 	}
 }

@@ -9,6 +9,7 @@
 #include <sys/mman.h>
 #include <dirent.h>
 #include <string.h>
+#include <errno.h>
 
 uint64_t** kos_bda_pointer = (uint64_t**) 0;
 
@@ -24,6 +25,8 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 	uint64_t* kos_bda = *kos_bda_pointer;
 	*result_pointer_pointer = &kos_bda[0];
 	kos_bda[0] = 0; // be optimistic about the success of the program
+	
+	long page_bytes = sysconf(_SC_PAGESIZE);
 	
 	if (data[0] == 0x72) { // read
 		path_t path;
@@ -47,22 +50,6 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		uint64_t* bytes_pointer = (uint64_t*) data[3];
 		
 		if (path.drive != FS_DRIVE_ASSETS) {
-			//~ FILE* file = fopen(path.path, "rb");
-			//~ if (!file) {
-				//~ printf("WARNING File not found\n");
-				//~ kos_bda[0] = 1; // failure
-				//~ return;
-			//~ }
-			
-			//~ fseek(file, 0L, SEEK_END);
-			//~ *bytes_pointer = ftell(file);
-			//~ rewind(file);
-			
-			//~ *data_pointer = (char*) malloc(*bytes_pointer);
-			//~ fread(*data_pointer, 1, *bytes_pointer, file);
-			
-			//~ fclose(file);
-			
 			int fd = open(path.path, O_RDONLY);
 			if (fd < 0) {
 				printf("WARNING File not found\n");
@@ -73,17 +60,18 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 			struct stat file_info;
 			if (fstat(fd, &file_info) == -1) {
 				close(fd);
+				
 				printf("WARNING Couldn't stat file\n");
 				kos_bda[0] = 1; // failure
 				return;
 			}
 			
-			long page_size = sysconf(_SC_PAGESIZE);
 			*bytes_pointer = file_info.st_size;
+			*data_pointer = mmap((void*) 0, *bytes_pointer + page_bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0) + page_bytes;
 			
-			*data_pointer = mmap((void*) 0, *bytes_pointer + page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0) + page_size;
 			if (*data_pointer == MAP_FAILED) {
 				close(fd);
+				
 				printf("WARNING Couldn't allocate memory\n");
 				kos_bda[0] = 1; // failure
 				return;
@@ -91,7 +79,7 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 			
 			*((uint64_t*) (*data_pointer - sizeof(uint64_t))) = *bytes_pointer;
 			if (mmap(*data_pointer, *bytes_pointer, PROT_READ, MAP_PRIVATE | MAP_FIXED, fd, 0) == MAP_FAILED) {
-				munmap(*data_pointer, *bytes_pointer + page_size);
+				munmap((void*) *data_pointer - sizeof(uint64_t), *bytes_pointer + page_bytes);
 				close(fd);
 				
 				printf("WARNING Couldn't map file to memory\n");
@@ -109,32 +97,49 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		for (int i = 0; i < path.list_index; i++) {
 			iar_node_t temp_node;
 			if (iar_find_node(boot_package_pointer, &temp_node, path.list[i], &parent_node) == -1) {
+				free_path(&path);
+				
 				printf("WARNING File not found\n");
 				kos_bda[0] = 1; // failure
-				
-				free_path(&path);
 				return;
 			}
 			
 			if (i >= path.list_index - 1) { // at the end of the list (presumably, this is the file node)
 				if (!temp_node.data_bytes) {
+					free_path(&path);
+					
 					printf("WARNING File is empty\n");
 					kos_bda[0] = 1; // failure
-					
-					free_path(&path);
 					return;
 				}
 				
 				*bytes_pointer = temp_node.data_bytes;
-				*data_pointer = (char*) malloc(*bytes_pointer);
 				
-				if (iar_read_node_contents(boot_package_pointer, &temp_node, *data_pointer)) {
-					printf("WARNING Node is not a file\n");
-					kos_bda[0] = 1;
+				if (boot_package_pointer->header.page_bytes == page_bytes) {
+					*data_pointer = mmap((void*) 0, *bytes_pointer + page_bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0) + page_bytes;
 					
-					free(*data_pointer);
-					free_path(&path);
-					return;
+					if (*data_pointer == MAP_FAILED) {
+						free_path(&path);
+						
+						printf("WARNING Couldn't allocate memory\n");
+						kos_bda[0] = 1; // failure
+						return;
+					}
+					
+					*((uint64_t*) (*data_pointer - sizeof(uint64_t))) = *bytes_pointer;
+					if (iar_map_node_contents(boot_package_pointer, &temp_node, (void*) *data_pointer)) {
+						munmap((void*) *data_pointer - page_bytes, *bytes_pointer + page_bytes);
+						kos_bda[0] = 1; // failure
+					}
+					
+				} else {
+					*data_pointer = (char*) malloc(*bytes_pointer + sizeof(uint64_t));
+					*((uint64_t*) *data_pointer) = 0;
+					*data_pointer += sizeof(uint64_t);
+					
+					if (iar_read_node_contents(boot_package_pointer, &temp_node, *data_pointer)) {
+						kos_bda[0] = 1; // failure
+					}
 				}
 				
 				break;
