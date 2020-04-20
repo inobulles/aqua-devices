@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/sendfile.h>
+#include <sys/mman.h>
 #include <dirent.h>
 #include <string.h>
 
@@ -46,21 +47,59 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		uint64_t* bytes_pointer = (uint64_t*) data[3];
 		
 		if (path.drive != FS_DRIVE_ASSETS) {
-			FILE* file = fopen(path.path, "rb");
-			if (!file) {
+			//~ FILE* file = fopen(path.path, "rb");
+			//~ if (!file) {
+				//~ printf("WARNING File not found\n");
+				//~ kos_bda[0] = 1; // failure
+				//~ return;
+			//~ }
+			
+			//~ fseek(file, 0L, SEEK_END);
+			//~ *bytes_pointer = ftell(file);
+			//~ rewind(file);
+			
+			//~ *data_pointer = (char*) malloc(*bytes_pointer);
+			//~ fread(*data_pointer, 1, *bytes_pointer, file);
+			
+			//~ fclose(file);
+			
+			int fd = open(path.path, O_RDONLY);
+			if (fd < 0) {
 				printf("WARNING File not found\n");
 				kos_bda[0] = 1; // failure
 				return;
 			}
 			
-			fseek(file, 0L, SEEK_END);
-			*bytes_pointer = ftell(file);
-			rewind(file);
+			struct stat file_info;
+			if (fstat(fd, &file_info) == -1) {
+				close(fd);
+				printf("WARNING Couldn't stat file\n");
+				kos_bda[0] = 1; // failure
+				return;
+			}
 			
-			*data_pointer = (char*) malloc(*bytes_pointer);
-			fread(*data_pointer, 1, *bytes_pointer, file);
+			long page_size = sysconf(_SC_PAGESIZE);
+			*bytes_pointer = file_info.st_size;
 			
-			fclose(file);
+			*data_pointer = mmap((void*) 0, *bytes_pointer + page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0) + page_size;
+			if (*data_pointer == MAP_FAILED) {
+				close(fd);
+				printf("WARNING Couldn't allocate memory\n");
+				kos_bda[0] = 1; // failure
+				return;
+			}
+			
+			*((uint64_t*) (*data_pointer - sizeof(uint64_t))) = *bytes_pointer;
+			if (mmap(*data_pointer, *bytes_pointer, PROT_READ, MAP_PRIVATE | MAP_FIXED, fd, 0) == MAP_FAILED) {
+				munmap(*data_pointer, *bytes_pointer + page_size);
+				close(fd);
+				
+				printf("WARNING Couldn't map file to memory\n");
+				kos_bda[0] = 1; // failure
+				return;
+			}
+			
+			close(fd);
 			return;
 		}
 		
