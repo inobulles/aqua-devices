@@ -23,11 +23,14 @@ static size_t root_drive_path_bytes;
 
 void load(void) {
 	chdir(*root_path_pointer);
+	root_drive_path = realpath(".", (char*) 0);
 	
+	mkdir("conf", 0700);
+	mkdir("user", 0700);
+
 	conf_drive_path = realpath("conf", (char*) 0);
 	user_drive_path = realpath("user", (char*) 0);
-	root_drive_path = realpath(".",    (char*) 0);
-	
+
 	conf_drive_path_bytes = strlen(conf_drive_path);
 	user_drive_path_bytes = strlen(user_drive_path);
 	root_drive_path_bytes = strlen(root_drive_path);
