@@ -228,6 +228,7 @@ static char* asl_to_glsl(char** attribute_list, uint32_t* attribute_count, uint8
 	free(head);
 	free(body);
 	
+    printf("%s\n", result);
 	return result;
 }
 
@@ -264,8 +265,8 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 			char* frag_shader_code = asl_to_glsl((char**) attribute_list, &attribute_count, 1, asl_frag_shader_code);
 		#endif
 		
-		kos_bda[0] = create_shader_program(program_pointer, attribute_list, attribute_count, vert_shader_code, frag_shader_code);
-		
+        kos_bda[0] = create_shader_program(program_pointer, attribute_list, attribute_count, vert_shader_code, frag_shader_code);
+
 		#if !USE_GLSL
 			for (int i = 0; i < MAX_ATTRIBUTE_COUNT; i++) {
 				free(attribute_list[i]);
@@ -273,6 +274,8 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 			
 			free(vert_shader_code);
 			free(frag_shader_code);
+
+            printf("What\n");
 		#endif
 		
 	} else if (data[0] == 0x72) { // remove
