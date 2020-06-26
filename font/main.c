@@ -1,6 +1,7 @@
 
 #include <stdint.h>
-#include <locale.h>
+#include <unicode/utf.h>
+#include <unicode/ustring.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb/stb_truetype.h"
@@ -80,8 +81,9 @@ void handle(uint64_t** result_pointer_pointer, uint64_t* data) {
 		
 		// create a bitmap for each character in the string
 		
-		for (uint64_t i = 0; i < bytes - 1; i++) { /// TODO UTF-8, wrapped text
-			int current = string[i];
+		for (uint32_t i = 0; i < bytes - 1;) { /// TODO UTF-8, wrapped text
+            uint32_t current = 0;
+            U8_NEXT(string, i, bytes, current);
 			
 			if (current == '\n') { // move down on newline
 				if (bitmap_count) {
