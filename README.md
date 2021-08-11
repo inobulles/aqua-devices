@@ -1,2 +1,3 @@
-# aqua-devices
-This repository contains the C code for all core AQUA devices on Linux-based KOS'.
+# aqua-devices (`core` branch)
+
+For a general overview of this repository, please refer to the `README` in the `main` branch.
