@@ -2,7 +2,14 @@
 
 This repository contains the source code for all core AQUA devices for a range of different platforms.
 Each branch corresponds to a set of devices which are meant to work together on a specific platform or configuration.
-Here is a quick overview of each branch:
+
+Using `aqua-unix`, you can switch to a different device branch by running:
+
+```shell
+% aqua-unix --update --devbranch different-branch
+```
+
+Here is a quick overview of each device branch:
 
 ## Core devices
 
