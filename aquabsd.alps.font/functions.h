@@ -28,7 +28,7 @@ dynamic int draw_font(font_t* font, const char* string, float red, float green, 
 
 	PangoLayout* layout = pango_cairo_create_layout(cairo);
 	pango_layout_set_font_description(layout, font->font_description);
-	
+
 	pango_layout_set_width (layout, wrap_width  * PANGO_SCALE);
 	pango_layout_set_height(layout, wrap_height * PANGO_SCALE);
 	

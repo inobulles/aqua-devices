@@ -19,10 +19,10 @@ uint64_t send(uint16_t command, void* data) {
 		
 		// TODO proper AXPN
 
-		float red   = (float) arguments[2];
-		float green = (float) arguments[3];
-		float blue  = (float) arguments[4];
-		float alpha = (float) arguments[5];
+		float red   = *(float*) &arguments[2];
+		float green = *(float*) &arguments[3];
+		float blue  = *(float*) &arguments[4];
+		float alpha = *(float*) &arguments[5];
 
 		int64_t wrap_width  = (int64_t) arguments[6];
 		int64_t wrap_height = (int64_t) arguments[7];
