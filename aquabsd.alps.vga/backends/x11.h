@@ -43,12 +43,14 @@ static int x11_get_mode_count(void) {
 }
 
 static video_mode_t* x11_get_modes(void) {
-	video_mode_t* modes = (video_mode_t*) malloc(sizeof(video_mode_t));
+	video_mode_t* modes = malloc(sizeof *modes);
 	
 	// 800x600x32@60
 	
 	video_mode_t* mode = &modes[0];
 	memset(mode, 0, sizeof(*mode));
+
+	mode->text = 0;
 
 	mode->width  = 800;
 	mode->height = 600;
@@ -197,7 +199,7 @@ static int x11_flip(void) {
 
 	// process events
 
-	int return_value = 0;
+	int return_value = 0; // nothing happened
 
 	for (xcb_generic_event_t* event; (event = xcb_poll_for_event(x11_connection)); free(event)) {
 		int event_type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
@@ -209,14 +211,14 @@ static int x11_flip(void) {
 			x11_invalidated = 0;
 			clock_gettime(CLOCK_MONOTONIC, &x11_last_exposure);
 
-			return_value = 1;
+			return_value = 1; // flipped, redraw
 		}
 
 		else if (event_type == XCB_CLIENT_MESSAGE) {
 			xcb_client_message_event_t* client_message_event = (xcb_client_message_event_t*) event;
 
 			if (client_message_event->data.data32[0] == x11_wm_delete_window_atom) {
-				return_value = -1;
+				return_value = -1; // quit
 			}
 		}
 	}

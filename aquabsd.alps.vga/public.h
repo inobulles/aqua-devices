@@ -10,6 +10,8 @@
 // 'aquabsd_alps_vga_mode_t' struct must be identical to the 'vga_mode_t' struct in 'aqua-lib' ('c/aquabsd/alps/vga.h')
 
 typedef struct {
+	uint64_t id;
+
 	uint64_t text;
 
 	uint64_t width, height;

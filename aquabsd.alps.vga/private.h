@@ -15,6 +15,10 @@ static void* (*backend_get_framebuffer) (void);
 
 static int (*backend_flip) (void);
 
+#if !defined(__FreeBSD__)
+	#define WITHOUT_AQUABSD_VGA // only available on FreeBSD/aquaBSD
+#endif
+
 #if !defined(WITHOUT_X11)
 	#include <aquabsd.alps.vga/backends/x11.h>
 #endif
