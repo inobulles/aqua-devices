@@ -6,8 +6,13 @@ dynamic int get_mode_count(void) {
 	if (!initialized) {
 		initialized = 1;
 
-		if (!aquabsd_vga_init()) goto initialized;
-		if (!x11_init        ()) goto initialized;
+		#if !defined(WITHOUT_AQUABSD_VGA)
+			if (!aquabsd_vga_init()) goto initialized;
+		#endif
+
+		#if !defined(WITHOUT_X11)
+			if (!x11_init()) goto initialized;
+		#endif
 
 		return -1;
 	}
