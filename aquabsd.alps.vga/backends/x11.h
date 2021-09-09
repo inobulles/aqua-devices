@@ -8,6 +8,7 @@
 
 #include <xcb/xcb.h>
 #include <xcb/shm.h>
+#include <xcb/xfixes.h>
 #include <xcb/xcb_image.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_event.h>
@@ -104,6 +105,11 @@ static int x11_set_mode(video_mode_t* mode) {
 	
 	x11_window = xcb_generate_id(x11_connection);
 	xcb_create_window(x11_connection, XCB_COPY_FROM_PARENT, x11_window, x11_screen->root, 0, 0, mode->width, mode->height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, x11_screen->root_visual, XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK, (const uint32_t[]) { x11_screen->black_pixel, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION });
+
+	// hide cursor
+
+	xcb_xfixes_query_version(x11_connection, 4, 0); // see: https://stackoverflow.com/questions/57841785/how-to-hide-cursor-in-xcb
+	xcb_xfixes_hide_cursor(x11_connection, x11_screen->root);
 
 	// add caption to window
 
