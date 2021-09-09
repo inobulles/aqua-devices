@@ -20,7 +20,7 @@ dynamic int free_font(font_t* font) {
 // yes, I very much know this is incredibly stupid
 // again though, it's not my fault if I'm forced to use crappy API's
 
-dynamic int draw_font(font_t* font, const char* string, float red, float green, float blue, float alpha, int64_t wrap_width, int64_t wrap_height, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference) {
+dynamic int draw_font(font_t* font, const char* string, float red, float green, float blue, float alpha, uint64_t wrap_width, uint64_t wrap_height, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference) {
 	// create dummy cairo surface and pango layout for getting text dimensions
 	
 	cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
@@ -29,8 +29,11 @@ dynamic int draw_font(font_t* font, const char* string, float red, float green, 
 	PangoLayout* layout = pango_cairo_create_layout(cairo);
 	pango_layout_set_font_description(layout, font->font_description);
 
-	pango_layout_set_width (layout, wrap_width  * PANGO_SCALE);
-	pango_layout_set_height(layout, wrap_height * PANGO_SCALE);
+	if (wrap_width ) pango_layout_set_width (layout, wrap_width  * PANGO_SCALE);
+	else             pango_layout_set_width (layout, -1);
+
+	if (wrap_height) pango_layout_set_height(layout, wrap_height * PANGO_SCALE);
+	else             pango_layout_set_height(layout, -1);
 	
 	pango_layout_set_wrap(layout, PANGO_WRAP_WORD);
 
@@ -64,8 +67,11 @@ dynamic int draw_font(font_t* font, const char* string, float red, float green, 
 	layout = pango_cairo_create_layout(cairo);
 	pango_layout_set_font_description(layout, font->font_description);
 
-	pango_layout_set_width (layout, wrap_width  * PANGO_SCALE);
-	pango_layout_set_height(layout, wrap_height * PANGO_SCALE);
+	if (wrap_width ) pango_layout_set_width (layout, wrap_width  * PANGO_SCALE);
+	else             pango_layout_set_width (layout, -1);
+
+	if (wrap_height) pango_layout_set_height(layout, wrap_height * PANGO_SCALE);
+	else             pango_layout_set_height(layout, -1);
 	
 	pango_layout_set_wrap(layout, PANGO_WRAP_WORD);
 

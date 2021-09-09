@@ -1,6 +1,8 @@
 // heavily inspired by the accepted answer on this SO question: https://stackoverflow.com/questions/65251904/draw-pixels-in-a-linux-window-without-opengl-in-c
 // also, as linked in the SO answer, this link helped a lot in migrating from Xlib to XCB: https://xcb.freedesktop.org/tutorial/basicwindowsanddrawing/
 
+#include <aquabsd.alps.mouse/public.h>
+
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
@@ -37,6 +39,12 @@ static video_mode_t x11_mode;
 static x11_image_t x11_image;
 
 static struct timespec x11_last_exposure = { 0, 0 };
+
+static unsigned x11_mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_COUNT];
+static float x11_mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_COUNT];
+
+static int x11_mouse_x;
+static int x11_mouse_y;
 
 static int x11_get_mode_count(void) {
 	return 1;
@@ -95,7 +103,7 @@ static int x11_set_mode(video_mode_t* mode) {
 	// actually create the window with the specified mode
 	
 	x11_window = xcb_generate_id(x11_connection);
-	xcb_create_window(x11_connection, XCB_COPY_FROM_PARENT, x11_window, x11_screen->root, 0, 0, mode->width, mode->height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, x11_screen->root_visual, XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK, (const uint32_t[]) { x11_screen->black_pixel, XCB_EVENT_MASK_EXPOSURE });
+	xcb_create_window(x11_connection, XCB_COPY_FROM_PARENT, x11_window, x11_screen->root, 0, 0, mode->width, mode->height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, x11_screen->root_visual, XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK, (const uint32_t[]) { x11_screen->black_pixel, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION });
 
 	// add caption to window
 
@@ -161,6 +169,11 @@ static int x11_set_mode(video_mode_t* mode) {
 
 	xcb_flush(x11_connection);
 
+	// assume the user program sets the cursor to the middle of the screen by default
+
+	x11_mouse_x = mode->width  / 2;
+	x11_mouse_y = mode->height / 2;
+
 	return 0;
 }
 
@@ -204,6 +217,8 @@ static int x11_flip(void) {
 	for (xcb_generic_event_t* event; (event = xcb_poll_for_event(x11_connection)); free(event)) {
 		int event_type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
 
+		// general events
+
 		if (event_type == XCB_EXPOSE) {
 			xcb_shm_put_image(x11_connection, x11_window, x11_context, x11_image.image->width, x11_image.image->height, 0, 0, x11_image.image->width, x11_image.image->height, 0, 0, x11_image.image->depth, x11_image.image->format, 0, x11_image.shm_seg, 0);
 			xcb_flush(x11_connection);
@@ -221,9 +236,67 @@ static int x11_flip(void) {
 				return_value = -1; // quit
 			}
 		}
+
+		// mouse button press/release events
+
+		else if (event_type == XCB_BUTTON_PRESS) {
+			xcb_button_press_event_t* button_press_event = (xcb_button_press_event_t*) event;
+			xcb_button_t button = button_press_event->detail;
+
+			if (button == 1) x11_mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_LEFT  ] = 1;
+			if (button == 3) x11_mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_RIGHT ] = 1;
+			if (button == 2) x11_mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_MIDDLE] = 1;
+
+			if (button == 5) x11_mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] = -1.0;
+			if (button == 4) x11_mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] =  1.0;
+		}
+
+		else if (event_type == XCB_BUTTON_RELEASE) {
+			xcb_button_release_event_t* button_release_event = (xcb_button_release_event_t*) event;
+			xcb_button_t button = button_release_event->detail;
+
+			if (button == 1) x11_mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_LEFT  ] = 0;
+			if (button == 3) x11_mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_RIGHT ] = 0;
+			if (button == 2) x11_mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_MIDDLE] = 0;
+		}
+
+		// mouse motion events
+
+		else if (event_type == XCB_ENTER_NOTIFY) {
+			xcb_enter_notify_event_t* enter_notify_event = (xcb_enter_notify_event_t*) event;
+
+			x11_mouse_x = enter_notify_event->event_x;
+			x11_mouse_y = enter_notify_event->event_y;
+		}
+
+		else if (event_type == XCB_LEAVE_NOTIFY) {
+			xcb_leave_notify_event_t* leave_notify_event = (xcb_leave_notify_event_t*) event;
+			
+			x11_mouse_x = leave_notify_event->event_x;
+			x11_mouse_y = leave_notify_event->event_y;
+		}
+
+		else if (event_type == XCB_MOTION_NOTIFY) {
+			xcb_motion_notify_event_t* motion_notify_event = (xcb_motion_notify_event_t*) event;
+			
+			x11_mouse_x = motion_notify_event->event_x;
+			x11_mouse_y = motion_notify_event->event_y;
+		}
 	}
 
 	return return_value;
+}
+
+static int x11_mouse_update_callback(aquabsd_alps_mouse_t* mouse) {
+	x11_mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_X] =       (float) x11_mouse_x / x11_mode.width;
+	x11_mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Y] = 1.0 - (float) x11_mouse_y / x11_mode.height;
+
+	memcpy(mouse->buttons, x11_mouse_buttons, sizeof mouse->buttons);
+	memcpy(mouse->axes, x11_mouse_axes, sizeof mouse->axes);
+
+	memset(x11_mouse_axes, 0, sizeof x11_mouse_axes);
+
+	return 0;
 }
 
 static int x11_init(void) {
@@ -253,5 +326,17 @@ static int x11_init(void) {
 	
 	x11_screen = xcb_setup_roots_iterator(xcb_get_setup(x11_connection)).data;
 
+	// register new mouse
+
+	memset(x11_mouse_buttons, 0, sizeof x11_mouse_buttons);
+	memset(x11_mouse_axes, 0, sizeof x11_mouse_axes);
+
+	uint64_t mouse_device = kos_query_device(0, (uint64_t) "aquabsd.alps.mouse");
+
+	if (mouse_device != -1) {
+		aquabsd_alps_mouse_register_mouse = kos_load_device_function(mouse_device, "register_mouse");
+		aquabsd_alps_mouse_register_mouse("aquabsd.alps.vga X11 backend mouse", x11_mouse_update_callback, 1);
+	}
+	
 	return 0;
 }

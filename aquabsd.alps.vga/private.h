@@ -2,6 +2,9 @@
 
 #include <aquabsd.alps.vga/public.h>
 
+static uint64_t (*kos_query_device) (uint64_t, uint64_t name);
+static void* (*kos_load_device_function) (uint64_t device, const char* name);
+
 // these functions must be set by the first backend that manages to initialize
 // 'mode_t' must be called 'video_mode_t' as it conflicts with 'mode_t' in 'sys/ipc.h' on FreeBSD unfortunately
 

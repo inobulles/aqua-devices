@@ -24,8 +24,8 @@ uint64_t send(uint16_t command, void* data) {
 		float blue  = *(float*) &arguments[4];
 		float alpha = *(float*) &arguments[5];
 
-		int64_t wrap_width  = (int64_t) arguments[6];
-		int64_t wrap_height = (int64_t) arguments[7];
+		uint64_t wrap_width  = (uint64_t) arguments[6];
+		uint64_t wrap_height = (uint64_t) arguments[7];
 
 		uint8_t** bitmap_reference = (uint8_t**) arguments[8];
 		
