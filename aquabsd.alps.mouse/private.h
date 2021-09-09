@@ -1,4 +1,5 @@
 #define dynamic
+
 #include <aquabsd.alps.mouse/public.h>
 
 #include <stdio.h>

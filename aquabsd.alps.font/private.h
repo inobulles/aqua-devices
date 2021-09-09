@@ -7,3 +7,5 @@
 
 #include <unicode/utf.h>
 #include <unicode/ustring.h>
+
+#define font_t aquabsd_alps_font_t

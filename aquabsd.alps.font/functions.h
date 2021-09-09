@@ -4,9 +4,7 @@
 dynamic font_t* load_font(const char* path) {
 	PangoFontDescription* font_description = pango_font_description_from_string(path);
 
-	font_t* font = (font_t*) malloc(sizeof(font_t));
-	memset(font, 0, sizeof(*font));
-
+	font_t* font = calloc(1, sizeof *font);
 	font->font_description = font_description;
 
 	return font;
@@ -19,6 +17,8 @@ dynamic int free_font(font_t* font) {
 
 // yes, I very much know this is incredibly stupid
 // again though, it's not my fault if I'm forced to use crappy API's
+
+// TODO include a 'size' argument
 
 dynamic int draw_font(font_t* font, const char* string, float red, float green, float blue, float alpha, uint64_t wrap_width, uint64_t wrap_height, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference) {
 	// create dummy cairo surface and pango layout for getting text dimensions

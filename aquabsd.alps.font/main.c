@@ -40,5 +40,5 @@ uint64_t send(uint16_t command, void* data) {
 		return (uint64_t) free_font(font);
 	}
 
-	return 0;
+	return -1;
 }

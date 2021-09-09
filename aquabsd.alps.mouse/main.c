@@ -1,6 +1,5 @@
 // TODO support for multiple mice and counting/listing functions
 //      maybe also network mice?
-// TODO make the X and Y axes absolute
 
 #include <aquabsd.alps.mouse/private.h>
 #include <aquabsd.alps.mouse/functions.h>
