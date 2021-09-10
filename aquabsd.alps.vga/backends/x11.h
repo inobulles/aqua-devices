@@ -106,10 +106,18 @@ static int x11_set_mode(video_mode_t* mode) {
 	x11_window = xcb_generate_id(x11_connection);
 	xcb_create_window(x11_connection, XCB_COPY_FROM_PARENT, x11_window, x11_screen->root, 0, 0, mode->width, mode->height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, x11_screen->root_visual, XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK, (const uint32_t[]) { x11_screen->black_pixel, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION });
 
-	// hide cursor
+	// hide cursor (yes this is needlessly complicated and hacky 😞)
 
-	xcb_xfixes_query_version(x11_connection, 4, 0); // see: https://stackoverflow.com/questions/57841785/how-to-hide-cursor-in-xcb
-	xcb_xfixes_hide_cursor(x11_connection, x11_screen->root);
+	xcb_pixmap_t empty_pixmap = xcb_generate_id(x11_connection);
+	xcb_create_pixmap(x11_connection, 1, empty_pixmap, x11_window, 1, 1);
+
+	xcb_cursor_t cursor = xcb_generate_id(x11_connection);
+	xcb_create_cursor(x11_connection, cursor, empty_pixmap, empty_pixmap, 0, 0, 0, 0, 0, 0, 0, 0);
+
+	xcb_change_window_attributes(x11_connection, x11_window, XCB_CW_CURSOR, (uint32_t[]) { cursor });
+
+	xcb_free_pixmap(x11_connection, empty_pixmap);
+	xcb_free_cursor(x11_connection, cursor);
 
 	// add caption to window
 
