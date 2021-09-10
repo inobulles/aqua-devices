@@ -4,7 +4,7 @@
 // definitions accessible to AQUA programs (through 'aqua-lib') and other devices
 
 // 'aquabsd_alps_mouse_button_t' & 'aquabsd_alps_mouse_axis_t' enums must respectively be identical to the 'mouse_button_t' & 'mouse_axis_t' enums in 'aqua-lib' ('c/aquabsd/alps/mouse.h')
-// 'aquabsd_alps_mouse_t' struct 
+// 'aquabsd_alps_mouse_t' struct must be identical to the 'mouse_t' struct in 'aqua-lib' ('c/aquabsd/alps/mouse.h')
 
 #define AQUABSD_ALPS_MOUSE_BUTTON_COUNT 3
 #define AQUABSD_ALPS_MOUSE_AXIS_COUNT 3
