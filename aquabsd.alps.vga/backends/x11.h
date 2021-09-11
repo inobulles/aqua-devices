@@ -37,7 +37,9 @@ static xcb_gcontext_t x11_context = (xcb_gcontext_t) 0;
 static xcb_atom_t x11_wm_delete_window_atom;
 
 static video_mode_t x11_mode;
+
 static x11_image_t x11_image;
+static void* x11_doublebuffer;
 
 static struct timespec x11_last_exposure = { 0, 0 };
 
@@ -166,6 +168,8 @@ static int x11_set_mode(video_mode_t* mode) {
 	x11_image.image->data = shmat(x11_image.shm_id, 0, 0);
 	assert((int64_t) x11_image.image->data >= 0);
 
+	x11_doublebuffer = malloc(x11_image.image->stride * x11_image.image->height);
+
 	x11_image.shm_seg = xcb_generate_id(x11_connection);
 	xcb_generic_error_t* error = xcb_request_check(x11_connection, xcb_shm_attach_checked(x11_connection, x11_image.shm_seg, x11_image.shm_id, 0));
 	assert(!error);
@@ -192,7 +196,7 @@ static int x11_set_mode(video_mode_t* mode) {
 }
 
 static void* x11_get_framebuffer(void) {
-	return (void*) x11_image.image->data;
+	return x11_doublebuffer;
 }
 
 static unsigned x11_invalidated = 1;
@@ -234,6 +238,8 @@ static int x11_flip(void) {
 		// general events
 
 		if (event_type == XCB_EXPOSE) {
+			memcpy(x11_image.image->data, x11_doublebuffer, x11_image.image->stride * x11_image.image->height);
+			
 			xcb_shm_put_image(x11_connection, x11_window, x11_context, x11_image.image->width, x11_image.image->height, 0, 0, x11_image.image->width, x11_image.image->height, 0, 0, x11_image.image->depth, x11_image.image->format, 0, x11_image.shm_seg, 0);
 			xcb_flush(x11_connection);
 
@@ -322,7 +328,7 @@ static int x11_init(void) {
 
 	const xcb_query_extension_reply_t* shm_extension = xcb_get_extension_data(x11_connection, &xcb_shm_id);
 
-	if (!shm_extension || !shm_extension->present) {
+	if (!shm_extension || !shm_extension->present ) {
 		return -1;
 	}
 
