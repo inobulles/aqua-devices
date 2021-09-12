@@ -1,6 +1,7 @@
 #if !defined(__AQUABSD_ALPS_SVG)
 #define __AQUABSD_ALPS_SVG
 
+#include <stdint.h>
 #include <librsvg/rsvg.h>
 
 typedef struct {
