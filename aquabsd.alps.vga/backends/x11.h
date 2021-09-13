@@ -9,6 +9,7 @@
 #include <xcb/xcb.h>
 #include <xcb/shm.h>
 #include <xcb/xfixes.h>
+#include <xcb/xinput.h>
 #include <xcb/xcb_image.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_event.h>
@@ -328,8 +329,17 @@ static int x11_init(void) {
 
 	const xcb_query_extension_reply_t* shm_extension = xcb_get_extension_data(x11_connection, &xcb_shm_id);
 
-	if (!shm_extension || !shm_extension->present ) {
+	if (!shm_extension || !shm_extension->present) {
 		return -1;
+	}
+
+	const xcb_query_extension_reply_t* input_extension = xcb_get_extension_data(x11_connection, &xcb_input_id);
+
+	if (!input_extension || !input_extension->present) {
+		printf("TODO file %s line %d func %s: XInput extension not present :(\n", __FILE__, __LINE__, __func__);
+
+		// TODO idk, don't fail because XInput isn't technically necessary, but at least fall back to regular scrolling
+		//      as a sidenote, how would smooth scrolling on trackpads work on aquaBSD with 'MOUSECTL'?
 	}
 
 	// set backend functions from 'private.h'

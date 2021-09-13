@@ -1,2 +1,2 @@
 #!/bin/sh
-cc -shared -fPIC main.c -o device "$@"
+cc -shared -fPIC main.c -lm -o device "$@"
