@@ -29,6 +29,9 @@ dynamic int draw_font(font_t* font, const char* string, float red, float green, 
 	PangoLayout* layout = pango_cairo_create_layout(cairo);
 	pango_layout_set_font_description(layout, font->font_description);
 
+	if (wrap_width  < 0x2000) wrap_width  = 0x2000;
+	if (wrap_height < 0x2000) wrap_height = 0x2000;
+
 	if (wrap_width ) pango_layout_set_width (layout, wrap_width  * PANGO_SCALE);
 	else             pango_layout_set_width (layout, -1);
 
@@ -39,7 +42,7 @@ dynamic int draw_font(font_t* font, const char* string, float red, float green, 
 
 	// actually get text dimensions
 
-	pango_layout_set_markup(layout, string, -1); // we use 'pango_layout_set_markup' instead of 'pango_layout_set_text' here because of obvious reasons
+	pango_layout_set_markup(layout, string, -1); // we use 'pango_layout_set_markup' instead of 'pango_layout_set_text' here for obvious reasons
 	
 	int width, height;
 
@@ -77,7 +80,7 @@ dynamic int draw_font(font_t* font, const char* string, float red, float green, 
 
 	// actually (x3 lol) draw text
 
-	pango_layout_set_markup(layout, string, -1); // we use 'pango_layout_set_markup' instead of 'pango_layout_set_text' here because of obvious reasons
+	pango_layout_set_markup(layout, string, -1); // we use 'pango_layout_set_markup' instead of 'pango_layout_set_text' here for obvious reasons
 	cairo_set_source_rgba(cairo, red, green, blue, alpha); // font colour
 
 	pango_cairo_update_layout(cairo, layout);
