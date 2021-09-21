@@ -29,8 +29,11 @@ dynamic int draw_font(font_t* font, const char* string, float red, float green, 
 	PangoLayout* layout = pango_cairo_create_layout(cairo);
 	pango_layout_set_font_description(layout, font->font_description);
 
-	if (wrap_width  > 0x2000) wrap_width  = 0x2000;
-	if (wrap_height > 0x2000) wrap_height = 0x2000;
+	#define MAX_WIDTH  0x2000
+	#define MAX_HEIGHT 0x2000
+
+	if (wrap_width  > MAX_WIDTH  || !wrap_width ) wrap_width  = MAX_WIDTH;
+	if (wrap_height > MAX_HEIGHT || !wrap_height) wrap_height = MAX_HEIGHT;
 
 	if (wrap_width ) pango_layout_set_width (layout, wrap_width  * PANGO_SCALE);
 	else             pango_layout_set_width (layout, -1);
