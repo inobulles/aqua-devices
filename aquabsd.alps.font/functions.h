@@ -35,7 +35,7 @@ dynamic int draw_font(font_t* font, const char* string, float red, float green, 
 	if (wrap_height) pango_layout_set_height(layout, wrap_height * PANGO_SCALE);
 	else             pango_layout_set_height(layout, -1);
 	
-	pango_layout_set_wrap(layout, PANGO_WRAP_WORD);
+	pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
 
 	// actually get text dimensions
 
@@ -73,7 +73,7 @@ dynamic int draw_font(font_t* font, const char* string, float red, float green, 
 	if (wrap_height) pango_layout_set_height(layout, wrap_height * PANGO_SCALE);
 	else             pango_layout_set_height(layout, -1);
 	
-	pango_layout_set_wrap(layout, PANGO_WRAP_WORD);
+	pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
 
 	// actually (x3 lol) draw text
 
