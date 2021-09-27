@@ -8,6 +8,7 @@
 static int aquabsd_vga_mode_count;
 static video_mode_t* aquabsd_vga_modes;
 
+static video_mode_t* aquabsd_vga_mode;
 static int aquabsd_vga_prev_mode;
 
 static size_t aquabsd_vga_framebuffer_bytes;
@@ -29,6 +30,8 @@ static video_mode_t* aquabsd_vga_get_modes(void) {
 }
 
 static int aquabsd_vga_set_mode(video_mode_t* mode) {
+	aquabsd_vga_mode = mode;
+
 	video_info_t info = { .vi_mode = mode->id };
 	ioctl(0, CONS_MODEINFO, &info);
 
@@ -62,9 +65,26 @@ static void* aquabsd_vga_get_framebuffer(void) {
 	return aquabsd_vga_doublebuffer;
 }
 
+static struct timespec aquabsd_vga_last_invalidation = { 0, 0 };
+
 static int aquabsd_vga_flip(void) {
-	memcpy(aquabsd_vga_framebuffer, aquabsd_vga_doublebuffer, aquabsd_vga_framebuffer_bytes);
-	return 1; // flipped, redraw
+	// if more than '1.0 / aquabsd_vga_mode->fps' seconds have passed, invalidate
+	// TODO see if it's feasible to unify this framerate-keeping code between backends?
+
+	struct timespec now = { 0, 0 };
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	float last_seconds = (float) aquabsd_vga_last_invalidation.tv_sec + 1.0e-9 * aquabsd_vga_last_invalidation.tv_nsec;
+	float now_seconds = (float) now.tv_sec + 1.0e-9 * now.tv_nsec;
+
+	if (now_seconds - last_seconds > 1.0 / aquabsd_vga_mode->fps) {
+		clock_gettime(CLOCK_MONOTONIC, &aquabsd_vga_last_invalidation);
+		memcpy(aquabsd_vga_framebuffer, aquabsd_vga_doublebuffer, aquabsd_vga_framebuffer_bytes);
+
+		return 1; // flipped, redraw
+	}
+
+	return 0; // nothing happened
 }
 
 static int aquabsd_vga_reset(void) {
