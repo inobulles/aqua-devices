@@ -320,6 +320,11 @@ static int x11_mouse_update_callback(aquabsd_alps_mouse_t* mouse) {
 	return 0;
 }
 
+static int x11_reset(void) {
+	x11_close_window();
+	return 0;
+}
+
 static int x11_init(void) {
 	x11_connection = xcb_connect(NULL /* default to the 'DISPLAY' environment variable */, NULL);
 
@@ -351,6 +356,8 @@ static int x11_init(void) {
 	backend_get_framebuffer = x11_get_framebuffer;
 
 	backend_flip = x11_flip;
+
+	backend_reset = x11_reset;
 
 	// finish init process
 	

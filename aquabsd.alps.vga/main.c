@@ -9,6 +9,8 @@
 
 #define CMD_FLIP        0x666C // 'fl'
 
+#define CMD_RESET       0x7672 // 'vr'
+
 int load(
 	uint64_t (*_kos_query_device) (uint64_t, uint64_t name),
 	void* (*_kos_load_device_function) (uint64_t device, const char* name),
@@ -42,6 +44,10 @@ uint64_t send(uint16_t command, void* data) {
 
 	else if (command == CMD_FLIP) {
 		return flip();
+	}
+
+	else if (command == CMD_RESET) {
+		return reset();
 	}
 
 	return -1;

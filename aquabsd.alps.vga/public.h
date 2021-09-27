@@ -26,4 +26,6 @@ static void* (*aquabsd_alps_vga_framebuffer) (void);
 
 static int (*aquabsd_alps_vga_flip) (void);
 
+static int (*aquabsd_alps_vga_reset) (void);
+
 #endif

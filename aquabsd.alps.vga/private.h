@@ -18,6 +18,8 @@ static void* (*backend_get_framebuffer) (void);
 
 static int (*backend_flip) (void);
 
+static int (*backend_reset) (void);
+
 #if !defined(__FreeBSD__)
 	#define WITHOUT_AQUABSD_VGA // only available on FreeBSD/aquaBSD
 #endif

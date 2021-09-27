@@ -39,3 +39,7 @@ dynamic void* get_framebuffer(void) {
 dynamic int flip(void) {
 	return backend_flip();
 }
+
+dynamic int reset(void) {
+	return backend_reset();
+}

@@ -38,7 +38,7 @@ static int aquabsd_vga_set_mode(video_mode_t* mode) {
 	ioctl(0, VT_WAITACTIVE, 0);
 
 	ioctl(0, KDSETMODE, info.vi_flags & V_INFO_GRAPHICS ? KD_GRAPHICS : KD_TEXT);
-	ioctl(0, info.vi_mode, 0);
+	ioctl(0, _IO('V', info.vi_mode - M_VESA_BASE), 0); // TODO text modes
 
 	video_adapter_info_t adapter_info = { 0 };
 	ioctl(0, CONS_ADPINFO, &adapter_info);
@@ -48,6 +48,7 @@ static int aquabsd_vga_set_mode(video_mode_t* mode) {
 	aquabsd_vga_framebuffer = mmap((void*) 0, adapter_info.va_window_size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, 0, 0);
 
 	if (aquabsd_vga_framebuffer == MAP_FAILED) {
+		printf("Map failed\n");
 		return -1;
 	}
 
@@ -64,6 +65,18 @@ static void* aquabsd_vga_get_framebuffer(void) {
 static int aquabsd_vga_flip(void) {
 	memcpy(aquabsd_vga_framebuffer, aquabsd_vga_doublebuffer, aquabsd_vga_framebuffer_bytes);
 	return 1; // flipped, redraw
+}
+
+static int aquabsd_vga_reset(void) {
+	ioctl(0, _IO('S', 24 /* hopefully mode 24 exists everywhere */), 0);
+	ioctl(0, KDDISABIO, 0);
+
+	struct vt_mode mode = { .mode = VT_AUTO };
+
+	ioctl(0, KDSETMODE, KD_TEXT);
+	ioctl(0, VT_SETMODE, &mode);
+
+	return 0;
 }
 
 static int aquabsd_vga_init(void) {
@@ -107,6 +120,8 @@ static int aquabsd_vga_init(void) {
 	backend_get_framebuffer = aquabsd_vga_get_framebuffer;
 
 	backend_flip = aquabsd_vga_flip;
+
+	backend_reset = aquabsd_vga_reset;
 
 	return 0;
 }
