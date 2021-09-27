@@ -1,5 +1,7 @@
 // TODO freeing (possibly a new function for "closing" a mode, i.e. resetting it to its previous state?)
 
+#include <time.h>
+
 #include <sys/mman.h>
 #include <sys/fbio.h>
 #include <sys/kbio.h>
