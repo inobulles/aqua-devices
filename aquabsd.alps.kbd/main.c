@@ -4,8 +4,8 @@
 #include <aquabsd.alps.kbd/private.h>
 #include <aquabsd.alps.kbd/functions.h>
 
-#define CMD_GET_DEFAULT_KBD_ID 0x646D // 'dk'
-#define CMD_UPDATE_KBD         0x756D // 'uk'
+#define CMD_GET_DEFAULT_KBD_ID 0x646B // 'dk'
+#define CMD_UPDATE_KBD         0x756B // 'uk'
 #define CMD_POLL_BUTTON        0x7062 // 'pb'
 
 int load(

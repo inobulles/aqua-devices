@@ -6,8 +6,6 @@
 // the 'aquabsd_alps_kbd_button_t' enum must be identical to the 'kbd_button_t' enum in 'aqua-lib' ('c/aquabsd/alps/kbd.h')
 // 'aquabsd_alps_kbd_t' struct must be identical to the 'kbd_t' struct in 'aqua-lib' ('c/aquabsd/alps/kbd.h')
 
-#define AQUABSD_ALPS_KBD_BUTTON_COUNT 5
-
 typedef enum {
 	AQUABSD_ALPS_KBD_BUTTON_ESC,
 
@@ -15,6 +13,8 @@ typedef enum {
 	AQUABSD_ALPS_KBD_BUTTON_DOWN,
 	AQUABSD_ALPS_KBD_BUTTON_LEFT,
 	AQUABSD_ALPS_KBD_BUTTON_RIGHT,
+
+	AQUABSD_ALPS_KBD_BUTTON_COUNT,
 } aquabsd_alps_kbd_button_t;
 
 // definitions exclusively accessible to other devices
