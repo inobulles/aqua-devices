@@ -2,6 +2,7 @@
 // also, as linked in the SO answer, this link helped a lot in migrating from Xlib to XCB: https://xcb.freedesktop.org/tutorial/basicwindowsanddrawing/
 
 #include <aquabsd.alps.mouse/public.h>
+#include <aquabsd.alps.kbd/public.h>
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -46,6 +47,8 @@ static struct timespec x11_last_exposure = { 0, 0 };
 
 static unsigned x11_mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_COUNT];
 static float x11_mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_COUNT];
+
+static unsigned x11_kbd_buttons[AQUABSD_ALPS_KBD_BUTTON_COUNT];
 
 static int x11_mouse_x;
 static int x11_mouse_y;
@@ -107,7 +110,7 @@ static int x11_set_mode(video_mode_t* mode) {
 	// actually create the window with the specified mode
 	
 	x11_window = xcb_generate_id(x11_connection);
-	xcb_create_window(x11_connection, XCB_COPY_FROM_PARENT, x11_window, x11_screen->root, 0, 0, mode->width, mode->height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, x11_screen->root_visual, XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK, (const uint32_t[]) { x11_screen->black_pixel, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION });
+	xcb_create_window(x11_connection, XCB_COPY_FROM_PARENT, x11_window, x11_screen->root, 0, 0, mode->width, mode->height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, x11_screen->root_visual, XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK, (const uint32_t[]) { x11_screen->black_pixel, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE });
 
 	// hide cursor (yes this is needlessly complicated and hacky 😞)
 
@@ -198,6 +201,19 @@ static int x11_set_mode(video_mode_t* mode) {
 
 static void* x11_get_framebuffer(void) {
 	return x11_doublebuffer;
+}
+
+static int x11_kbd_map(xcb_keycode_t key) {
+	switch (key) {
+		case 9: return AQUABSD_ALPS_KBD_BUTTON_ESC;
+
+		case 111: return AQUABSD_ALPS_KBD_BUTTON_UP;
+		case 116: return AQUABSD_ALPS_KBD_BUTTON_DOWN;
+		case 113: return AQUABSD_ALPS_KBD_BUTTON_LEFT;
+		case 114: return AQUABSD_ALPS_KBD_BUTTON_RIGHT;
+	}
+
+	return -1;
 }
 
 static unsigned x11_invalidated = 1;
@@ -303,6 +319,30 @@ static int x11_flip(void) {
 			x11_mouse_x = motion_notify_event->event_x;
 			x11_mouse_y = motion_notify_event->event_y;
 		}
+
+		// keyboard button press/release events
+
+		else if (event_type == XCB_KEY_PRESS) {
+			xcb_key_press_event_t* key_press_event = (xcb_key_press_event_t*) event;
+			xcb_keycode_t key = key_press_event->detail;
+
+			int index = x11_kbd_map(key);
+
+			if (index >= 0) {
+				x11_kbd_buttons[index] = 1;
+			}
+		}
+
+		else if (event_type == XCB_KEY_RELEASE) {
+			xcb_key_release_event_t* key_release_event = (xcb_key_release_event_t*) event;
+			xcb_keycode_t key = key_release_event->detail;
+
+			int index = x11_kbd_map(key);
+
+			if (index >= 0) {
+				x11_kbd_buttons[index] = 0;
+			}
+		}
 	}
 
 	return return_value;
@@ -317,6 +357,11 @@ static int x11_mouse_update_callback(aquabsd_alps_mouse_t* mouse) {
 
 	memset(x11_mouse_axes, 0, sizeof x11_mouse_axes);
 
+	return 0;
+}
+
+static int x11_kbd_update_callback(aquabsd_alps_kbd_t* kbd) {
+	memcpy(kbd->buttons, x11_kbd_buttons, sizeof kbd->buttons);
 	return 0;
 }
 
@@ -373,6 +418,17 @@ static int x11_init(void) {
 	if (mouse_device != -1) {
 		aquabsd_alps_mouse_register_mouse = kos_load_device_function(mouse_device, "register_mouse");
 		aquabsd_alps_mouse_register_mouse("aquabsd.alps.vga X11 backend mouse", x11_mouse_update_callback, 1);
+	}
+
+	// register new keyboard
+
+	memset(x11_kbd_buttons, 0, sizeof x11_kbd_buttons);
+
+	uint64_t kbd_device = kos_query_device(0, (uint64_t) "aquabsd.alps.kbd");
+
+	if (kbd_device != -1) {
+		aquabsd_alps_kbd_register_kbd = kos_load_device_function(kbd_device, "register_kbd");
+		aquabsd_alps_kbd_register_kbd("aquabsd.alps.vga X11 backend keyboard", x11_kbd_update_callback, 1);
 	}
 	
 	return 0;
