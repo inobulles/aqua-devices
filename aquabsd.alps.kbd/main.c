@@ -1,5 +1,5 @@
 // for now, you can only poll individual keyboard buttons, such as arrows
-// in the future though, I'll have an event system to recieve and unicode character, as I don't want applications to have to deal with keymaps
+// in the future though, I'll have an event system to receive and unicode character, as I don't want applications to have to deal with keymaps
 
 #include <aquabsd.alps.kbd/private.h>
 #include <aquabsd.alps.kbd/functions.h>
@@ -17,7 +17,9 @@ int load(
 	kbds = NULL;
 
 	#if defined(AQUABSD_CONSOLE_KBD)
-		aquabsd_console_kbd_id = register_mouse("aquaBSD console keyboard", update_aquabsd_console_kbd, 1)->id;
+		if (init_aquabsd_console_kbd() == 0) {
+			aquabsd_console_kbd_id = register_kbd("aquaBSD console keyboard", update_aquabsd_console_kbd, 1)->id;
+		}
 	#endif
 
 	return 0;

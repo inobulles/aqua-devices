@@ -33,7 +33,7 @@ struct aquabsd_alps_kbd_t {
 };
 
 #if defined(__FreeBSD__)
-	//#define AQUABSD_ALPS_KBD_AQUABSD_CONSOLE_KBD
+	#define AQUABSD_ALPS_KBD_AQUABSD_CONSOLE_KBD
 #endif
 
 static unsigned (*aquabsd_alps_kbd_get_default_kbd_id) (void);
