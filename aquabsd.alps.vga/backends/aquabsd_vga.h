@@ -7,6 +7,8 @@
 #include <sys/kbio.h>
 #include <sys/consio.h>
 
+#include <termios.h>
+
 static int aquabsd_vga_mode_count;
 static video_mode_t* aquabsd_vga_modes;
 
@@ -89,7 +91,12 @@ static int aquabsd_vga_flip(void) {
 	return 0; // nothing happened
 }
 
+static int aquabsd_vga_kbd_mode = -1;
+static struct termios aquabsd_vga_tty;
+
 static int aquabsd_vga_reset(void) {
+	// set the mode back to some usable mode
+	
 	ioctl(0, _IO('S', 24 /* hopefully mode 24 exists everywhere */), 0);
 	ioctl(0, KDDISABIO, 0);
 
@@ -97,6 +104,15 @@ static int aquabsd_vga_reset(void) {
 
 	ioctl(0, KDSETMODE, KD_TEXT);
 	ioctl(0, VT_SETMODE, &mode);
+
+	// reset the previous keyboard mode & TTY state
+
+	if (aquabsd_vga_kbd_mode < 0) {
+		return 0;
+	}
+
+	ioctl(0, KDSKBMODE, aquabsd_vga_kbd_mode);
+	tcsetattr(0, TCSANOW | TCSAFLUSH, &aquabsd_vga_tty);
 
 	return 0;
 }
@@ -132,6 +148,11 @@ static int aquabsd_vga_init(void) {
 	if (!aquabsd_vga_modes) {
 		return -1;
 	}
+
+	// recall the previous keyboard mode & TTY state in case any other devices modify it
+
+	ioctl(0, KDGKBMODE, &aquabsd_vga_kbd_mode); // if this fails, we don't care, 'kbd_mode' will be '-1'
+	tcgetattr(0, &aquabsd_vga_tty);
 
 	// set backend functions from 'private.h'
 
