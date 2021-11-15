@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define FATAL_ERROR(...) fprintf(stderr, "[aquabsd.alps.win] FATAL ERROR "__VA_ARGS__); delete(win); return NULL;
 #define WARNING(...) fprintf(stderr, "[aquabsd.alps.win] WARNING "__VA_ARGS__);
@@ -66,11 +67,6 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 
 	xcb_icccm_set_wm_protocols(win->connection, win->win, wm_protocols_atom, 1, &win->wm_delete_win_atom);
 
-	// add caption to window
-
-	#define CAPTION "TODO window captions for aquabsd.alps.win"
-	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, sizeof(CAPTION), CAPTION);
-
 	// set sensible minimum and maximum sizes for the window
 
 	xcb_size_hints_t hints = { 0 };
@@ -85,6 +81,11 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	xcb_map_window(win->connection, win->win);
 
 	return win;
+}
+
+dynamic int set_caption(win_t* win, const char* caption) {
+	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(caption) + 1, caption);
+	return 0;
 }
 
 dynamic int register_cb(win_t* win, cb_t type, uint64_t cb, uint64_t param) {

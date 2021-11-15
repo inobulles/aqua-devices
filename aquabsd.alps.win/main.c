@@ -4,6 +4,8 @@
 #define CMD_CREATE      0x6377 // 'cw'
 #define CMD_DELETE      0x6477 // 'cd'
 
+#define CMD_SET_CAPTION 0x7363 // 'sc'
+
 #define CMD_REGISTER_CB 0x7263 // 'rc'
 #define CMD_LOOP        0x6C6F // 'lo'
 
@@ -31,6 +33,13 @@ uint64_t send(uint16_t command, void* data) {
 		win_t* win = (void*) arguments[0];
 		return delete(win);
 	}
+
+	else if (command == CMD_SET_CAPTION) {
+		win_t* win = (void*) arguments[0];
+		const char* caption = (void*) arguments[1];
+
+		return set_caption(win, caption);
+	}	
 
 	else if (command == CMD_REGISTER_CB) {
 		win_t* win = (void*) arguments[0];
