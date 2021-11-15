@@ -160,7 +160,7 @@ dynamic context_t* create_window(unsigned x_res, unsigned y_res) {
 	xcb_size_hints_t hints;
 
 	xcb_icccm_size_hints_set_min_size(&hints, 320, 200);
-	// no maximum size
+	xcb_icccm_size_hints_set_max_size(&hints, 1 << 16, 1 << 16);
 
 	xcb_icccm_set_wm_size_hints(context->connection, context->window, XCB_ATOM_WM_NORMAL_HINTS, &hints);
 
