@@ -2,16 +2,16 @@
 
 #include <aquabsd.alps.ogl/public.h>
 
-// TODO are 'kos_query_device' & 'kos_load_device_function' going to be necessary?
-
 static uint64_t (*kos_query_device) (uint64_t, uint64_t name);
 static void* (*kos_load_device_function) (uint64_t device, const char* name);
 static uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
 
-#define cb_t aquabsd_alps_ogl_cb_t
+static uint64_t win_device = -1;
 
-#define CB_DRAW AQUABSD_ALPS_OGL_CB_DRAW
-#define CB_LEN AQUABSD_ALPS_OGL_CB_LEN
+#define context_type_t aquabsd_alps_ogl_context_type_t
 
-#define window_t aquabsd_alps_ogl_window_t
+#define CONTEXT_TYPE_WIN AQUABSD_ALPS_OGL_CONTEXT_TYPE_WIN
+#define CONTEXT_TYPE_WM  AQUABSD_ALPS_OGL_CONTEXT_TYPE_WM
+#define CONTEXT_TYPE_LEN AQUABSD_ALPS_OGL_CONTEXT_TYPE_LEN
+
 #define context_t aquabsd_alps_ogl_context_t
