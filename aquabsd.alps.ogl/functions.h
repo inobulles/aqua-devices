@@ -15,11 +15,10 @@ dynamic int delete_context(context_t* context) {
 	return 0;
 }
 
-// 'create_generic_context' returns 'context_t*' to retain compatibility with the 'FATAL_ERROR' macro
+// 'create_egl_context' returns 'context_t*' to retain compatibility with the 'FATAL_ERROR' macro
 // yeah it's a bit hacky, I know
 
-static context_t* create_generic_context(context_t* context) {
-	// setup EGL
+static context_t* create_egl_context(context_t* context) {
 	// TODO take a look at how I'm meant to enable/disable vsync
 	// TODO ALSO still maintain a GLX backend as it seems to be significantly faster on some platforms
 
@@ -170,7 +169,7 @@ dynamic context_t* create_window(unsigned x_res, unsigned y_res) {
 	window_t* window = calloc(1, sizeof *window);
 	context->backend.window = window;
 
-	if (create_generic_context(context) != context) {
+	if (create_egl_context(context) != context) {
 		return NULL;
 	}
 

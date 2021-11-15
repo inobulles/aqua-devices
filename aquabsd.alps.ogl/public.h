@@ -54,4 +54,12 @@ typedef struct {
 	uint64_t cb_params[AQUABSD_ALPS_OGL_CB_LEN];
 } aquabsd_alps_ogl_context_t;
 
+static aquabsd_alps_ogl_context_t* (*aquabsd_alps_ogl_create_window) (unsigned x_res, unsigned y_res);
+static aquabsd_alps_ogl_context_t* (*aquabsd_alps_ogl_create_wm) (void);
+
+static int (*aquabsd_alps_ogl_register_cb) (aquabsd_alps_ogl_context_t* context, aquabsd_alps_ogl_cb_t type, uint64_t cb, uint64_t param);
+static int (*aquabsd_alps_ogl_loop) (aquabsd_alps_ogl_context_t* context);
+
+static void* (*aquabsd_alps_ogl_get_function) (aquabsd_alps_ogl_context_t* context, const char* name);
+
 #endif
