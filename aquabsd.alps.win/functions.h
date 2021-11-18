@@ -119,12 +119,29 @@ static inline int call_cb(win_t* win, cb_t type) {
 	return kos_callback(cb, 2, (uint64_t) win, param);
 }
 
+static void invalidate(win_t* win) {
+	xcb_expose_event_t event;
+
+	event.window = win->win;
+	event.response_type = XCB_EXPOSE;
+
+	event.x = 0;
+	event.y = 0;
+
+	event.width  = win->x_res;
+	event.height = win->y_res;
+
+	xcb_send_event(win->connection, 0, win->win, XCB_EVENT_MASK_EXPOSURE, (const char*) &event);
+	xcb_flush(win->connection);
+}
+
 dynamic int loop(win_t* win) {
 	for (xcb_generic_event_t* event; (event = xcb_wait_for_event(win->connection)); free(event)) {
 		int type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
 
 		if (type == XCB_EXPOSE) {
 			call_cb(win, CB_DRAW);
+			invalidate(win);
 		}
 
 		else if (type == XCB_CLIENT_MESSAGE) {
