@@ -17,11 +17,12 @@ uint64_t send(uint16_t command, void* data) {
 		png_t* png = (png_t*) arguments[0];
 
 		uint8_t** bitmap_reference = (void*) arguments[1];
+		uint64_t* bpp_reference    = (void*) arguments[2];
 		
-		uint64_t* width_reference  = (void*) arguments[2];
-		uint64_t* height_reference = (void*) arguments[3];
+		uint64_t* width_reference  = (void*) arguments[3];
+		uint64_t* height_reference = (void*) arguments[4];
 
-		return (uint64_t) draw_png(png, bitmap_reference, width_reference, height_reference);
+		return (uint64_t) draw_png(png, bitmap_reference, bpp_reference, width_reference, height_reference);
 	}
 
 	else if (command == CMD_FREE) {

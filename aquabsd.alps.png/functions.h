@@ -63,7 +63,7 @@ error:
 	return NULL;
 }
 
-dynamic int draw_png(png_t* png, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference) {
+dynamic int draw_png(png_t* png, uint8_t** bitmap_reference, uint64_t* bpp_reference, uint64_t* width_reference, uint64_t* height_reference) {
 	// set references we already know about
 	// TODO maybe there's a better API to be made which isn't based off of aquabsd.alps.svg?
 
@@ -92,6 +92,7 @@ dynamic int draw_png(png_t* png, uint8_t** bitmap_reference, uint64_t* width_ref
 	// set bitmap reference
 
 	*bitmap_reference = bitmap;
+	*bpp_reference = row_bytes / png->width * 8;
 
 	// TODO in theory, free everything
 	// it's just that, from a *very* quick overview, it doesn't seem like libpng needs anything to be freed???
