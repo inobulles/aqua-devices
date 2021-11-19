@@ -17,6 +17,6 @@ typedef struct {
 
 static aquabsd_alps_png_t* (*aquabsd_alps_png_load) (const char* path);
 static int (*aquabsd_alps_png_free) (aquabsd_alps_png_t* png);
-static int (*aquabsd_alps_png_draw) (aquabsd_alps_png_t* png, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference);
+static int (*aquabsd_alps_png_draw) (aquabsd_alps_png_t* png, uint8_t** bitmap_reference, uint64_t* bpp_reference, uint64_t* width_reference, uint64_t* height_reference);
 
 #endif
