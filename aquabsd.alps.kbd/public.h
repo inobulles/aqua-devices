@@ -20,11 +20,13 @@ typedef enum {
 // definitions exclusively accessible to other devices
 
 typedef struct aquabsd_alps_kbd_t aquabsd_alps_kbd_t; // forward declaration
-typedef int (*aquabsd_alps_kbd_update_callback_t) (aquabsd_alps_kbd_t* kbd);
+typedef int (*aquabsd_alps_kbd_update_callback_t) (aquabsd_alps_kbd_t* kbd, void* param);
 
 struct aquabsd_alps_kbd_t {
 	unsigned available;
+
 	aquabsd_alps_kbd_update_callback_t update_callback;
+	void* update_cb_param;
 
 	unsigned id;
 	char name[256];
@@ -41,6 +43,6 @@ static int (*aquabsd_alps_kbd_update_kbd) (unsigned kbd_id);
 
 static unsigned (*aquabsd_alps_kbd_poll_button) (unsigned kbd_id, aquabsd_alps_kbd_button_t button);
 
-static aquabsd_alps_kbd_t* (*aquabsd_alps_kbd_register_kbd) (const char* name, aquabsd_alps_kbd_update_callback_t update_callback, unsigned set_default);
+static aquabsd_alps_kbd_t* (*aquabsd_alps_kbd_register_kbd) (const char* name, aquabsd_alps_kbd_update_callback_t update_callback, void* update_cb_param, unsigned set_default);
 
 #endif

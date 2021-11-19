@@ -25,11 +25,13 @@ typedef enum {
 // definitions exclusively accessible to other devices
 
 typedef struct aquabsd_alps_mouse_t aquabsd_alps_mouse_t; // forward declaration
-typedef int (*aquabsd_alps_mouse_update_callback_t) (aquabsd_alps_mouse_t* mouse);
+typedef int (*aquabsd_alps_mouse_update_callback_t) (aquabsd_alps_mouse_t* mouse, void* param);
 
 struct aquabsd_alps_mouse_t {
 	unsigned available;
+
 	aquabsd_alps_mouse_update_callback_t update_callback;
+	void* update_cb_param;
 
 	unsigned id;
 	char name[256];
@@ -48,6 +50,6 @@ static int (*aquabsd_alps_mouse_update_mouse) (unsigned mouse_id);
 static unsigned (*aquabsd_alps_mouse_poll_button) (unsigned mouse_id, aquabsd_alps_mouse_button_t button);
 static float (*aquabsd_alps_mouse_poll_axis) (unsigned mouse_id, aquabsd_alps_mouse_axis_t axis);
 
-static aquabsd_alps_mouse_t* (*aquabsd_alps_mouse_register_mouse) (const char* name, aquabsd_alps_mouse_update_callback_t update_callback, unsigned set_default);
+static aquabsd_alps_mouse_t* (*aquabsd_alps_mouse_register_mouse) (const char* name, aquabsd_alps_mouse_update_callback_t update_callback, void* update_cb_param, unsigned set_default);
 
 #endif

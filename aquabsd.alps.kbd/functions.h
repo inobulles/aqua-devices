@@ -14,7 +14,7 @@ dynamic int update_kbd(unsigned kbd_id) {
 		return 0;
 	}
 
-	return kbd->update_callback(kbd);
+	return kbd->update_callback(kbd, kbd->update_cb_param);
 }
 
 dynamic unsigned poll_button(unsigned kbd_id, button_t button) {
@@ -23,14 +23,16 @@ dynamic unsigned poll_button(unsigned kbd_id, button_t button) {
 
 // functions exclusively accessible to other devices
 
-dynamic kbd_t* register_kbd(const char* name, update_callback_t update_callback, unsigned set_default) {
+dynamic kbd_t* register_kbd(const char* name, update_callback_t update_callback, void* update_cb_param, unsigned set_default) {
 	unsigned kbd_id = kbd_count++;
 
 	kbds = realloc(kbds, kbd_count * sizeof *kbds);
 	kbd_t* kbd = &kbds[kbd_id];
 	
 	memset(kbd, 0, sizeof *kbd);
+
 	kbd->update_callback = update_callback;
+	kbd->update_cb_param = update_cb_param;
 
 	kbd->id = kbd_id;
 	strncpy(kbd->name, name, sizeof kbd->name);

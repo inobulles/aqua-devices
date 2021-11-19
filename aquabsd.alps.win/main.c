@@ -14,7 +14,15 @@ int load(
 	void* (*_kos_load_device_function) (uint64_t device, const char* name),
 	uint64_t (*_kos_callback) (uint64_t callback, int argument_count, ...)) {
 
+	kos_query_device = _kos_query_device;
+	kos_load_device_function = _kos_load_device_function;
 	kos_callback = _kos_callback;
+
+	mouse_device = kos_query_device(0, (uint64_t) "aquabsd.alps.mouse");
+
+	if (mouse_device != -1) {
+		aquabsd_alps_mouse_register_mouse = kos_load_device_function(mouse_device, "register_mouse");
+	}
 
 	return 0;
 }

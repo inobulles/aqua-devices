@@ -1,3 +1,5 @@
+#include <aquabsd.alps.mouse/public.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +14,13 @@ dynamic int delete(win_t* win) {
 
 	free(win);
 
+	return 0;
+}
+
+static int mouse_update_callback(aquabsd_alps_mouse_t* mouse, void* _win) {
+	win_t* win = _win;
+
+	printf("mouse_update_callback %p %p\n", mouse, win);
 	return 0;
 }
 
@@ -76,9 +85,15 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 
 	xcb_icccm_set_wm_size_hints(win->connection, win->win, XCB_ATOM_WM_NORMAL_HINTS, &hints);
 
-	// finally, map the window
+	// finally (at least for the windowing part), map the window
 
 	xcb_map_window(win->connection, win->win);
+
+	// register a new mouse
+
+	if (mouse_device != -1) {
+		aquabsd_alps_mouse_register_mouse("aquabsd.alps.win mouse", mouse_update_callback, win, 1);
+	}
 
 	return win;
 }
