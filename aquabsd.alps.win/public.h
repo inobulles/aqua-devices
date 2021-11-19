@@ -1,6 +1,8 @@
 #if !defined(__AQUABSD_ALPS_WIN)
 #define __AQUABSD_ALPS_WIN
 
+#include <aquabsd.alps.mouse/public.h>
+
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_event.h>
@@ -43,6 +45,13 @@ struct aquabsd_alps_win_t {
 
 	int (*dev_cbs[AQUABSD_ALPS_WIN_CB_LEN]) (aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param);
 	void* dev_cb_params[AQUABSD_ALPS_WIN_CB_LEN];
+
+	// input tracking stuff
+
+	unsigned mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_COUNT];
+	float mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_COUNT];
+
+	int mouse_x, mouse_y;
 };
 
 // functions exposed to devices & apps

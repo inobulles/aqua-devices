@@ -1,5 +1,3 @@
-#include <aquabsd.alps.mouse/public.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +18,14 @@ dynamic int delete(win_t* win) {
 static int mouse_update_callback(aquabsd_alps_mouse_t* mouse, void* _win) {
 	win_t* win = _win;
 
-	printf("mouse_update_callback %p %p\n", mouse, win);
+	win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_X] =       (float) win->mouse_x / win->x_res;
+	win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Y] = 1.0 - (float) win->mouse_y / win->y_res;
+
+	memcpy(mouse->buttons, win->mouse_buttons, sizeof mouse->buttons);
+	memcpy(mouse->axes, win->mouse_axes, sizeof mouse->axes);
+
+	memset(win->mouse_axes, 0, sizeof win->mouse_axes);
+
 	return 0;
 }
 
@@ -55,7 +60,7 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	// create window
 	
 	const uint32_t win_attribs[] = {
-		XCB_EVENT_MASK_EXPOSURE,
+		XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION,
 	};
 
 	win->win = xcb_generate_id(win->connection);
@@ -165,6 +170,52 @@ dynamic int loop(win_t* win) {
 			if (specific->data.data32[0] == win->wm_delete_win_atom) {
 				return 0;
 			}
+		}
+
+		// mouse button press/release events
+
+		else if (type == XCB_BUTTON_PRESS) {
+			xcb_button_press_event_t* detail = (void*) event;
+			xcb_button_t button = detail->detail;
+
+			if (button == 1) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_LEFT  ] = 1;
+			if (button == 3) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_RIGHT ] = 1;
+			if (button == 2) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_MIDDLE] = 1;
+
+			if (button == 5) win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] = -1.0;
+			if (button == 4) win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] =  1.0;
+		}
+
+		else if (type == XCB_BUTTON_RELEASE) {
+			xcb_button_release_event_t* detail = (void*) event;
+			xcb_button_t button = detail->detail;
+
+			if (button == 1) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_LEFT  ] = 0;
+			if (button == 3) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_RIGHT ] = 0;
+			if (button == 2) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_MIDDLE] = 0;
+		}
+
+		// mouse motion events
+
+		else if (type == XCB_ENTER_NOTIFY) {
+			xcb_enter_notify_event_t* detail = (void*) event;
+
+			win->mouse_x = detail->event_x;
+			win->mouse_y = detail->event_y;
+		}
+
+		else if (type == XCB_LEAVE_NOTIFY) {
+			xcb_leave_notify_event_t* detail = (void*) event;
+			
+			win->mouse_x = detail->event_x;
+			win->mouse_y = detail->event_y;
+		}
+
+		else if (type == XCB_MOTION_NOTIFY) {
+			xcb_motion_notify_event_t* detail = (void*) event;
+			
+			win->mouse_x = detail->event_x;
+			win->mouse_y = detail->event_y;
 		}
 	}
 
