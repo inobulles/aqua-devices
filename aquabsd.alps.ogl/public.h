@@ -4,7 +4,11 @@
 #include <aquabsd.alps.win/public.h>
 
 #include <EGL/egl.h>
-#include <GL/gl.h>
+
+// from the 'ogl' library (in 'aqua-lib')
+// there, there is a generator provided to automatically update it
+
+#include <aquabsd.alps.ogl/gl/gl.h>
 
 typedef enum {
 	AQUABSD_ALPS_OGL_CONTEXT_TYPE_WIN,
