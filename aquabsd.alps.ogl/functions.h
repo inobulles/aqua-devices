@@ -44,6 +44,9 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	context_t* context = calloc(1, sizeof *context);
 	context->backend.win = win;
 
+	context->x_res = win->x_res;
+	context->y_res = win->y_res;
+
 	// setup EGL
 
 	// TODO take a look at how I'm meant to enable/disable vsync
