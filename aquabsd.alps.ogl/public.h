@@ -12,6 +12,8 @@ typedef enum {
 } aquabsd_alps_ogl_context_type_t;
 
 typedef struct {
+	unsigned x_res, y_res;
+
 	// backend stuff
 
 	aquabsd_alps_ogl_context_type_t backend_type;
