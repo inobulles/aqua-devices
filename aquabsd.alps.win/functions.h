@@ -155,8 +155,8 @@ static void invalidate(win_t* win) {
 	xcb_flush(win->connection);
 }
 
-dynamic int loop(win_t* win) {
-	for (xcb_generic_event_t* event; (event = xcb_wait_for_event(win->connection)); free(event)) {
+static int process_events(win_t* win) {
+	for (xcb_generic_event_t* event; (event = xcb_poll_for_event(win->connection)); free(event)) {
 		int type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
 
 		if (type == XCB_EXPOSE) {
@@ -219,6 +219,11 @@ dynamic int loop(win_t* win) {
 		}
 	}
 
+	return 1;
+}
+
+dynamic int loop(win_t* win) {
+	while (process_events(win));
 	return 0; // no more events to process
 }
 

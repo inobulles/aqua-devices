@@ -2,9 +2,6 @@
 #include <stdlib.h>
 
 static void swap(context_t* context) {
-	// void (*_glFinish) (void) = eglGetProcAddress("glFinish");
-	// _glFinish();
-
 	eglSwapBuffers(context->egl_display, context->egl_surface);
 }
 
