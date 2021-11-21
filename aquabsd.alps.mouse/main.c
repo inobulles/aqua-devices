@@ -18,7 +18,7 @@ int load(
 	mice = NULL;
 
 	#if defined(AQUABSD_CONSOLE_MOUSE)
-		aquabsd_console_mouse_id = register_mouse("aquaBSD console mouse", update_aquabsd_console_mouse, 1)->id;
+		aquabsd_console_mouse_id = register_mouse("aquaBSD console mouse", update_aquabsd_console_mouse, NULL, 1)->id;
 	#endif
 
 	return 0;

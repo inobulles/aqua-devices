@@ -30,7 +30,7 @@ uint64_t send(uint16_t command, void* data) {
 	if (command == CMD_CREATE) {
 		context_type_t type = arguments[0];
 		context_t* context = NULL;
-
+		
 		if (type == CONTEXT_TYPE_WIN && win_device != -1) {
 			aquabsd_alps_win_t* win = (void*) arguments[1];
 			context = create_win_context(win);

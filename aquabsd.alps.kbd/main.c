@@ -18,7 +18,7 @@ int load(
 
 	#if defined(AQUABSD_CONSOLE_KBD)
 		if (init_aquabsd_console_kbd() == 0) {
-			aquabsd_console_kbd_id = register_kbd("aquaBSD console keyboard", update_aquabsd_console_kbd, 1)->id;
+			aquabsd_console_kbd_id = register_kbd("aquaBSD console keyboard", update_aquabsd_console_kbd, NULL, 1)->id;
 		}
 	#endif
 

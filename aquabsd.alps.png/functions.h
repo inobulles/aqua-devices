@@ -22,7 +22,7 @@ dynamic png_t* load_png(const char* path) {
 	char header[8];
 	fread(header, 1, sizeof header, png->fp);
 
-	if (png_sig_cmp(header, 0, sizeof header)) {
+	if (png_sig_cmp((png_const_bytep) header, 0, sizeof header)) {
 		goto error; // file ain't PNG
 	}
 

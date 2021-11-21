@@ -39,7 +39,7 @@ static inline int __attribute__((unused)) /* currently have no use for this func
 	return 0;
 }
 
-static inline int update_aquabsd_console_mouse(mouse_t* mouse) {
+static inline int update_aquabsd_console_mouse(mouse_t* mouse, void* _) {
 	// get resolution information
 	
 	int video_mode;

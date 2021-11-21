@@ -22,7 +22,7 @@ dynamic svg_t* load_svg(const char* path) {
 	svg_t* svg = calloc(1, sizeof *svg);
 	svg->handle = handle;
 
-	rsvg_handle_get_dimensions(svg->handle, &svg->dimensions);
+	rsvg_handle_get_intrinsic_size_in_pixels(svg->handle, &svg->width, &svg->height);
 
 	return svg;
 
@@ -33,18 +33,20 @@ error:
 }
 
 dynamic int draw_svg(svg_t* svg, uint64_t size, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference) {
-	int width = size * svg->dimensions.width / svg->dimensions.height;
+	int width = size * svg->width / svg->height;
 	int height = size;
 
 	cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
 	cairo_t* cairo = cairo_create(surface);
 
-	cairo_scale(cairo, (float) width / svg->dimensions.width, (float) height / svg->dimensions.height);
+	cairo_scale(cairo, (float) width / svg->width, (float) height / svg->height);
 
 	// cairo_set_source_rgba(cairo, 0.0, 0.0, 0.0, 0.0); // note that cairo premultiplies our alpha
 	// cairo_paint(cairo); // set background colour
 
-	rsvg_handle_render_cairo(svg->handle, cairo);
+	RsvgRectangle viewport = { 50.0, 50.0, 50.0, 50.0 };
+
+	rsvg_handle_render_document(svg->handle, cairo, &viewport, NULL);
 	cairo_surface_flush(surface);
 
 	// copy data to bitmap

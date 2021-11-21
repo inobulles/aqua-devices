@@ -29,7 +29,7 @@ static inline int init_aquabsd_console_kbd(void) {
 	return 0;
 }
 
-static inline int update_aquabsd_console_kbd(kbd_t* kbd) {
+static inline int update_aquabsd_console_kbd(kbd_t* kbd, void* _) {
 	uint8_t ch;
 
 	// reset keyboard structure

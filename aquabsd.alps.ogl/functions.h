@@ -54,7 +54,7 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	}
 
 	context->egl_display = eglGetDisplay(win->display);
-	
+
 	if (context->egl_display == EGL_NO_DISPLAY) {
 		FATAL_ERROR("Failed to get EGL display from X11 display\n")
 	}
@@ -128,6 +128,6 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 }
 
 dynamic void* get_function(context_t* context, const char* name) {
-	return eglGetProcAddress((const GLubyte*) name);
+	return eglGetProcAddress(name);
 }
 

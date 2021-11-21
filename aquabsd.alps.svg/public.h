@@ -6,7 +6,7 @@
 
 typedef struct {
 	RsvgHandle* handle;
-	RsvgDimensionData dimensions;
+	double width, height;
 } aquabsd_alps_svg_t;
 
 static aquabsd_alps_svg_t* (*aquabsd_alps_svg_load_svg) (const char* path);
