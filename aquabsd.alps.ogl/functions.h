@@ -52,7 +52,7 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	// TODO take a look at how I'm meant to enable/disable vsync
 	// TODO ALSO still maintain a GLX backend as it seems to be significantly faster on some platforms
 
-	if (!eglBindAPI(EGL_OPENGL_API)) {
+	if (!eglBindAPI(EGL_OPENGL_ES_API)) {
 		FATAL_ERROR("Failed to bind EGL API\n")
 	}
 
@@ -91,6 +91,8 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	}
 
 	const int context_attribs[] = {
+		EGL_CONTEXT_MAJOR_VERSION, 3,
+		EGL_CONTEXT_MINOR_VERSION, 0,
 		EGL_NONE
 	};
 
@@ -139,6 +141,7 @@ dynamic void* get_function(context_t* context, const char* name) {
 // to pass the 'buffer' argument to 'eglCreateImage', we must use the undocumented EGL_KHR_image_pixmap extension (https://www.khronos.org/registry/EGL/extensions/KHR/EGL_KHR_image_base.txt) with the 'EGL_NATIVE_PIXMAP_KHR' target (which also means we must load and use 'eglCreateImageKHR' as our 'eglCreateImage' function instead)
 // once we finally have our 'EGLImageKHR', we can't bind it to a 'GL_TEXTURE_2D' target, as that would be too simple, so we must use the OES_EGL_image_external extension (https://www.khronos.org/registry/OpenGL/extensions/OES/OES_EGL_image_external.txt)
 // this extension provies the 'GL_TEXTURE_EXTERNAL_OES' target and the new 'glEGLImageTargetTexture2DOES' function
+// also, in the MESA GL driver, it seems the OES_EGL_image_external extension is only supported when using the OpenGL ES API, so don't forget to use that and set the context version appropirately when binding the EGL API (https://github.com/mesa3d/mesa/blob/43dd023bd1eb23a5cdb1470c6a30595c3fbf319a/src/mesa/main/extensions_table.h)
 
 // source files which helped:
 // - https://github.com/nemomobile/eglext-tests
@@ -168,13 +171,15 @@ dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
 	aquabsd_alps_win_t* context_win = context->backend.win;
 
 	if (pixmap) {
-		goto bind;
+		//goto bind;
 	}
 
 	pixmap = xcb_generate_id(context_win->connection);
-	xcb_composite_name_window_pixmap(context_win->connection, 0xa0002c, pixmap);
+	xcb_composite_name_window_pixmap(context_win->connection, 0x2800003, pixmap);
 
 	image = eglCreateImageKHR(context->egl_display, EGL_NO_CONTEXT /* don't pass 'context->egl_context' !!! */, EGL_NATIVE_PIXMAP_KHR, (EGLClientBuffer) (intptr_t) pixmap, NULL);
+
+	printf("%d\n", eglGetError() == EGL_BAD_ALLOC);
 
 	GLuint texture;
 	_glGenTextures(1, &texture);
