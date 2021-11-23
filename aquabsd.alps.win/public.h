@@ -52,6 +52,13 @@ struct aquabsd_alps_win_t {
 	float mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_COUNT];
 
 	int mouse_x, mouse_y;
+
+	// potential EGL stuff, if needed
+	// these fields used by the aquabsd.alps.ogl device and should not be accessed by us
+
+	xcb_pixmap_t egl_pixmap;
+	uint32_t /* GLuint */ egl_texture;
+	void* /* EGLImageKHR */ egl_image;
 };
 
 // functions exposed to devices & apps

@@ -1,6 +1,7 @@
 #define dynamic
 
 #include <aquabsd.alps.ogl/public.h>
+#include <aquabsd.alps.ogl/gl/gl.h>
 
 static uint64_t (*kos_query_device) (uint64_t, uint64_t name);
 static void* (*kos_load_device_function) (uint64_t device, const char* name);

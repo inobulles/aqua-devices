@@ -141,7 +141,7 @@ dynamic void* get_function(context_t* context, const char* name) {
 // to pass the 'buffer' argument to 'eglCreateImage', we must use the undocumented EGL_KHR_image_pixmap extension (https://www.khronos.org/registry/EGL/extensions/KHR/EGL_KHR_image_base.txt) with the 'EGL_NATIVE_PIXMAP_KHR' target (which also means we must load and use 'eglCreateImageKHR' as our 'eglCreateImage' function instead)
 // once we finally have our 'EGLImageKHR', we can't bind it to a 'GL_TEXTURE_2D' target, as that would be too simple, so we must use the OES_EGL_image_external extension (https://www.khronos.org/registry/OpenGL/extensions/OES/OES_EGL_image_external.txt)
 // this extension provies the 'GL_TEXTURE_EXTERNAL_OES' target and the new 'glEGLImageTargetTexture2DOES' function
-// also, in the MESA GL driver, it seems the OES_EGL_image_external extension is only supported when using the OpenGL ES API, so don't forget to use that and set the context version appropirately when binding the EGL API (https://github.com/mesa3d/mesa/blob/43dd023bd1eb23a5cdb1470c6a30595c3fbf319a/src/mesa/main/extensions_table.h)
+// also, in the MESA GL driver, it seems the OES_EGL_image_external extension is only supported when using the OpenGL ES API, so don't forget to use that and set the context version appropriately when binding the EGL API (https://github.com/mesa3d/mesa/blob/43dd023bd1eb23a5cdb1470c6a30595c3fbf319a/src/mesa/main/extensions_table.h)
 
 // source files which helped:
 // - https://github.com/nemomobile/eglext-tests
@@ -153,41 +153,50 @@ dynamic void* get_function(context_t* context, const char* name) {
 #include <xcb/xcb.h>
 #include <xcb/composite.h>
 
-#include <GL/gl.h>
+static PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR = NULL;
+static void (*glEGLImageTargetTexture2DOES) (GLenum target, GLeglImageOES image) = NULL; // could've used 'PFNGLEGLIMAGETARGETTEXTURE2DOESPROC' from <GL/gl.h> here
 
-#define GL_TEXTURE_EXTERNAL_OES 0x8D65
-
-static xcb_pixmap_t pixmap = 0;
-static EGLImageKHR image;
-static GLuint texture;
+static void (*glGenTextures) (GLsizei n, GLuint* textures) = NULL;
+static void (*glBindTexture) (GLenum target, GLuint texture) = NULL;
 
 dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
-	PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR = get_function(context, "eglCreateImageKHR");
-	PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES = get_function(context, "glEGLImageTargetTexture2DOES");
-
-	void (*_glGenTextures) (GLint, GLuint*) = get_function(context, "glGenTextures");
-	void (*_glBindTexture) (GLenum, GLuint) = get_function(context, "glBindTexture");
-
 	aquabsd_alps_win_t* context_win = context->backend.win;
-
-	if (pixmap) {
-		//goto bind;
+	
+	if (!win) {
+		win = context_win;
 	}
 
-	pixmap = xcb_generate_id(context_win->connection);
-	xcb_composite_name_window_pixmap(context_win->connection, 0x2800003, pixmap);
+	#define CHECK_AND_GET(name) \
+		if (!name) { \
+			name = get_function(context, #name); \
+		}
 
-	image = eglCreateImageKHR(context->egl_display, EGL_NO_CONTEXT /* don't pass 'context->egl_context' !!! */, EGL_NATIVE_PIXMAP_KHR, (EGLClientBuffer) (intptr_t) pixmap, NULL);
+	CHECK_AND_GET(eglCreateImageKHR)
+	CHECK_AND_GET(glEGLImageTargetTexture2DOES)
 
-	printf("%d\n", eglGetError() == EGL_BAD_ALLOC);
+	CHECK_AND_GET(glGenTextures)
+	CHECK_AND_GET(glBindTexture)
 
-	GLuint texture;
-	_glGenTextures(1, &texture);
+	if (win->egl_pixmap) {
+		goto bind;
+	}
+
+	win->egl_pixmap = xcb_generate_id(context_win->connection);
+	xcb_composite_name_window_pixmap(context_win->connection, win->win, win->egl_pixmap);
+
+	win->egl_image = eglCreateImageKHR(context->egl_display, EGL_NO_CONTEXT /* don't pass 'context->egl_context' !!! */, EGL_NATIVE_PIXMAP_KHR, (EGLClientBuffer) (intptr_t) win->egl_pixmap, NULL);
+
+	if (eglGetError() == EGL_BAD_ALLOC) {
+		// TODO I'm having some troubles with MESA where 'eglCreateImageKHR' consistently errors-out with 'EGL_BAD_ALLOC'
+		fprintf(stderr, "[aquabsd.alps.ogl] 'eglCreateImageKHR' failed with 'EGL_BAD_ALLOC' for some reason\n");
+	}
+
+	glGenTextures(1, &win->egl_texture);
 
 bind:
 
-	_glBindTexture(GL_TEXTURE_EXTERNAL_OES, texture);
-	glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
+	glBindTexture(GL_TEXTURE_EXTERNAL_OES, win->egl_texture);
+	glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, win->egl_image);
 
 	// you must use the 'GL_OES_EGL_image_external' extension to be able to sample from 'samplerExternalOES' samplers:
 	// #extension GL_OES_EGL_image_external : require
