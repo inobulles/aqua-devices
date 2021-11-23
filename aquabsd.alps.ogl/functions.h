@@ -40,6 +40,8 @@ dynamic int delete(context_t* context) {
 #define FATAL_ERROR(...) fprintf(stderr, "[aquabsd.alps.ogl] FATAL ERROR "__VA_ARGS__); delete(context); return NULL;
 #define WARNING(...) fprintf(stderr, "[aquabsd.alps.ogl] WARNING "__VA_ARGS__);
 
+static EGLConfig config; // REMME
+
 dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	context_t* context = calloc(1, sizeof *context);
 	context->backend.win = win;
@@ -83,7 +85,7 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 		EGL_NONE
 	};
 
-	EGLConfig config;
+	// EGLConfig config;
 	EGLint config_count;
 
 	if (!eglChooseConfig(context->egl_display, config_attribs, &config, 1, &config_count) || !config_count) {
@@ -134,3 +136,32 @@ dynamic void* get_function(context_t* context, const char* name) {
 	return eglGetProcAddress(name);
 }
 
+dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
+	// if the window's stored pixmap is still valid, jump straight to binding
+
+	if (/* window's stored pixmap is valid */ 0) {
+		goto bind;
+	}
+
+	// get window EGL pixmap if the window's stored pixmap is invalid
+	// do this by first getting the X pixmap, and then finding an EGLConfig which fits the window's visual (see picom/x-compositing-wm)
+	// then, you can call eglCreatePixmapSurface to get the final EGLSurface
+
+	/*XWindowAttributes attribs;
+	XGetWindowAttributes(context->egl_
+
+	EGLConfig config; // TODO
+
+	xcb_pixmap_t pixmap = xcb_new_id(win->display);
+	xcb_composite_name_window_pixmap(win->display, win->win, pixmap);
+
+	EGLSurface surface = eglCreatePixmapSurface(win->display, config, pixmap, NULL);*/
+
+	// maybe also take a look at eglCreateWindowSurface, that seems like it could simplify things alot
+	EGLSurface surface = eglCreateWindowSurface(context->egl_display, config, /*win->win*/ 0x2200002, NULL);
+
+bind:
+
+	eglBindTexImage(context->egl_display, surface, EGL_BACK_BUFFER /* this argument doesn't seem to be correctly documented by Khronos */);
+	return 0;
+}
