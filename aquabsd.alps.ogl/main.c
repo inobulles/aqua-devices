@@ -1,3 +1,5 @@
+// TODO for resizing, investigate if how picom does it is any good ('src/backend/gl/gl_common.c' line 1606)
+
 #include <aquabsd.alps.ogl/private.h>
 #include <aquabsd.alps.ogl/functions.h>
 
@@ -5,6 +7,8 @@
 #define CMD_DELETE       0x6364 // 'dc'
 
 #define CMD_GET_FUNCTION 0x6766 // 'gf'
+
+#define CMD_BIND_WIN_TEX 0x6277 // 'bw'
 
 int load(
     uint64_t (*_kos_query_device) (uint64_t, uint64_t name),
@@ -49,6 +53,13 @@ uint64_t send(uint16_t command, void* data) {
 		const char* name = (void*) arguments[1];
 
 		return (uint64_t) get_function(context, name);
+	}
+
+	else if (command == CMD_BIND_WIN_TEX) {
+		context_t* context = (void*) arguments[0];
+		aquabsd_alps_win_t* win = (void*) arguments[1];
+
+		return bind_win_tex(context, win);
 	}
 
 	return -1;
