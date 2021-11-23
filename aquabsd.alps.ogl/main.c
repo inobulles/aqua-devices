@@ -1,3 +1,5 @@
+// TODO for resizing, investigate if how picom does it is any good ('src/backend/gl/gl_common.c' line 1606)
+
 #include <aquabsd.alps.ogl/private.h>
 #include <aquabsd.alps.ogl/functions.h>
 

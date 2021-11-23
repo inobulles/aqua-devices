@@ -4,6 +4,7 @@
 #include <aquabsd.alps.win/public.h>
 
 #include <EGL/egl.h>
+#include <EGL/eglext.h>
 
 typedef enum {
 	AQUABSD_ALPS_OGL_CONTEXT_TYPE_WIN,

@@ -40,8 +40,6 @@ dynamic int delete(context_t* context) {
 #define FATAL_ERROR(...) fprintf(stderr, "[aquabsd.alps.ogl] FATAL ERROR "__VA_ARGS__); delete(context); return NULL;
 #define WARNING(...) fprintf(stderr, "[aquabsd.alps.ogl] WARNING "__VA_ARGS__);
 
-static EGLConfig config; // REMME
-
 dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	context_t* context = calloc(1, sizeof *context);
 	context->backend.win = win;
@@ -85,7 +83,7 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 		EGL_NONE
 	};
 
-	// EGLConfig config;
+	EGLConfig config;
 	EGLint config_count;
 
 	if (!eglChooseConfig(context->egl_display, config_attribs, &config, 1, &config_count) || !config_count) {
@@ -136,32 +134,58 @@ dynamic void* get_function(context_t* context, const char* name) {
 	return eglGetProcAddress(name);
 }
 
-dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
-	// if the window's stored pixmap is still valid, jump straight to binding
+// 'EGL_BIND_TO_TEXTURE_RGB' & 'EGL_BIND_TO_TEXTURE_RGBA' seem to have been deprecated (at least by NVIDIA), as per https://forums.developer.nvidia.com/t/egl-bind-to-texture-rgba-attribute-always-false/58676 (this is not reflected in the Khronos EGL registry for some reason)
+// so instead of using 'eglCreatePixmapSurface', we shall use 'eglCreateImage'
+// to pass the 'buffer' argument to 'eglCreateImage', we must use the undocumented EGL_KHR_image_pixmap extension (https://www.khronos.org/registry/EGL/extensions/KHR/EGL_KHR_image_base.txt) with the 'EGL_NATIVE_PIXMAP_KHR' target (which also means we must load and use 'eglCreateImageKHR' as our 'eglCreateImage' function instead)
+// once we finally have our 'EGLImageKHR', we can't bind it to a 'GL_TEXTURE_2D' target, as that would be too simple, so we must use the OES_EGL_image_external extension (https://www.khronos.org/registry/OpenGL/extensions/OES/OES_EGL_image_external.txt)
+// this extension provies the 'GL_TEXTURE_EXTERNAL_OES' target and the new 'glEGLImageTargetTexture2DOES' function
 
-	if (/* window's stored pixmap is valid */ 0) {
+// source files which helped:
+// - https://github.com/nemomobile/eglext-tests
+// - https://github.com/sabipeople/tegra
+
+// TODO check if 'EGL_KHR_image_pixmap' extension is supported
+// TODO add this to public.h
+
+#include <xcb/xcb.h>
+#include <xcb/composite.h>
+
+#include <GL/gl.h>
+
+#define GL_TEXTURE_EXTERNAL_OES 0x8D65
+
+static xcb_pixmap_t pixmap = 0;
+static EGLImageKHR image;
+static GLuint texture;
+
+dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
+	PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR = get_function(context, "eglCreateImageKHR");
+	PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES = get_function(context, "glEGLImageTargetTexture2DOES");
+
+	void (*_glGenTextures) (GLint, GLuint*) = get_function(context, "glGenTextures");
+	void (*_glBindTexture) (GLenum, GLuint) = get_function(context, "glBindTexture");
+
+	aquabsd_alps_win_t* context_win = context->backend.win;
+
+	if (pixmap) {
 		goto bind;
 	}
 
-	// get window EGL pixmap if the window's stored pixmap is invalid
-	// do this by first getting the X pixmap, and then finding an EGLConfig which fits the window's visual (see picom/x-compositing-wm)
-	// then, you can call eglCreatePixmapSurface to get the final EGLSurface
+	pixmap = xcb_generate_id(context_win->connection);
+	xcb_composite_name_window_pixmap(context_win->connection, 0xa0002c, pixmap);
 
-	/*XWindowAttributes attribs;
-	XGetWindowAttributes(context->egl_
+	image = eglCreateImageKHR(context->egl_display, EGL_NO_CONTEXT /* don't pass 'context->egl_context' !!! */, EGL_NATIVE_PIXMAP_KHR, (EGLClientBuffer) (intptr_t) pixmap, NULL);
 
-	EGLConfig config; // TODO
-
-	xcb_pixmap_t pixmap = xcb_new_id(win->display);
-	xcb_composite_name_window_pixmap(win->display, win->win, pixmap);
-
-	EGLSurface surface = eglCreatePixmapSurface(win->display, config, pixmap, NULL);*/
-
-	// maybe also take a look at eglCreateWindowSurface, that seems like it could simplify things alot
-	EGLSurface surface = eglCreateWindowSurface(context->egl_display, config, /*win->win*/ 0x2200002, NULL);
+	GLuint texture;
+	_glGenTextures(1, &texture);
 
 bind:
 
-	eglBindTexImage(context->egl_display, surface, EGL_BACK_BUFFER /* this argument doesn't seem to be correctly documented by Khronos */);
+	_glBindTexture(GL_TEXTURE_EXTERNAL_OES, texture);
+	glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
+
+	// you must use the 'GL_OES_EGL_image_external' extension to be able to sample from 'samplerExternalOES' samplers:
+	// #extension GL_OES_EGL_image_external : require
+
 	return 0;
 }
