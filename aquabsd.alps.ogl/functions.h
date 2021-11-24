@@ -143,6 +143,7 @@ dynamic void* get_function(context_t* context, const char* name) {
 // once we finally have our 'EGLImageKHR', we can't bind it to a 'GL_TEXTURE_2D' target, as that would be too simple, so we must use the OES_EGL_image_external extension (https://www.khronos.org/registry/OpenGL/extensions/OES/OES_EGL_image_external.txt)
 // this extension provies the 'GL_TEXTURE_EXTERNAL_OES' target and the new 'glEGLImageTargetTexture2DOES' function
 // also, in the MESA GL driver, it seems the OES_EGL_image_external extension is only supported when using the OpenGL ES API, so don't forget to use that and set the context version appropriately when binding the EGL API (https://github.com/mesa3d/mesa/blob/43dd023bd1eb23a5cdb1470c6a30595c3fbf319a/src/mesa/main/extensions_table.h)
+// on some installations, the MESA GL driver fails with 'xcb_dri3_buffer_from_pixmap'. As a temporary fix, try disabling DRI3 with 'export LIBGL_DRI3_DISABLE=1'
 
 // source files which helped:
 // - https://github.com/nemomobile/eglext-tests
@@ -196,9 +197,8 @@ dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
 
 	win->egl_image = eglCreateImageKHR(context->egl_display, EGL_NO_CONTEXT /* don't pass 'context->egl_context' !!! */, EGL_NATIVE_PIXMAP_KHR, (EGLClientBuffer) (intptr_t) win->egl_pixmap, attribs);
 
-	if (eglGetError() == EGL_BAD_ALLOC) {
-		// TODO I'm having some troubles with MESA where 'eglCreateImageKHR' consistently errors-out with 'EGL_BAD_ALLOC'
-		fprintf(stderr, "[aquabsd.alps.ogl] 'eglCreateImageKHR' failed with 'EGL_BAD_ALLOC' for some reason\n");
+	if (win->egl_image == EGL_NO_IMAGE) {
+		return -1;
 	}
 
 	glGenTextures(1, &win->egl_texture);
