@@ -136,6 +136,7 @@ dynamic void* get_function(context_t* context, const char* name) {
 	return eglGetProcAddress(name);
 }
 
+// quick tip: 'export EGL_LOG_LEVEL=debug' before debugging EGL apps
 // 'EGL_BIND_TO_TEXTURE_RGB' & 'EGL_BIND_TO_TEXTURE_RGBA' seem to have been deprecated (at least by NVIDIA), as per https://forums.developer.nvidia.com/t/egl-bind-to-texture-rgba-attribute-always-false/58676 (this is not reflected in the Khronos EGL registry for some reason)
 // so instead of using 'eglCreatePixmapSurface', we shall use 'eglCreateImage'
 // to pass the 'buffer' argument to 'eglCreateImage', we must use the undocumented EGL_KHR_image_pixmap extension (https://www.khronos.org/registry/EGL/extensions/KHR/EGL_KHR_image_base.txt) with the 'EGL_NATIVE_PIXMAP_KHR' target (which also means we must load and use 'eglCreateImageKHR' as our 'eglCreateImage' function instead)
@@ -177,6 +178,10 @@ dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
 	CHECK_AND_GET(glGenTextures)
 	CHECK_AND_GET(glBindTexture)
 
+	if (!eglCreateImageKHR || !glEGLImageTargetTexture2DOES || !glGenTextures || !glBindTexture) {
+		return -1; // well... I guess some of the extensions aren't supported then 🤷
+	}
+
 	if (win->egl_pixmap) {
 		goto bind;
 	}
@@ -184,7 +189,12 @@ dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
 	win->egl_pixmap = xcb_generate_id(context_win->connection);
 	xcb_composite_name_window_pixmap(context_win->connection, win->win, win->egl_pixmap);
 
-	win->egl_image = eglCreateImageKHR(context->egl_display, EGL_NO_CONTEXT /* don't pass 'context->egl_context' !!! */, EGL_NATIVE_PIXMAP_KHR, (EGLClientBuffer) (intptr_t) win->egl_pixmap, NULL);
+	const EGLint attribs[] = {
+		EGL_IMAGE_PRESERVED_KHR, EGL_FALSE,
+		EGL_NONE
+	};
+
+	win->egl_image = eglCreateImageKHR(context->egl_display, EGL_NO_CONTEXT /* don't pass 'context->egl_context' !!! */, EGL_NATIVE_PIXMAP_KHR, (EGLClientBuffer) (intptr_t) win->egl_pixmap, attribs);
 
 	if (eglGetError() == EGL_BAD_ALLOC) {
 		// TODO I'm having some troubles with MESA where 'eglCreateImageKHR' consistently errors-out with 'EGL_BAD_ALLOC'
