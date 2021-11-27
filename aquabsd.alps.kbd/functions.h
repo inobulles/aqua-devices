@@ -10,6 +10,10 @@ dynamic unsigned get_default_kbd_id(void) {
 dynamic int update_kbd(unsigned kbd_id) {
 	kbd_t* kbd = &kbds[kbd_id];
 
+	if (kbd->buf) {
+		free(kbd->buf);
+	}
+
 	if (!kbd->update_callback) {
 		return 0;
 	}

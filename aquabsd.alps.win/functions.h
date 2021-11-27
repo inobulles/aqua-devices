@@ -34,6 +34,14 @@ static int kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _win) {
 
 	memcpy(kbd->buttons, win->kbd_buttons, sizeof kbd->buttons);
 
+	kbd->buf_len = win->kbd_buf_len;
+	kbd->buf = win->kbd_buf;
+
+	// we're passing this on to the keyboard device, so reset
+
+	win->kbd_buf_len = 0;
+	win->kbd_buf = NULL;
+
 	return 0;
 }
 
@@ -81,7 +89,7 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	// create window
 	
 	const uint32_t win_attribs[] = {
-		XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION,
+		XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE,
 	};
 
 	win->win = xcb_generate_id(win->connection);
@@ -256,6 +264,28 @@ static int process_events(win_t* win) {
 			if (index >= 0) {
 				win->kbd_buttons[index] = 1;
 			}
+			
+			// get unicode character and append it to the buffer
+			// XCB annoyingly doesn't have a function to do this, so we'll need to use Xlib to help us
+			// I'll stop my comment right here before I start ranting about XCB
+
+			XKeyEvent xlib_event;
+
+			xlib_event.display = win->display;
+			xlib_event.keycode = detail->detail;
+			xlib_event.state = detail->state;
+
+			int len = XLookupString(&xlib_event, NULL, NULL, NULL, NULL);
+
+			if (len <= 0) {
+				continue;
+			}
+
+			unsigned prev_buf_len = win->kbd_buf_len;
+			win->kbd_buf_len += len;
+			
+			win->kbd_buf = realloc(win->kbd_buf, win->kbd_buf_len);
+			XLookupString(&xlib_event, win->kbd_buf + prev_buf_len, len, NULL, NULL);
 		}
 
 		else if (type == XCB_KEY_RELEASE) {

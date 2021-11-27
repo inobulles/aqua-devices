@@ -58,6 +58,9 @@ struct aquabsd_alps_win_t {
 
 	unsigned kbd_buttons[AQUABSD_ALPS_KBD_BUTTON_COUNT];
 
+	unsigned kbd_buf_len;
+	void* kbd_buf;
+
 	// potential EGL stuff, if needed
 	// these fields used by the aquabsd.alps.ogl device and should not be accessed by us
 
