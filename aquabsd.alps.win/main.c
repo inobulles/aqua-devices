@@ -24,6 +24,12 @@ int load(
 		aquabsd_alps_mouse_register_mouse = kos_load_device_function(mouse_device, "register_mouse");
 	}
 
+	kbd_device = kos_query_device(0, (uint64_t) "aquabsd.alps.kbd");
+
+	if (kbd_device != -1) {
+		aquabsd_alps_kbd_register_kbd = kos_load_device_function(kbd_device, "register_kbd");
+	}
+
 	return 0;
 }
 

@@ -21,6 +21,15 @@ dynamic unsigned poll_button(unsigned kbd_id, button_t button) {
 	return kbds[kbd_id].buttons[button];
 }
 
+dynamic unsigned get_buf_len(unsigned kbd_id) {
+	return kbds[kbd_id].buf_len;
+}
+
+dynamic unsigned read_buf(unsigned kbd_id, void* buf) {
+	memcpy(buf, kbds[kbd_id].buf, get_buf_len(kbd_id));
+	return 0;
+}
+
 // functions exclusively accessible to other devices
 
 dynamic kbd_t* register_kbd(const char* name, update_callback_t update_callback, void* update_cb_param, unsigned set_default) {

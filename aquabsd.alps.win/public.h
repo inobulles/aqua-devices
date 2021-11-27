@@ -2,6 +2,7 @@
 #define __AQUABSD_ALPS_WIN
 
 #include <aquabsd.alps.mouse/public.h>
+#include <aquabsd.alps.kbd/public.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
@@ -46,12 +47,16 @@ struct aquabsd_alps_win_t {
 	int (*dev_cbs[AQUABSD_ALPS_WIN_CB_LEN]) (aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param);
 	void* dev_cb_params[AQUABSD_ALPS_WIN_CB_LEN];
 
-	// input tracking stuff
+	// mouse input stuff
 
 	unsigned mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_COUNT];
 	float mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_COUNT];
 
 	int mouse_x, mouse_y;
+
+	// keyboard input stuff
+
+	unsigned kbd_buttons[AQUABSD_ALPS_KBD_BUTTON_COUNT];
 
 	// potential EGL stuff, if needed
 	// these fields used by the aquabsd.alps.ogl device and should not be accessed by us

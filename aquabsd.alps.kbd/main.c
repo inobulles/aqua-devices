@@ -7,6 +7,8 @@
 #define CMD_GET_DEFAULT_KBD_ID 0x646B // 'dk'
 #define CMD_UPDATE_KBD         0x756B // 'uk'
 #define CMD_POLL_BUTTON        0x7062 // 'pb'
+#define CMD_GET_BUF_LEN        0x626C // 'bl'
+#define CMD_READ_BUF           0x7262 // 'rb'
 
 int load(
 	uint64_t (*kos_query_device) (uint64_t, uint64_t name),
@@ -46,6 +48,18 @@ uint64_t send(uint16_t command, void* data) {
 		button_t button = arguments[1];
 
 		return (uint64_t) poll_button(kbd_id, button);
+	}
+
+	else if (command == CMD_GET_BUF_LEN) {
+		unsigned kbd_id = arguments[0];
+		return get_buf_len(kbd_id);
+	}
+
+	else if (command == CMD_READ_BUF) {
+		unsigned kbd_id = arguments[0];
+		void* buf = (void*) arguments[1];
+
+		return read_buf(kbd_id, buf);
 	}
 
 	return -1;

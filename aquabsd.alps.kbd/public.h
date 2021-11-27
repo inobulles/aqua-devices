@@ -32,6 +32,9 @@ struct aquabsd_alps_kbd_t {
 	char name[256];
 
 	unsigned buttons[AQUABSD_ALPS_KBD_BUTTON_COUNT];
+
+	unsigned buf_len;
+	void* buf;
 };
 
 #if defined(__FreeBSD__)
@@ -42,6 +45,9 @@ static unsigned (*aquabsd_alps_kbd_get_default_kbd_id) (void);
 static int (*aquabsd_alps_kbd_update_kbd) (unsigned kbd_id);
 
 static unsigned (*aquabsd_alps_kbd_poll_button) (unsigned kbd_id, aquabsd_alps_kbd_button_t button);
+
+static unsigned (*aquabsd_alps_kbd_get_buf_len) (unsigned kbd_id);
+static int (*aquabsd_alps_kbd_read_buf) (unsigned kbd_id, void* buf);
 
 static aquabsd_alps_kbd_t* (*aquabsd_alps_kbd_register_kbd) (const char* name, aquabsd_alps_kbd_update_callback_t update_callback, void* update_cb_param, unsigned set_default);
 

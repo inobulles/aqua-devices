@@ -33,7 +33,7 @@ static inline int update_aquabsd_console_kbd(kbd_t* kbd, void* _) {
 	uint8_t ch;
 
 	// reset keyboard structure
-	
+
 	memset(kbd->buttons, 0, sizeof kbd->buttons);
 
 	// continuously process while there still are keys pressed

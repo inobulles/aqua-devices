@@ -7,6 +7,7 @@ static void* (*kos_load_device_function) (uint64_t device, const char* name);
 static uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
 
 static uint64_t mouse_device = -1;
+static uint64_t kbd_device = -1;
 
 #define cb_t aquabsd_alps_win_cb_t
 

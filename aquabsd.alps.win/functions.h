@@ -29,6 +29,27 @@ static int mouse_update_callback(aquabsd_alps_mouse_t* mouse, void* _win) {
 	return 0;
 }
 
+static int kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _win) {
+	win_t* win = _win;
+
+	memcpy(kbd->buttons, win->kbd_buttons, sizeof kbd->buttons);
+
+	return 0;
+}
+
+static int x11_kbd_map(xcb_keycode_t key) {
+	switch (key) {
+		case 9: return AQUABSD_ALPS_KBD_BUTTON_ESC;
+
+		case 111: return AQUABSD_ALPS_KBD_BUTTON_UP;
+		case 116: return AQUABSD_ALPS_KBD_BUTTON_DOWN;
+		case 113: return AQUABSD_ALPS_KBD_BUTTON_LEFT;
+		case 114: return AQUABSD_ALPS_KBD_BUTTON_RIGHT;
+	}
+
+	return -1;
+}
+
 dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	win_t* win = calloc(1, sizeof *win);
 
@@ -96,8 +117,14 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 
 	// register a new mouse
 
-	if (mouse_device != -1) {
+	if (aquabsd_alps_mouse_register_mouse) {
 		aquabsd_alps_mouse_register_mouse("aquabsd.alps.win mouse", mouse_update_callback, win, 1);
+	}
+
+	// register a new keyboard
+
+	if (aquabsd_alps_kbd_register_kbd) {
+		aquabsd_alps_kbd_register_kbd("aquabsd.alps.win keyboard", kbd_update_callback, win, 1);
 	}
 
 	return win;
@@ -216,6 +243,30 @@ static int process_events(win_t* win) {
 			
 			win->mouse_x = detail->event_x;
 			win->mouse_y = detail->event_y;
+		}
+
+		// keyboard button press/release events
+
+		else if (type == XCB_KEY_PRESS) {
+			xcb_key_press_event_t* detail = (void*) event;
+			xcb_keycode_t key = detail->detail;
+
+			int index = x11_kbd_map(key);
+
+			if (index >= 0) {
+				win->kbd_buttons[index] = 1;
+			}
+		}
+
+		else if (type == XCB_KEY_RELEASE) {
+			xcb_key_release_event_t* detail = (void*) event;
+			xcb_keycode_t key = detail->detail;
+
+			int index = x11_kbd_map(key);
+
+			if (index >= 0) {
+				win->kbd_buttons[index] = 0;
+			}
 		}
 	}
 
