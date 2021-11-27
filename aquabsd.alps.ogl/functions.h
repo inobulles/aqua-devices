@@ -77,6 +77,9 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 		EGL_BLUE_SIZE, 8,
 		EGL_DEPTH_SIZE, 16,
 
+		EGL_SAMPLE_BUFFERS, 1,
+		EGL_SAMPLES, 4,
+
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
 		EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
 
