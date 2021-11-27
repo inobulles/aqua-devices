@@ -275,7 +275,7 @@ static int process_events(win_t* win) {
 			xlib_event.keycode = detail->detail;
 			xlib_event.state = detail->state;
 
-			int len = XLookupString(&xlib_event, NULL, NULL, NULL, NULL);
+			int len = XLookupString(&xlib_event, NULL, 0, NULL, NULL);
 
 			if (len <= 0) {
 				continue;

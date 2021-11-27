@@ -12,6 +12,7 @@
 // https://xcb.freedesktop.org/opengl/
 
 #include <X11/Xlib.h>
+#include <X11/Xutil.h> // for 'XLookupString'
 #include <X11/Xlib-xcb.h>
 
 typedef enum {
