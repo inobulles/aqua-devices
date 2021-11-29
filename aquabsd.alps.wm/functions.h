@@ -82,8 +82,7 @@ dynamic wm_t* create(const char* name) {
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supporting_wm_check_atom, XA_WINDOW, 32, 1, support_win_list);
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, support_win, supporting_wm_check_atom, XA_WINDOW, 32, 1, support_win_list);
 
-	xcb_atom_t name_atom = get_intern_atom(wm, "_NET_WM_NAME");
-	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, support_win, name_atom, XCB_ATOM_STRING, 8, strlen(wm->name) + 1, wm->name);
+	aquabsd_alps_win_set_caption(wm->root, wm->name);
 
 	// TODO get all monitors and their individual resolutions with Xinerama
 

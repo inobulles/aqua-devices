@@ -75,6 +75,8 @@ struct aquabsd_alps_win_t {
 static aquabsd_alps_win_t* (*aquabsd_alps_win_create) (unsigned x_res, unsigned y_res);
 static int (*aquabsd_alps_win_delete) (aquabsd_alps_win_t* win);
 
+static int (*aquabsd_alps_win_set_caption) (aquabsd_alps_win_t* win, const char* caption);
+
 static int (*aquabsd_alps_win_register_cb) (aquabsd_alps_win_t* win, aquabsd_alps_win_cb_t type, uint64_t cb, uint64_t param);
 static int (*aquabsd_alps_win_loop) (aquabsd_alps_win_t* win);
 
