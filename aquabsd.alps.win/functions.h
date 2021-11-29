@@ -78,6 +78,8 @@ static win_t* __create_setup(void) {
 
 	XSetEventQueueOwner(win->display, XCBOwnsEventQueue);
 	
+	// get screen
+
 	xcb_screen_iterator_t it = xcb_setup_roots_iterator(xcb_get_setup(win->connection));
 	for (int i = win->default_screen; it.rem && i > 0; i--, xcb_screen_next(&it));
 	
@@ -141,9 +143,10 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 
 	xcb_icccm_set_wm_size_hints(win->connection, win->win, XCB_ATOM_WM_NORMAL_HINTS, &hints);
 
-	// finally (at least for the windowing part), map the window
+	// finally (at least for the windowing part), map the window and flush
 
 	xcb_map_window(win->connection, win->win);
+	xcb_flush(win->connection);
 
 	return win;
 }
