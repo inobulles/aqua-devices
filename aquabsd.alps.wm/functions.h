@@ -33,8 +33,6 @@ dynamic wm_t* create(const char* name) {
 		FATAL_ERROR("Failed to open X display\n")
 	}
 
-	XSynchronize(wm->display, DEBUGGING); // this call is here for debugging, so that errors are reported synchronously as they occur
-
 	// setup XCB connection
 
 	wm->default_screen = DefaultScreen(wm->display);
@@ -57,7 +55,7 @@ dynamic wm_t* create(const char* name) {
 	// get width & height of root window
 
 	xcb_get_geometry_cookie_t root_geom_cookie = xcb_get_geometry(wm->connection, wm->root);
-	xcb_get_geometry_reply_t* root_geom_reply = xcb_get_geometry_reply(wm->connection, root_geom_cookie, NULL);
+	xcb_get_geometry_reply_t* root_geom = xcb_get_geometry_reply(wm->connection, root_geom_cookie, NULL);
 
 	wm->x_res = root_geom->width;
 	wm->y_res = root_geom->height;
@@ -73,7 +71,7 @@ dynamic wm_t* create(const char* name) {
 
 	// grab the keys we are interested in as a window manager (i.e. those with the super key modifier)
 
-	xcb_ungrab_key(wm->connection, XCB_GRAB_ANY, wm->root, XBC_MOD_MASK_ANY);
+	xcb_ungrab_key(wm->connection, XCB_GRAB_ANY, wm->root, XCB_MOD_MASK_ANY);
 	xcb_grab_key(wm->connection, 1, wm->root, XCB_MOD_MASK_4 /* looks like this is the super key */, XCB_GRAB_ANY, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
 	// TODO actually explain shit in 'wm_t'
@@ -93,7 +91,7 @@ dynamic wm_t* create(const char* name) {
 	xcb_atom_t supporting_wm_check_atom = get_intern_atom(wm, "_NET_SUPPORTING_WM_CHECK");
 
 	xcb_window_t support_win = xcb_generate_id(wm->connection);
-	xcb_create_window(wm->connection, XCB_COPY_FROM_PARENT, support_win, wm->root, 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_COPY_FROM_PARENT, 0, NULL);
+	xcb_create_window(wm->connection, XCB_COPY_FROM_PARENT, support_win, wm->root, 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_COPY_FROM_PARENT, 0, 0, NULL);
 
 	xcb_window_t support_win_list[1] = { support_win };
 

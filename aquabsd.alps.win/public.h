@@ -22,10 +22,10 @@ typedef enum {
 
 typedef struct aquabsd_alps_win_t aquabsd_alps_win_t; // forward declaration
 
-struct aquabsd_alps_win_t { 
-	// X11 stuff
-
+struct aquabsd_alps_win_t {
 	unsigned x_res, y_res;
+
+	// X11 stuff
 
 	Display* display;
 	int default_screen;
@@ -33,7 +33,7 @@ struct aquabsd_alps_win_t {
 	xcb_connection_t* connection;
 	xcb_screen_t* screen;
 
-	xcb_drawable_t win;
+	xcb_window_t win;
 
 	xcb_atom_t wm_delete_win_atom;
 
