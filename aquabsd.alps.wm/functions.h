@@ -56,8 +56,7 @@ dynamic wm_t* create(void) {
 	xcb_ungrab_key(wm->root->connection, XCB_GRAB_ANY, wm->root->win, XCB_MOD_MASK_ANY);
 	xcb_grab_key(wm->root->connection, 1, wm->root->win, XCB_MOD_MASK_4 /* looks like this is the super key */, XCB_GRAB_ANY, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
-	// TODO actually explain shit in 'wm_t'
-	// setup our atoms (explained in more detail in the 'wm_t' struct)
+	// setup our atoms
 	// we also need to specify which atoms are supported in '_NET_SUPPORTED'
 
 	wm->client_list_atom = get_intern_atom(wm, "_NET_CLIENT_LIST");
@@ -91,4 +90,27 @@ dynamic wm_t* create(void) {
 
 dynamic aquabsd_alps_win_t* get_root_win(wm_t* wm) {
 	return wm->root;
+}
+
+dynamic int register_cb(wm_t* wm, cb_t type, uint64_t cb, uint64_t param) {
+	if (type >= CB_LEN) {
+		fprintf(stderr, "[aquabsd.alps.wm] Callback type %d doesn't exist\n", type);
+		return -1;
+	}
+
+	wm->cbs[type] = cb;
+	wm->cb_params[type] = param;
+
+	return 0;
+}
+
+static inline int call_cb(wm_t* wm, cb_t type) {
+	uint64_t cb = wm->cbs[type];
+	uint64_t param = wm->cb_params[type];
+
+	if (!cb) {
+		return -1;
+	}
+
+	return kos_callback(cb, 2, (uint64_t) wm, param);
 }

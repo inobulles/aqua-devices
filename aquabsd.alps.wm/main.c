@@ -6,6 +6,8 @@ typedef enum {
 	CMD_DELETE       = 0x6477, // 'dw'
 
 	CMD_GET_ROOT_WIN = 0x7277, // 'rw'
+
+	CMD_REGISTER_CB  = 0x7263, // 'rc'
 } cmd_t;
 
 int load(
@@ -46,6 +48,16 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_GET_ROOT_WIN) {
 		wm_t* wm = (void*) args[0];
 		return (uint64_t) get_root_win(wm);
+	}
+
+	else if (cmd == CMD_REGISTER_CB) {
+		wm_t* wm = (void*) args[0];
+		cb_t type = args[1];
+
+		uint64_t cb = args[2];
+		uint64_t param = args[3];
+
+		return register_cb(wm, type, cb, param);
 	}
 	
 	return -1;
