@@ -3,4 +3,7 @@
 
 #include <aquabsd.alps.win/public.h>
 
+typedef struct {
+} aquabsd_alps_wm_t;
+
 #endif

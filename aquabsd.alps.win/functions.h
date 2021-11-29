@@ -103,10 +103,10 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	// setup 'WM_DELETE_WINDOW' protocol (yes this is dumb, thank you XCB & X11)
 
 	xcb_intern_atom_cookie_t wm_protocols_cookie = xcb_intern_atom(win->connection, 1, 12 /* strlen("WM_PROTOCOLS") */, "WM_PROTOCOLS");
-	xcb_atom_t wm_protocols_atom = xcb_intern_atom_reply(win->connection, wm_protocols_cookie, 0)->atom;
+	xcb_atom_t wm_protocols_atom = xcb_intern_atom_reply(win->connection, wm_protocols_cookie, NULL)->atom;
 
 	xcb_intern_atom_cookie_t wm_delete_win_cookie = xcb_intern_atom(win->connection, 0, 16 /* strlen("WM_DELETE_WINDOW") */, "WM_DELETE_WINDOW");
-	win->wm_delete_win_atom = xcb_intern_atom_reply(win->connection, wm_delete_win_cookie, 0)->atom;
+	win->wm_delete_win_atom = xcb_intern_atom_reply(win->connection, wm_delete_win_cookie, NULL)->atom;
 
 	xcb_icccm_set_wm_protocols(win->connection, win->win, wm_protocols_atom, 1, &win->wm_delete_win_atom);
 
