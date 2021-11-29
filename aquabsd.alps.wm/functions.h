@@ -21,6 +21,139 @@ dynamic int delete(wm_t* wm) {
 	return 0;
 }
 
+static inline int call_cb(wm_t* wm, cb_t type) {
+	uint64_t cb = wm->cbs[type];
+	uint64_t param = wm->cb_params[type];
+
+	if (!cb) {
+		return -1;
+	}
+
+	return kos_callback(cb, 2, (uint64_t) wm, param);
+}
+
+static win_t* add_win(wm_t* wm, xcb_window_t id) {
+	win_t* win = calloc(1, sizeof *win);
+	win->win = id;
+
+	if (!wm->win_head) {
+		wm->win_head = win;
+	}
+
+	win->prev = wm->win_tail;
+
+	if (wm->win_tail) {
+		wm->win_tail->next = win;
+	}
+
+	wm->win_tail = win;
+
+	// TODO call 'WM_CB_CREATE' callback
+
+	return win;
+}
+
+static win_t* search_win(wm_t* wm, xcb_window_t id) {
+	win_t* win = NULL;
+	
+	for (win = wm->win_head; win; win = win->next) {
+		if (win->win == id) {
+			return win;
+		}
+	}
+
+	if (!win) {
+		fprintf(stderr, "[aquabsd.alps.wm] WARNING Window of id 0x%x was not found\n", id);
+	}
+
+	return NULL; // something's probably gonna crash ;)
+}
+
+static void show_win(wm_t* wm, win_t* win) {
+	win->visible = 1;
+	// TODO see how I want to handle callbacks for this one
+}
+
+static void hide_win(wm_t* wm, win_t* win) {
+	win->visible = 0;
+	// TODO see how I want to handle callbacks for this one
+}
+
+static void modify_win(wm_t* wm, win_t* win) {
+	// TODO call 'WM_CB_MODIFY' callback
+}
+
+static void rem_win(wm_t* wm, win_t* win) {
+	// was the window at the head or tail of the parent?
+	// if not, stitch the previous/next window to the next/previous window in the list
+
+	if (wm->win_tail == win) {
+		wm->win_tail = win->prev;
+	}
+
+	else {
+		win->next->prev = win->prev;
+	}
+
+	if (wm->win_head == win) {
+		wm->win_head = win->next;
+	}
+
+	else {
+		win->prev->next = win->next;
+	}
+
+	// finally, free the window object itself
+
+	free(win);
+	// TODO call 'WM_CB_DELETE' callback (how should this work?)
+}
+
+#define WIN_CONFIG \
+	win->x = detail->x; \
+	win->y = detail->y; \
+	\
+	win->x_res = detail->width; \
+	win->y_res = detail->height;
+
+static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
+	wm_t* wm = _wm;
+	
+	// all of the definitions of these structs can be found in <xcb/xproto.h>
+
+	if (type == XCB_CREATE_NOTIFY) {
+		xcb_create_notify_event_t* detail = (void*) event;
+		
+		win_t* win = add_win(wm, detail->window);
+		WIN_CONFIG
+	}
+
+	else if (type == XCB_DESTROY_NOTIFY) {
+		xcb_destroy_notify_event_t* detail = (void*) event;
+		rem_win(wm, search_win(wm, detail->window));
+	}
+
+	else if (type == XCB_MAP_NOTIFY) { // show window
+		xcb_map_notify_event_t* detail = (void*) event;
+		show_win(wm, search_win(wm, detail->window));
+	}
+
+	else if (type == XCB_UNMAP_NOTIFY) { // hide window
+		xcb_unmap_notify_event_t* detail = (void*) event;
+		hide_win(wm, search_win(wm, detail->window));
+	}
+
+	else if (type == XCB_CONFIGURE_NOTIFY) { // move/resize window
+		xcb_configure_notify_event_t* detail = (void*) event;
+		win_t* win = search_win(wm, detail->window);
+
+		WIN_CONFIG
+		modify_win(wm, win);
+	}
+
+	return 0;
+}
+
 dynamic wm_t* create(void) {
 	wm_t* wm = calloc(1, sizeof *wm);
 
@@ -85,6 +218,11 @@ dynamic wm_t* create(void) {
 
 	xcb_flush(wm->root->connection);
 
+	// set the fields reserved to us in the root window object
+
+	wm->root->wm_object = wm;
+	wm->root->wm_event_cb = process_event;
+
 	return wm;
 }
 
@@ -102,15 +240,4 @@ dynamic int register_cb(wm_t* wm, cb_t type, uint64_t cb, uint64_t param) {
 	wm->cb_params[type] = param;
 
 	return 0;
-}
-
-static inline int call_cb(wm_t* wm, cb_t type) {
-	uint64_t cb = wm->cbs[type];
-	uint64_t param = wm->cb_params[type];
-
-	if (!cb) {
-		return -1;
-	}
-
-	return kos_callback(cb, 2, (uint64_t) wm, param);
 }

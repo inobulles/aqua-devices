@@ -13,6 +13,7 @@ static uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
 
 #define cb_t aquabsd_alps_wm_cb_t
 #define wm_t aquabsd_alps_wm_t
+#define win_t aquabsd_alps_wm_win_t
 
 // I cannot for the life of me figure out what the XCB equivalent of these types are
 // I found all of them defined over here though: https://code.woboq.org/qt5/include/X11/Xatom.h.html

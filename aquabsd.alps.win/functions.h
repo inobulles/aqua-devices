@@ -58,7 +58,7 @@ static int x11_kbd_map(xcb_keycode_t key) {
 	return -1;
 }
 
-static win_t* __create_setup(void) {
+static win_t* _create_setup(void) {
 	win_t* win = calloc(1, sizeof *win);
 
 	// get connection to X server
@@ -101,7 +101,7 @@ static win_t* __create_setup(void) {
 }
 
 dynamic win_t* create(unsigned x_res, unsigned y_res) {
-	win_t* win = __create_setup();
+	win_t* win = _create_setup();
 
 	if (!win) {
 		return NULL;
@@ -311,6 +311,13 @@ static int process_events(win_t* win) {
 				win->kbd_buttons[index] = 0;
 			}
 		}
+
+		// if we've got 'wm_event_cb', this means a window manager is attached to us
+		// pass on all the other events we receive to it, it probably knows better what to do with them than us
+
+		else if (win->wm_event_cb) {
+			win->wm_event_cb(win->wm_object, type, event);
+		}
 	}
 
 	return 1;
@@ -324,7 +331,7 @@ dynamic int loop(win_t* win) {
 // functions exposed exclusively to devices
 
 dynamic win_t* create_setup(void) {
-	return __create_setup();
+	return _create_setup();
 }
 
 dynamic int register_dev_cb(win_t* win, cb_t type, int (*cb) (win_t* win, void* param, uint64_t cb, uint64_t cb_param), void* param) {

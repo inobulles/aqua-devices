@@ -63,11 +63,17 @@ struct aquabsd_alps_win_t {
 	void* kbd_buf;
 
 	// potential EGL stuff, if needed
-	// these fields used by the aquabsd.alps.ogl device and should not be accessed by us
+	// these fields are used by the aquabsd.alps.ogl device and should not be accessed by us
 
 	xcb_pixmap_t egl_pixmap;
 	uint32_t /* GLuint */ egl_texture;
 	void* /* EGLImageKHR */ egl_image;
+
+	// potential WM stuff, if needed
+	// these fields are used by the aquabsd.alps.wm device, and we should use them for what they are intended
+
+	void* wm_object;
+	int (*wm_event_cb) (void* _wm, int type, xcb_generic_event_t* event);
 };
 
 // functions exposed to devices & apps
