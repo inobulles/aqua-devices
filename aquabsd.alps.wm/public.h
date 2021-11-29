@@ -4,7 +4,6 @@
 #include <aquabsd.alps.win/public.h>
 
 typedef struct {
-	char* name;
 	aquabsd_alps_win_t* root;
 	
 	// X11 atoms

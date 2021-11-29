@@ -14,7 +14,6 @@ static xcb_atom_t get_intern_atom(wm_t* wm, const char* name) {
 }
 
 dynamic int delete(wm_t* wm) {
-	if (wm->name) free(wm->name);
 	if (wm->root) aquabsd_alps_win_delete(wm->root);
 
 	free(wm);
@@ -22,9 +21,8 @@ dynamic int delete(wm_t* wm) {
 	return 0;
 }
 
-dynamic wm_t* create(const char* name) {
+dynamic wm_t* create(void) {
 	wm_t* wm = calloc(1, sizeof *wm);
-	wm->name = strdup(name);
 
 	// create a window with the help of the 'aquabsd.alps.win' device
 
@@ -82,8 +80,6 @@ dynamic wm_t* create(const char* name) {
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supporting_wm_check_atom, XA_WINDOW, 32, 1, support_win_list);
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, support_win, supporting_wm_check_atom, XA_WINDOW, 32, 1, support_win_list);
 
-	aquabsd_alps_win_set_caption(wm->root, wm->name);
-
 	// TODO get all monitors and their individual resolutions with Xinerama
 
 	// flush
@@ -91,4 +87,8 @@ dynamic wm_t* create(const char* name) {
 	xcb_flush(wm->root->connection);
 
 	return wm;
+}
+
+dynamic aquabsd_alps_win_t* get_root_win(wm_t* wm) {
+	return wm->root;
 }

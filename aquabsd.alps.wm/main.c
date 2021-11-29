@@ -2,8 +2,10 @@
 #include <aquabsd.alps.wm/functions.h>
 
 typedef enum {
-	CMD_CREATE = 0x6377, // 'cw'
-	CMD_DELETE = 0x6477, // 'dw'
+	CMD_CREATE       = 0x6377, // 'cw'
+	CMD_DELETE       = 0x6477, // 'dw'
+
+	CMD_GET_ROOT_WIN = 0x7277, // 'rw'
 } cmd_t;
 
 int load(
@@ -33,13 +35,17 @@ uint64_t send(uint16_t _cmd, void* data) {
 	uint64_t* args = data;
 
 	if (cmd == CMD_CREATE) {
-		const char* name = (void*) args[0];
-		return (uint64_t) create(name);
+		return (uint64_t) create();
 	}
 
 	else if (cmd == CMD_DELETE) {
 		wm_t* wm = (void*) args[0];
 		return delete(wm);
+	}
+
+	else if (cmd == CMD_GET_ROOT_WIN) {
+		wm_t* wm = (void*) args[0];
+		return (uint64_t) get_root_win(wm);
 	}
 	
 	return -1;
