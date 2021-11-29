@@ -58,11 +58,8 @@ static int x11_kbd_map(xcb_keycode_t key) {
 	return -1;
 }
 
-dynamic win_t* create(unsigned x_res, unsigned y_res) {
+static win_t* __create_setup(void) {
 	win_t* win = calloc(1, sizeof *win);
-
-	win->x_res = x_res;
-	win->y_res = y_res;
 
 	// get connection to X server
 
@@ -86,8 +83,33 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	
 	win->screen = it.data;
 
+	// register a new mouse
+
+	if (aquabsd_alps_mouse_register_mouse) {
+		aquabsd_alps_mouse_register_mouse("aquabsd.alps.win mouse", mouse_update_callback, win, 1);
+	}
+
+	// register a new keyboard
+
+	if (aquabsd_alps_kbd_register_kbd) {
+		aquabsd_alps_kbd_register_kbd("aquabsd.alps.win keyboard", kbd_update_callback, win, 1);
+	}
+
+	return win;
+}
+
+dynamic win_t* create(unsigned x_res, unsigned y_res) {
+	win_t* win = __create_setup();
+
+	if (!win) {
+		return NULL;
+	}
+
 	// create window
-	
+
+	win->x_res = x_res;
+	win->y_res = y_res;
+
 	const uint32_t win_attribs[] = {
 		XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE,
 	};
@@ -122,18 +144,6 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	// finally (at least for the windowing part), map the window
 
 	xcb_map_window(win->connection, win->win);
-
-	// register a new mouse
-
-	if (aquabsd_alps_mouse_register_mouse) {
-		aquabsd_alps_mouse_register_mouse("aquabsd.alps.win mouse", mouse_update_callback, win, 1);
-	}
-
-	// register a new keyboard
-
-	if (aquabsd_alps_kbd_register_kbd) {
-		aquabsd_alps_kbd_register_kbd("aquabsd.alps.win keyboard", kbd_update_callback, win, 1);
-	}
 
 	return win;
 }
@@ -309,6 +319,10 @@ dynamic int loop(win_t* win) {
 }
 
 // functions exposed exclusively to devices
+
+dynamic win_t* create_setup(void) {
+	return __create_setup();
+}
 
 dynamic int register_dev_cb(win_t* win, cb_t type, int (*cb) (win_t* win, void* param, uint64_t cb, uint64_t cb_param), void* param) {
 	if (type >= CB_LEN) {

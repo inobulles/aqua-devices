@@ -80,6 +80,7 @@ static int (*aquabsd_alps_win_loop) (aquabsd_alps_win_t* win);
 
 // functions exposed exclusively to devices
 
+static aquabsd_alps_win_t* (*aquabsd_alps_win_create_setup) (void);
 static int (*aquabsd_alps_win_register_dev_cb) (aquabsd_alps_win_t* win, aquabsd_alps_win_cb_t type, int (*cb) (aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param), void* param);
 
 #endif
