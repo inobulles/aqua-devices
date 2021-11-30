@@ -11,6 +11,8 @@ typedef enum {
 	CMD_GET_Y_RES    = 0x7972, // 'yr'
 
 	CMD_REGISTER_CB  = 0x7263, // 'rc'
+
+	CMD_GET_OVERLAY  = 0x6F77, // 'ow'
 } cmd_t;
 
 int load(
@@ -70,6 +72,11 @@ uint64_t send(uint16_t _cmd, void* data) {
 		uint64_t param = args[3];
 
 		return register_cb(wm, type, cb, param);
+	}
+
+	else if (cmd == CMD_GET_OVERLAY) {
+		wm_t* wm = (void*) args[0];
+		return (uint64_t) get_overlay_win(wm);
 	}
 	
 	return -1;

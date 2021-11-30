@@ -3,6 +3,8 @@
 
 #include <aquabsd.alps.win/public.h>
 
+#include <xcb/composite.h>
+
 typedef enum {
 	AQUABSD_ALPS_WM_CB_CREATE,
 	AQUABSD_ALPS_WM_CB_MODIFY,

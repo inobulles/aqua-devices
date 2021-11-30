@@ -5,13 +5,24 @@
 #define FATAL_ERROR(...) fprintf(stderr, "[aquabsd.alps.wm] FATAL ERROR "__VA_ARGS__); delete(wm); return NULL;
 #define WARNING(...) fprintf(stderr, "[aquabsd.alps.wm] WARNING "__VA_ARGS__);
 
-static xcb_atom_t get_intern_atom(wm_t* wm, const char* name) {
+// helper functions (for XCB)
+
+static inline xcb_atom_t get_intern_atom(wm_t* wm, const char* name) {
 	// TODO obviously, this function isn't super ideal for leveraging the benefits XCB provides over Xlib
 	//      at some point, refactor this so that... well all this work converting from Xlib to XCB isn't for nothing
 
 	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(wm->root->connection, 0, strlen(name), name);
 	return xcb_intern_atom_reply(wm->root->connection, atom_cookie, NULL)->atom;
 }
+
+static inline xcb_window_t create_dumb_win(wm_t* wm) {
+	xcb_window_t win = xcb_generate_id(wm->root->connection);
+	xcb_create_window(wm->root->connection, XCB_COPY_FROM_PARENT, win, wm->root->win, 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_COPY_FROM_PARENT, 0, 0, NULL);
+
+	return win;
+}
+
+// actual functions
 
 dynamic int delete(wm_t* wm) {
 	if (wm->root) aquabsd_alps_win_delete(wm->root);
@@ -230,9 +241,7 @@ dynamic wm_t* create(void) {
 	// this is a bit weird, but it's all specified by the EWMH spec: https://developer.gnome.org/wm-spec/
 
 	xcb_atom_t supporting_wm_check_atom = get_intern_atom(wm, "_NET_SUPPORTING_WM_CHECK");
-
-	xcb_window_t support_win = xcb_generate_id(wm->root->connection);
-	xcb_create_window(wm->root->connection, XCB_COPY_FROM_PARENT, support_win, wm->root->win, 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_COPY_FROM_PARENT, 0, 0, NULL);
+	xcb_window_t support_win = create_dumb_win(wm);
 
 	xcb_window_t support_win_list[1] = { support_win };
 
@@ -277,3 +286,62 @@ dynamic int register_cb(wm_t* wm, cb_t type, uint64_t cb, uint64_t param) {
 	return 0;
 }
 
+// this function is for compositing window managers
+
+dynamic aquabsd_alps_win_t* get_overlay_win(wm_t* wm) {
+	// make it so that our compositing window manager can be recognized as such by other processes
+
+	xcb_window_t screen_owner = create_dumb_win(wm);
+	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, screen_owner, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen("xcompmgr") /* don't need to include null */, "xcompmgr");
+
+	char name[] = "_NET_WM_CM_S##";
+	snprintf(name, sizeof(name), "_NET_WM_CM_S%d", wm->root->default_screen);
+
+	xcb_atom_t atom = get_intern_atom(wm, name);
+	xcb_set_selection_owner(wm->root->connection, screen_owner, atom, 0);
+
+	// we want to enable manual redirection, because we want to track damage and flush updates ourselves
+	// if we were to pass 'XCB_COMPOSITE_REDIRECT_AUTOMATIC' instead, the server would handle all that internally
+
+	xcb_composite_redirect_subwindows(wm->root->connection, wm->root->win, XCB_COMPOSITE_REDIRECT_MANUAL);
+
+	// get the overlay window
+	// this window allows us to draw what we want on a layer between normal windows and the screensaver without interference
+	// basically, it's as if there was a giant screen-filling window above all the others
+	// if we were to attach an OpenGL context to it with 'aquabsd.alps.ogl', we could render anything we want to it
+	// that includes the underlying windows
+	// (in that case we would do that by getting an OpenGL texture with their contents through 'CMD_BIND_WIN_TEX')
+
+	xcb_composite_get_overlay_window_cookie_t overlay_win_cookie = xcb_composite_get_overlay_window(wm->root->connection, wm->root->win);
+	xcb_window_t overlay_win = xcb_composite_get_overlay_window_reply(wm->root->connection, overlay_win_cookie, NULL)->overlay_win;
+
+	// for whatever reason, X (and even Xcomposite, which is even weirder) doesn't include a way to make windows transparent to events
+	// so we must use the Xfixes extension to make the overlay window transparent to events and pass them on through to lower windows
+	// remember, the overlay is like one giant window above all our other windows
+	// why/how does this work? I don't know and no one seems to know either, this was stolen from picom, and I can't remember how I figured out the Xlib equivalent bit of code in x-compositing-wm
+	// also, we must "negotiate the version" of the Xfixes extension (i.e. just initialize) before we use it, or we get UB
+
+	xcb_xfixes_query_version(wm->root->connection, XCB_XFIXES_MAJOR_VERSION, XCB_XFIXES_MINOR_VERSION);
+
+	xcb_shape_mask(wm->root->connection, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, overlay_win, 0, 0, 0);
+	xcb_shape_rectangles(wm->root->connection, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_INPUT, XCB_CLIP_ORDERING_UNSORTED, overlay_win, 0, 0, 0, NULL);
+
+	// phew! now, we simply create an output window with the help of 'aquabsd.alps.win'
+	// this window shouldn't be used for events or anything of the sorts, only for drawing
+	// use the root window for events instead
+
+	aquabsd_alps_win_t* win = calloc(1, sizeof *win);
+
+	win->x_res = wm->root->x_res;
+	win->y_res = wm->root->y_res;
+
+	win->display = wm->root->display;
+	win->default_screen = wm->root->default_screen;
+
+	win->connection = wm->root->connection;
+	win->screen = wm->root->screen;
+
+	win->win = overlay_win;
+
+	return win;
+}
