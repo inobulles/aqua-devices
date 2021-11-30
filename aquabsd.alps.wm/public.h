@@ -35,6 +35,8 @@ typedef struct {
 
 	// doubly-linked list with all windows
 
+	unsigned win_count;
+
 	aquabsd_alps_wm_win_t* win_head;
 	aquabsd_alps_wm_win_t* win_tail;
 

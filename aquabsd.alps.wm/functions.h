@@ -32,6 +32,18 @@ static inline int call_cb(wm_t* wm, cb_t type) {
 	return kos_callback(cb, 2, (uint64_t) wm, param);
 }
 
+static void update_client_list(wm_t* wm) {
+	xcb_window_t* client_list = calloc(wm->win_count, sizeof *client_list);
+	unsigned i = 0;
+
+	for (win_t* win = wm->win_head; win; win = win->next) {
+		client_list[i++] = win->win;
+	}
+
+	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->client_list_atom, XA_WINDOW, 32, wm->win_count, client_list);
+	free(client_list);
+}
+
 static win_t* add_win(wm_t* wm, xcb_window_t id) {
 	win_t* win = calloc(1, sizeof *win);
 	win->win = id;
@@ -49,6 +61,9 @@ static win_t* add_win(wm_t* wm, xcb_window_t id) {
 	wm->win_tail = win;
 
 	// TODO call 'WM_CB_CREATE' callback
+
+	wm->win_count++;
+	update_client_list(wm);
 
 	return win;
 }
@@ -72,15 +87,18 @@ static win_t* search_win(wm_t* wm, xcb_window_t id) {
 static void show_win(wm_t* wm, win_t* win) {
 	win->visible = 1;
 	// TODO see how I want to handle callbacks for this one
+	printf("show_win\n");
 }
 
 static void hide_win(wm_t* wm, win_t* win) {
 	win->visible = 0;
 	// TODO see how I want to handle callbacks for this one
+	printf("hide_win\n");
 }
 
 static void modify_win(wm_t* wm, win_t* win) {
 	// TODO call 'WM_CB_MODIFY' callback
+	printf("modify_win\n");
 }
 
 static void rem_win(wm_t* wm, win_t* win) {
@@ -106,7 +124,11 @@ static void rem_win(wm_t* wm, win_t* win) {
 	// finally, free the window object itself
 
 	free(win);
+	printf("rem_win\n");
 	// TODO call 'WM_CB_DELETE' callback (how should this work?)
+
+	wm->win_count--;
+	update_client_list(wm);
 }
 
 #define WIN_CONFIG \

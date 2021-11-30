@@ -27,7 +27,6 @@ int load(
 
 	aquabsd_alps_win_create_setup = kos_load_device_function(win_device, "create_setup");
 	aquabsd_alps_win_delete = kos_load_device_function(win_device, "delete");
-	aquabsd_alps_win_set_caption = kos_load_device_function(win_device, "set_caption");
 
 	return 0;
 }
