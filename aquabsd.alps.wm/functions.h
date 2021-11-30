@@ -40,7 +40,7 @@ static void update_client_list(wm_t* wm) {
 		client_list[i++] = win->win;
 	}
 
-	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->client_list_atom, XA_WINDOW, 32, wm->win_count, client_list);
+	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->client_list_atom, XCB_ATOM_WINDOW, 32, wm->win_count, client_list);
 	free(client_list);
 }
 
@@ -60,7 +60,7 @@ static win_t* add_win(wm_t* wm, xcb_window_t id) {
 
 	wm->win_tail = win;
 
-	// TODO call 'WM_CB_CREATE' callback
+	call_cb(wm, CB_CREATE);
 
 	wm->win_count++;
 	update_client_list(wm);
@@ -97,8 +97,7 @@ static void hide_win(wm_t* wm, win_t* win) {
 }
 
 static void modify_win(wm_t* wm, win_t* win) {
-	// TODO call 'WM_CB_MODIFY' callback
-	printf("modify_win\n");
+	call_cb(wm, CB_MODIFY);
 }
 
 static void rem_win(wm_t* wm, win_t* win) {
@@ -124,8 +123,7 @@ static void rem_win(wm_t* wm, win_t* win) {
 	// finally, free the window object itself
 
 	free(win);
-	printf("rem_win\n");
-	// TODO call 'WM_CB_DELETE' callback (how should this work?)
+	call_cb(wm, CB_DELETE);
 
 	wm->win_count--;
 	update_client_list(wm);
@@ -173,6 +171,10 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		modify_win(wm, win);
 	}
 
+	else {
+		printf("unknown %d\n", type);
+	}
+
 	return 0;
 }
 
@@ -201,7 +203,8 @@ dynamic wm_t* create(void) {
 	// tell X to send us all 'CreateNotify', 'ConfigureNotify', and 'DestroyNotify' events ('SubstructureNotifyMask' also sends back some other events but we're not using those)
 
 	const uint32_t attribs[] = {
-		XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE
+		//XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE
+		XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY
 	};
 
 	xcb_change_window_attributes(wm->root->connection, wm->root->win, XCB_CW_EVENT_MASK, attribs);
@@ -219,7 +222,7 @@ dynamic wm_t* create(void) {
 	xcb_atom_t supported_atoms_list_atom = get_intern_atom(wm, "_NET_SUPPORTED");
 	const xcb_atom_t supported_atoms[] = { supported_atoms_list_atom, wm->client_list_atom };
 
-	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supported_atoms_list_atom, XA_ATOM, 32, sizeof(supported_atoms) / sizeof(*supported_atoms), supported_atoms);
+	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supported_atoms_list_atom, XCB_ATOM_ATOM, 32, sizeof(supported_atoms) / sizeof(*supported_atoms), supported_atoms);
 
 	// now, we move on to '_NET_SUPPORTING_WM_CHECK'
 	// this is a bit weird, but it's all specified by the EWMH spec: https://developer.gnome.org/wm-spec/
@@ -231,8 +234,8 @@ dynamic wm_t* create(void) {
 
 	xcb_window_t support_win_list[1] = { support_win };
 
-	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supporting_wm_check_atom, XA_WINDOW, 32, 1, support_win_list);
-	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, support_win, supporting_wm_check_atom, XA_WINDOW, 32, 1, support_win_list);
+	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supporting_wm_check_atom, XCB_ATOM_WINDOW, 32, 1, support_win_list);
+	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, support_win, supporting_wm_check_atom, XCB_ATOM_WINDOW, 32, 1, support_win_list);
 
 	// TODO get all monitors and their individual resolutions with Xinerama
 
