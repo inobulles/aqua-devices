@@ -21,7 +21,7 @@ dynamic int delete(wm_t* wm) {
 	return 0;
 }
 
-static inline int call_cb(wm_t* wm, cb_t type) {
+static inline int call_cb(wm_t* wm, win_t* win, cb_t type) {
 	uint64_t cb = wm->cbs[type];
 	uint64_t param = wm->cb_params[type];
 
@@ -29,7 +29,7 @@ static inline int call_cb(wm_t* wm, cb_t type) {
 		return -1;
 	}
 
-	return kos_callback(cb, 2, (uint64_t) wm, param);
+	return kos_callback(cb, 3, (uint64_t) wm, (uint64_t) win, param);
 }
 
 static void update_client_list(wm_t* wm) {
@@ -62,7 +62,7 @@ static win_t* add_win(wm_t* wm, xcb_window_t id) {
 
 	wm->win_tail = win;
 
-	call_cb(wm, CB_CREATE);
+	call_cb(wm, win, CB_CREATE);
 
 	wm->win_count++;
 	update_client_list(wm);
@@ -99,7 +99,7 @@ static void hide_win(wm_t* wm, win_t* win) {
 }
 
 static void modify_win(wm_t* wm, win_t* win) {
-	call_cb(wm, CB_MODIFY);
+	call_cb(wm, win, CB_MODIFY);
 }
 
 static void rem_win(wm_t* wm, win_t* win) {
@@ -125,7 +125,7 @@ static void rem_win(wm_t* wm, win_t* win) {
 	// finally, free the window object itself
 
 	free(win);
-	call_cb(wm, CB_DELETE);
+	call_cb(wm, win, CB_DELETE);
 
 	wm->win_count--;
 	update_client_list(wm);
@@ -257,6 +257,14 @@ dynamic aquabsd_alps_win_t* get_root_win(wm_t* wm) {
 	return wm->root;
 }
 
+dynamic unsigned get_x_res(wm_t* wm) {
+	return wm->root->x_res;
+}
+
+dynamic unsigned get_y_res(wm_t* wm) {
+	return wm->root->y_res;
+}
+
 dynamic int register_cb(wm_t* wm, cb_t type, uint64_t cb, uint64_t param) {
 	if (type >= CB_LEN) {
 		fprintf(stderr, "[aquabsd.alps.wm] Callback type %d doesn't exist\n", type);
@@ -268,3 +276,4 @@ dynamic int register_cb(wm_t* wm, cb_t type, uint64_t cb, uint64_t param) {
 
 	return 0;
 }
+

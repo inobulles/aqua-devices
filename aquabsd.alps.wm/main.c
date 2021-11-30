@@ -7,6 +7,9 @@ typedef enum {
 
 	CMD_GET_ROOT_WIN = 0x7277, // 'rw'
 
+	CMD_GET_X_RES    = 0x7872, // 'xr'
+	CMD_GET_Y_RES    = 0x7972, // 'yr'
+
 	CMD_REGISTER_CB  = 0x7263, // 'rc'
 } cmd_t;
 
@@ -47,6 +50,16 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_GET_ROOT_WIN) {
 		wm_t* wm = (void*) args[0];
 		return (uint64_t) get_root_win(wm);
+	}
+
+	else if (cmd == CMD_GET_X_RES) {
+		wm_t* wm = (void*) args[0];
+		return (uint64_t) get_x_res(wm);
+	}
+
+	else if (cmd == CMD_GET_Y_RES) {
+		wm_t* wm = (void*) args[0];
+		return (uint64_t) get_y_res(wm);
 	}
 
 	else if (cmd == CMD_REGISTER_CB) {
