@@ -9,7 +9,7 @@ static xcb_atom_t get_intern_atom(wm_t* wm, const char* name) {
 	// TODO obviously, this function isn't super ideal for leveraging the benefits XCB provides over Xlib
 	//      at some point, refactor this so that... well all this work converting from Xlib to XCB isn't for nothing
 
-	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(wm->root->connection, 1, strlen(name), name);
+	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(wm->root->connection, 0, strlen(name), name);
 	return xcb_intern_atom_reply(wm->root->connection, atom_cookie, NULL)->atom;
 }
 
@@ -41,6 +41,8 @@ static void update_client_list(wm_t* wm) {
 	}
 
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->client_list_atom, XCB_ATOM_WINDOW, 32, wm->win_count, client_list);
+	xcb_flush(wm->root->connection);
+	
 	free(client_list);
 }
 

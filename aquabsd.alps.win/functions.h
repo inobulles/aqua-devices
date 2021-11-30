@@ -152,7 +152,9 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 }
 
 dynamic int set_caption(win_t* win, const char* caption) {
-	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(caption) + 1, caption);
+	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
+	xcb_flush(win->connection);
+
 	return 0;
 }
 
