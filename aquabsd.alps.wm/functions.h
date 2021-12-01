@@ -98,6 +98,13 @@ static win_t* search_win(wm_t* wm, xcb_window_t id) {
 }
 
 static void show_win(wm_t* wm, win_t* win) {
+	// in a compositing window manager, this means we're trying to show the overlay
+	// prevent that
+
+	if (win->win == wm->root->auxiliary) {
+		return;
+	}
+
 	win->visible = 1;
 	call_cb(wm, win, CB_SHOW);
 }
