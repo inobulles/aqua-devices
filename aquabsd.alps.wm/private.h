@@ -7,6 +7,8 @@ static void* (*kos_load_device_function) (uint64_t device, const char* name);
 static uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
 
 #define CB_CREATE AQUABSD_ALPS_WM_CB_CREATE
+#define CB_SHOW   AQUABSD_ALPS_WM_CB_SHOW
+#define CB_HIDE   AQUABSD_ALPS_WM_CB_HIDE
 #define CB_MODIFY AQUABSD_ALPS_WM_CB_MODIFY
 #define CB_DELETE AQUABSD_ALPS_WM_CB_DELETE
 #define CB_LEN    AQUABSD_ALPS_WM_CB_LEN

@@ -7,12 +7,17 @@
 
 typedef enum {
 	AQUABSD_ALPS_WM_CB_CREATE,
+	AQUABSD_ALPS_WM_CB_SHOW,
+	AQUABSD_ALPS_WM_CB_HIDE,
 	AQUABSD_ALPS_WM_CB_MODIFY,
 	AQUABSD_ALPS_WM_CB_DELETE,
 	AQUABSD_ALPS_WM_CB_LEN
 } aquabsd_alps_wm_cb_t;
 
 typedef struct aquabsd_alps_wm_win_t aquabsd_alps_wm_win_t; // forward declaration
+
+// TODO should aquabsd_alps_wm_win_t be merged with aquabsd_alps_win_t?
+//      (you could define win_t as aquabsd_alps_win_t in private.h)
 
 struct aquabsd_alps_wm_win_t { // this is all the WM really cares about as for what a window is
 	xcb_window_t win;
