@@ -164,14 +164,13 @@ static PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR = NULL;
 static void (*glEGLImageTargetTexture2DOES) (GLenum target, GLeglImageOES image) = NULL; // could've used 'PFNGLEGLIMAGETARGETTEXTURE2DOESPROC' from <GL/gl.h> here
 
 static void (*glGenTextures) (GLsizei n, GLuint* textures) = NULL;
+static void (*glDeleteTextures) (GLsizei n, GLuint* textures) = NULL;
 static void (*glBindTexture) (GLenum target, GLuint texture) = NULL;
 
 dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
 	if (!win) { // this only works sometimes
 		win = context->win;
 	}
-	
-	xcb_window_t xcb_win = aquabsd_alps_win_get_draw_win(win);
 
 	#define CHECK_AND_GET(name) \
 		if (!name) { \
@@ -182,11 +181,24 @@ dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
 	CHECK_AND_GET(glEGLImageTargetTexture2DOES)
 
 	CHECK_AND_GET(glGenTextures)
+	CHECK_AND_GET(glDeleteTextures)
 	CHECK_AND_GET(glBindTexture)
 
-	if (!eglCreateImageKHR || !glEGLImageTargetTexture2DOES || !glGenTextures || !glBindTexture) {
+	if (!eglCreateImageKHR || !glEGLImageTargetTexture2DOES || !glGenTextures || !glDeleteTextures || !glBindTexture) {
 		return -1; // well... I guess some of the extensions aren't supported then 🤷
 	}
+
+	if (win->pixmap_modified) {
+		win->pixmap_modified = 0;
+
+		glDeleteTextures(1, &win->egl_texture);
+		eglDestroyImage(context->egl_display, win->egl_image);
+		xcb_free_pixmap(context->win->connection, win->egl_pixmap);
+
+		win->egl_image = 0;
+	}
+
+	xcb_window_t xcb_win = aquabsd_alps_win_get_draw_win(win);
 
 	unsigned nvidia = 1;
 

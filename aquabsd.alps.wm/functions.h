@@ -115,6 +115,7 @@ static void hide_win(wm_t* wm, win_t* win) {
 }
 
 static void modify_win(wm_t* wm, win_t* win) {
+	win->pixmap_modified = 1;
 	call_cb(wm, win, CB_MODIFY);
 }
 
