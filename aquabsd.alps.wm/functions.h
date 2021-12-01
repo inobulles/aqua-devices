@@ -148,8 +148,8 @@ static void rem_win(wm_t* wm, win_t* win) {
 }
 
 #define WIN_CONFIG \
-	win->x = detail->x; \
-	win->y = detail->y; \
+	win->x_pos = detail->x; \
+	win->y_pos = detail->y; \
 	\
 	win->x_res = detail->width; \
 	win->y_res = detail->height;

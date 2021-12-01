@@ -25,7 +25,7 @@ typedef struct aquabsd_alps_win_t aquabsd_alps_win_t; // forward declaration
 struct aquabsd_alps_win_t {
 	unsigned visible;
 	
-	unsigned x, y;
+	unsigned x_pos, y_pos;
 	unsigned x_res, y_res;
 
 	// X11 stuff
@@ -95,6 +95,12 @@ static int (*aquabsd_alps_win_set_caption) (aquabsd_alps_win_t* win, const char*
 
 static int (*aquabsd_alps_win_register_cb) (aquabsd_alps_win_t* win, aquabsd_alps_win_cb_t type, uint64_t cb, uint64_t param);
 static int (*aquabsd_alps_win_loop) (aquabsd_alps_win_t* win);
+
+static int (*aquabsd_alps_win_get_x_pos) (aquabsd_alps_win_t* win);
+static int (*aquabsd_alps_win_get_y_pos) (aquabsd_alps_win_t* win);
+
+static unsigned (*aquabsd_alps_win_get_x_res) (aquabsd_alps_win_t* win);
+static unsigned (*aquabsd_alps_win_get_y_res) (aquabsd_alps_win_t* win);
 
 // functions exposed exclusively to devices
 

@@ -9,6 +9,12 @@ typedef enum {
 
 	CMD_REGISTER_CB = 0x7263, // 'rc'
 	CMD_LOOP        = 0x6C6F, // 'lo'
+
+	CMD_GET_X_POS   = 0x7870, // 'xp'
+	CMD_GET_Y_POS   = 0x7970, // 'yp'
+
+	CMD_GET_X_RES   = 0x7872, // 'xr'
+	CMD_GET_Y_RES   = 0x7972, // 'yr'
 } cmd_t;
 
 int load(
@@ -71,6 +77,26 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_LOOP) {
 		win_t* win = (void*) args[0];
 		return loop(win);
+	}
+
+	else if (cmd == CMD_GET_X_POS) {
+		win_t* win = (void*) args[0];
+		return get_x_pos(win);
+	}
+
+	else if (cmd == CMD_GET_Y_POS) {
+		win_t* win = (void*) args[0];
+		return get_y_pos(win);
+	}
+
+	else if (cmd == CMD_GET_X_RES) {
+		win_t* win = (void*) args[0];
+		return get_x_res(win);
+	}
+
+	else if (cmd == CMD_GET_Y_RES) {
+		win_t* win = (void*) args[0];
+		return get_y_res(win);
 	}
 
 	return -1;

@@ -329,11 +329,28 @@ static int process_events(win_t* win) {
 
 dynamic int loop(win_t* win) {
 	while (process_events(win)) {
-		if (win->wm_object) {
+		if (win->wm_object) { // TODO find a cleaner system
 			call_cb(win, CB_DRAW);
 		}
 	}
+
 	return 0; // no more events to process
+}
+
+dynamic int get_x_pos(win_t* win) {
+	return win->x_pos;
+}
+
+dynamic int get_y_pos(win_t* win) {
+	return win->y_pos;
+}
+
+dynamic int get_x_res(win_t* win) {
+	return win->x_res;
+}
+
+dynamic int get_y_res(win_t* win) {
+	return win->y_res;
 }
 
 // functions exposed exclusively to devices
