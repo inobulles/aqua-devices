@@ -19,6 +19,7 @@ typedef struct {
 	
 	// X11 atoms (used for communicating information between clients)
 
+	xcb_window_t support_win;
 	xcb_atom_t client_list_atom;
 
 	// doubly-linked list with all windows
@@ -44,6 +45,8 @@ static aquabsd_alps_win_t* (*aquabsd_alps_wm_get_root_win) (aquabsd_alps_wm_t* w
 
 static unsigned (*aquabsd_alps_wm_get_x_res) (aquabsd_alps_wm_t* wm);
 static unsigned (*aquabsd_alps_wm_get_y_res) (aquabsd_alps_wm_t* wm);
+
+static int (*aquabsd_alps_wm_set_name) (aquabsd_alps_wm_t* wm, const char* name);
 
 static int (*aquabsd_alps_wm_register_cb) (aquabsd_alps_wm_t* wm, aquabsd_alps_wm_cb_t type, uint64_t cb, uint64_t param);
 static int (*aquabsd_alps_wm_make_compositing) (aquabsd_alps_wm_t* wm);

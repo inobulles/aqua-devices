@@ -239,7 +239,7 @@ dynamic wm_t* create(void) {
 	wm->client_list_atom = get_intern_atom(wm, "_NET_CLIENT_LIST");
 
 	xcb_atom_t supported_atoms_list_atom = get_intern_atom(wm, "_NET_SUPPORTED");
-	const xcb_atom_t supported_atoms[] = { supported_atoms_list_atom, wm->client_list_atom };
+	const xcb_atom_t supported_atoms[] = { supported_atoms_list_atom, wm->client_list_atom, get_intern_atom(wm, "_NET_WM_NAME"), get_intern_atom(wm, "_NET_WM_VISIBLE_NAME") };
 
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supported_atoms_list_atom, XCB_ATOM_ATOM, 32, sizeof(supported_atoms) / sizeof(*supported_atoms), supported_atoms);
 
@@ -247,12 +247,12 @@ dynamic wm_t* create(void) {
 	// this is a bit weird, but it's all specified by the EWMH spec: https://developer.gnome.org/wm-spec/
 
 	xcb_atom_t supporting_wm_check_atom = get_intern_atom(wm, "_NET_SUPPORTING_WM_CHECK");
-	xcb_window_t support_win = create_dumb_win(wm);
+	wm->support_win = create_dumb_win(wm);
 
-	xcb_window_t support_win_list[1] = { support_win };
+	xcb_window_t support_win_list[1] = { wm->support_win };
 
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supporting_wm_check_atom, XCB_ATOM_WINDOW, 32, 1, support_win_list);
-	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, support_win, supporting_wm_check_atom, XCB_ATOM_WINDOW, 32, 1, support_win_list);
+	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->support_win, supporting_wm_check_atom, XCB_ATOM_WINDOW, 32, 1, support_win_list);
 
 	// TODO get all monitors and their individual resolutions with Xinerama
 
@@ -278,6 +278,17 @@ dynamic unsigned get_x_res(wm_t* wm) {
 
 dynamic unsigned get_y_res(wm_t* wm) {
 	return wm->root->y_res;
+}
+
+dynamic int set_name(wm_t* wm, const char* name) {
+	win_t support_win = {
+		.connection = wm->root->connection,
+		.win = wm->support_win
+	};
+
+	aquabsd_alps_win_set_caption(&support_win, name);
+
+	return 0;
 }
 
 dynamic int register_cb(wm_t* wm, cb_t type, uint64_t cb, uint64_t param) {

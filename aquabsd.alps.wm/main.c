@@ -10,6 +10,7 @@ typedef enum {
 	CMD_GET_X_RES        = 0x7872, // 'xr'
 	CMD_GET_Y_RES        = 0x7972, // 'yr'
 
+	CMD_SET_NAME         = 0x736E, // 'sn'
 	CMD_REGISTER_CB      = 0x7263, // 'rc'
 
 	CMD_MAKE_COMPOSITING = 0x6D63, // 'mc'
@@ -31,6 +32,7 @@ int load(
 	}
 
 	aquabsd_alps_win_create_setup = kos_load_device_function(win_device, "create_setup");
+	aquabsd_alps_win_set_caption = kos_load_device_function(win_device, "set_caption");
 	aquabsd_alps_win_delete = kos_load_device_function(win_device, "delete");
 
 	return 0;
@@ -62,6 +64,13 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_GET_Y_RES) {
 		wm_t* wm = (void*) args[0];
 		return (uint64_t) get_y_res(wm);
+	}
+
+	else if (cmd == CMD_SET_NAME) {
+		wm_t* wm = (void*) args[0];
+		const char* name = (void*) args[1];
+
+		return set_name(wm, name);
 	}
 
 	else if (cmd == CMD_REGISTER_CB) {

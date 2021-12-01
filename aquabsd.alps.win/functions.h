@@ -5,6 +5,16 @@
 #define FATAL_ERROR(...) fprintf(stderr, "[aquabsd.alps.win] FATAL ERROR "__VA_ARGS__); delete(win); return NULL;
 #define WARNING(...) fprintf(stderr, "[aquabsd.alps.win] WARNING "__VA_ARGS__);
 
+// helper functions (for XCB)
+
+static inline xcb_atom_t get_intern_atom(win_t* win, const char* name) {
+	// TODO obviously, this function isn't super ideal for leveraging the benefits XCB provides over Xlib
+	//      at some point, refactor this so that... well all this work converting from Xlib to XCB isn't for nothing
+
+	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(win->connection, 0, strlen(name), name);
+	return xcb_intern_atom_reply(win->connection, atom_cookie, NULL)->atom;
+}
+
 // functions exposed to devices & apps
 
 dynamic int delete(win_t* win) {
@@ -126,11 +136,8 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	
 	// setup 'WM_DELETE_WINDOW' protocol (yes this is dumb, thank you XCB & X11)
 
-	xcb_intern_atom_cookie_t wm_protocols_cookie = xcb_intern_atom(win->connection, 1, 12 /* strlen("WM_PROTOCOLS") */, "WM_PROTOCOLS");
-	xcb_atom_t wm_protocols_atom = xcb_intern_atom_reply(win->connection, wm_protocols_cookie, NULL)->atom;
-
-	xcb_intern_atom_cookie_t wm_delete_win_cookie = xcb_intern_atom(win->connection, 0, 16 /* strlen("WM_DELETE_WINDOW") */, "WM_DELETE_WINDOW");
-	win->wm_delete_win_atom = xcb_intern_atom_reply(win->connection, wm_delete_win_cookie, NULL)->atom;
+	xcb_atom_t wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
+	win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
 
 	xcb_icccm_set_wm_protocols(win->connection, win->win, wm_protocols_atom, 1, &win->wm_delete_win_atom);
 
@@ -155,6 +162,13 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 
 dynamic int set_caption(win_t* win, const char* caption) {
 	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
+
+	xcb_atom_t atom = get_intern_atom(win, "_NET_WM_NAME"); // EWMH spec says it's better to use this than just 'WM_NAME'
+	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, atom, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
+
+	atom = get_intern_atom(win, "_NET_WM_VISIBLE_NAME");
+	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, atom, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
+
 	xcb_flush(win->connection);
 
 	return 0;
