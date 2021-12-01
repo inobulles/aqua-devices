@@ -342,12 +342,7 @@ static int process_events(win_t* win) {
 }
 
 dynamic int loop(win_t* win) {
-	while (process_events(win)) {
-		if (win->wm_object) { // TODO find a cleaner system
-			call_cb(win, CB_DRAW);
-		}
-	}
-
+	while (process_events(win));
 	return 0; // no more events to process
 }
 

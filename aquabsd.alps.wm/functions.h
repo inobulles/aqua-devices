@@ -223,7 +223,10 @@ dynamic wm_t* create(void) {
 
 	const uint32_t attribs[] = {
 		//XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE
-		XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY
+		XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
+		XCB_EVENT_MASK_EXPOSURE |
+		XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION |
+		XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE
 	};
 
 	xcb_change_window_attributes(wm->root->connection, wm->root->win, XCB_CW_EVENT_MASK, attribs);
@@ -237,9 +240,14 @@ dynamic wm_t* create(void) {
 	// we also need to specify which atoms are supported in '_NET_SUPPORTED'
 
 	wm->client_list_atom = get_intern_atom(wm, "_NET_CLIENT_LIST");
-
 	xcb_atom_t supported_atoms_list_atom = get_intern_atom(wm, "_NET_SUPPORTED");
-	const xcb_atom_t supported_atoms[] = { supported_atoms_list_atom, wm->client_list_atom, get_intern_atom(wm, "_NET_WM_NAME"), get_intern_atom(wm, "_NET_WM_VISIBLE_NAME") };
+
+	const xcb_atom_t supported_atoms[] = {
+		supported_atoms_list_atom,
+		wm->client_list_atom,
+		get_intern_atom(wm, "_NET_WM_NAME"),
+		get_intern_atom(wm, "_NET_WM_VISIBLE_NAME")
+	};
 
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supported_atoms_list_atom, XCB_ATOM_ATOM, 32, sizeof(supported_atoms) / sizeof(*supported_atoms), supported_atoms);
 
@@ -281,7 +289,7 @@ dynamic unsigned get_y_res(wm_t* wm) {
 }
 
 dynamic int set_name(wm_t* wm, const char* name) {
-	win_t support_win = {
+	win_t support_win = { // shim for 'aquabsd_alps_win_set_caption'
 		.connection = wm->root->connection,
 		.win = wm->support_win
 	};
