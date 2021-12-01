@@ -286,7 +286,7 @@ dynamic int register_cb(wm_t* wm, cb_t type, uint64_t cb, uint64_t param) {
 	return 0;
 }
 
-// this function is for compositing window managers
+// this function is only for compositing window managers
 
 dynamic int make_compositing(wm_t* wm) {
 	// make it so that our compositing window manager can be recognized as such by other processes
@@ -331,7 +331,6 @@ dynamic int make_compositing(wm_t* wm) {
 	// use the root window for events instead
 
 	wm->root->auxiliary = overlay_win;
-	wm->compositing = 1;
 
 	return 0;
 }
