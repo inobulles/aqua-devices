@@ -32,7 +32,7 @@ dynamic int delete(wm_t* wm) {
 	return 0;
 }
 
-static inline int call_cb(wm_t* wm, win_t* _win, cb_t type) {
+static inline int call_cb(wm_t* wm, win_t* win, cb_t type) {
 	uint64_t cb = wm->cbs[type];
 	uint64_t param = wm->cb_params[type];
 
@@ -40,18 +40,7 @@ static inline int call_cb(wm_t* wm, win_t* _win, cb_t type) {
 		return -1;
 	}
 
-	// convert window to universal type
-
-	aquabsd_alps_win_t* win = calloc(1, sizeof *win);
-	win->win = _win->win;
-
-	win->x_res = _win->x_res;
-	win->y_res = _win->y_res;
-
-	int rv = kos_callback(cb, 3, (uint64_t) wm, (uint64_t) win, param);
-	//free(win);
-
-	return rv;
+	return kos_callback(cb, 3, (uint64_t) wm, (uint64_t) win, param);
 }
 
 static void update_client_list(wm_t* wm) {
@@ -271,7 +260,7 @@ dynamic wm_t* create(void) {
 	return wm;
 }
 
-dynamic aquabsd_alps_win_t* get_root_win(wm_t* wm) {
+dynamic win_t* get_root_win(wm_t* wm) {
 	return wm->root;
 }
 

@@ -23,6 +23,9 @@ typedef enum {
 typedef struct aquabsd_alps_win_t aquabsd_alps_win_t; // forward declaration
 
 struct aquabsd_alps_win_t {
+	unsigned visible;
+	
+	unsigned x, y;
 	unsigned x_res, y_res;
 
 	// X11 stuff
@@ -62,6 +65,11 @@ struct aquabsd_alps_win_t {
 
 	unsigned kbd_buf_len;
 	void* kbd_buf;
+
+	// in case we need a doubly-linked list of windows
+
+	aquabsd_alps_win_t* prev;
+	aquabsd_alps_win_t* next;
 
 	// potential EGL stuff, if needed
 	// these fields are used by the aquabsd.alps.ogl device and should not be accessed by us

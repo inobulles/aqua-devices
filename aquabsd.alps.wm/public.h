@@ -14,25 +14,6 @@ typedef enum {
 	AQUABSD_ALPS_WM_CB_LEN
 } aquabsd_alps_wm_cb_t;
 
-typedef struct aquabsd_alps_wm_win_t aquabsd_alps_wm_win_t; // forward declaration
-
-// TODO should aquabsd_alps_wm_win_t be merged with aquabsd_alps_win_t?
-//      (you could define win_t as aquabsd_alps_win_t in private.h)
-
-struct aquabsd_alps_wm_win_t { // this is all the WM really cares about as for what a window is
-	xcb_window_t win;
-
-	unsigned visible;
-
-	int x, y;
-	unsigned x_res, y_res;
-
-	// for doubly-linked list of windows
-
-	aquabsd_alps_wm_win_t* prev;
-	aquabsd_alps_wm_win_t* next;
-};
-
 typedef struct {
 	aquabsd_alps_win_t* root;
 	
@@ -44,8 +25,8 @@ typedef struct {
 
 	unsigned win_count;
 
-	aquabsd_alps_wm_win_t* win_head;
-	aquabsd_alps_wm_win_t* win_tail;
+	aquabsd_alps_win_t* win_head;
+	aquabsd_alps_win_t* win_tail;
 
 	// app client callbacks
 	// a bit of data-orientated design here ;)

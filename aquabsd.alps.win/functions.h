@@ -143,10 +143,12 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 
 	xcb_icccm_set_wm_size_hints(win->connection, win->win, XCB_ATOM_WM_NORMAL_HINTS, &hints);
 
-	// finally (at least for the windowing part), map the window and flush
+	// finally (at least for the windowing part), map the window (show it basically) and flush
 
 	xcb_map_window(win->connection, win->win);
 	xcb_flush(win->connection);
+
+	win->visible = 1;
 
 	return win;
 }
