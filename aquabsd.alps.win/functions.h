@@ -398,6 +398,16 @@ dynamic int loop(win_t* win) {
 	return 0; // no more events to process
 }
 
+dynamic int grab_focus(win_t* win) {
+	// this could be helpful in the future:
+	// https://github.com/Cloudef/monsterwm-xcb/blob/master/monsterwm.c
+
+	xcb_set_input_focus(win->connection, XCB_INPUT_FOCUS_PARENT, win->win, XCB_CURRENT_TIME);
+	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_STACK_MODE, (unsigned[]) { XCB_STACK_MODE_ABOVE });
+
+	return 0;
+}
+
 dynamic int get_x_pos(win_t* win) {
 	return win->x_pos;
 }
