@@ -158,11 +158,21 @@ static void rem_win(wm_t* wm, win_t* win) {
 static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 	wm_t* wm = _wm;
 	
+	// window management events
 	// all of the definitions of these structs can be found in <xcb/xproto.h>
 
 	if (type == XCB_CREATE_NOTIFY) {
 		xcb_create_notify_event_t* detail = (void*) event;
-		
+
+		const uint32_t attribs[] = {
+			XCB_EVENT_MASK_FOCUS_CHANGE
+		};
+
+		// make it so that we receive this window's mouse events too
+
+		xcb_change_window_attributes(wm->root->connection, detail->window, XCB_CW_EVENT_MASK, attribs);
+		xcb_grab_button(wm->root->connection, 1, detail->window, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+
 		win_t* win = add_win(wm, detail->window);
 		WIN_CONFIG
 	}
@@ -190,8 +200,18 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		modify_win(wm, win);
 	}
 
-	else {
-		printf("unknown %d\n", type);
+	// mouse events
+
+	else if (type == XCB_BUTTON_PRESS) {
+		xcb_button_press_event_t* detail = (void*) event;
+
+		xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME); // pass on event to client
+		// xcb_allow_events(wm->root->connection, XCB_ALLOW_SYNC_POINTER, XCB_CURRENT_TIME); // don't pass on event to client
+	}
+
+	else if (type == XCB_BUTTON_RELEASE) {
+		xcb_button_release_event_t* detail = (void*) event;
+		xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
 	}
 
 	return 0;

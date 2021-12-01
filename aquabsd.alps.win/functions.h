@@ -243,7 +243,7 @@ static int process_events(win_t* win) {
 		else if (type == XCB_BUTTON_PRESS) {
 			xcb_button_press_event_t* detail = (void*) event;
 			xcb_button_t button = detail->detail;
-
+			
 			if (button == 1) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_LEFT  ] = 1;
 			if (button == 3) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_RIGHT ] = 1;
 			if (button == 2) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_MIDDLE] = 1;
@@ -333,7 +333,7 @@ static int process_events(win_t* win) {
 		// if we've got 'wm_event_cb', this means a window manager is attached to us
 		// pass on all the other events we receive to it, it probably knows better what to do with them than us
 
-		else if (win->wm_event_cb) {
+		if (win->wm_event_cb) {
 			win->wm_event_cb(win->wm_object, type, event);
 		}
 	}
