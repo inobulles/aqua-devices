@@ -167,11 +167,11 @@ static void (*glGenTextures) (GLsizei n, GLuint* textures) = NULL;
 static void (*glBindTexture) (GLenum target, GLuint texture) = NULL;
 
 dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
-	xcb_window_t xcb_win = context->draw_win;
-
-	if (win) {
-		xcb_win = aquabsd_alps_win_get_draw_win(win);
+	if (!win) { // this only works sometimes
+		win = context->win;
 	}
+	
+	xcb_window_t xcb_win = aquabsd_alps_win_get_draw_win(win);
 
 	#define CHECK_AND_GET(name) \
 		if (!name) { \
@@ -188,33 +188,53 @@ dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
 		return -1; // well... I guess some of the extensions aren't supported then 🤷
 	}
 
-	if (win->egl_pixmap) {
+	unsigned nvidia = 1;
+
+	if (win->egl_image/* || win->egl_surface*/) {
 		goto bind;
 	}
 
 	win->egl_pixmap = xcb_generate_id(context->win->connection);
-	xcb_composite_name_window_pixmap(context->win->connection, xcb_win, win->egl_pixmap);
+	xcb_void_cookie_t cookie = xcb_composite_name_window_pixmap_checked(context->win->connection, xcb_win, win->egl_pixmap);
 
-	const EGLint attribs[] = {
-		EGL_IMAGE_PRESERVED_KHR, EGL_FALSE,
-		EGL_NONE
-	};
-
-	win->egl_image = eglCreateImageKHR(context->egl_display, EGL_NO_CONTEXT /* don't pass 'context->egl_context' !!! */, EGL_NATIVE_PIXMAP_KHR, (EGLClientBuffer) (intptr_t) win->egl_pixmap, attribs);
-
-	if (win->egl_image == EGL_NO_IMAGE) {
+	if (xcb_request_check(context->win->connection, cookie)) {
+		fprintf(stderr, "[aquabsd.alps.ogl] Failed to create window pixmap. Do you happen to be running MESA and not as a window manager?\n");
 		return -1;
 	}
 
-	glGenTextures(1, &win->egl_texture);
+	if (nvidia) {
+		const EGLint attribs[] = {
+			EGL_IMAGE_PRESERVED_KHR, EGL_FALSE,
+			EGL_NONE
+		};
+
+		win->egl_image = eglCreateImageKHR(context->egl_display, EGL_NO_CONTEXT /* don't pass 'context->egl_context' !!! */, EGL_NATIVE_PIXMAP_KHR, (EGLClientBuffer) (intptr_t) win->egl_pixmap, attribs);
+		xcb_free_pixmap(context->win->connection, win->egl_pixmap);
+
+		if (win->egl_image == EGL_NO_IMAGE) {
+			return -1;
+		}
+
+		glGenTextures(1, &win->egl_texture);
+	}
+
+	// else {
+	// 	win->egl_surface = eglCreatePixmapSurface(context->egl_display, config, win->egl_pixmap, NULL);
+	// }
 
 bind:
 
-	glBindTexture(GL_TEXTURE_EXTERNAL_OES, win->egl_texture);
-	glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, win->egl_image);
+	if (nvidia) {
+		glBindTexture(GL_TEXTURE_EXTERNAL_OES, win->egl_texture);
+		glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, win->egl_image);
 
-	// you must use the 'GL_OES_EGL_image_external' extension to be able to sample from 'samplerExternalOES' samplers:
-	// #extension GL_OES_EGL_image_external : require
+		// you must use the 'GL_OES_EGL_image_external' extension to be able to sample from 'samplerExternalOES' samplers:
+		// #extension GL_OES_EGL_image_external : require
+	}
+
+	// else {
+	// 	eglBindTexImage(context->egl_display, win->egl_surface, EGL_BACK_BUFFER /* this argument doesn't seem to be correctly documented by Khronos */);
+	// }
 
 	return 0;
 }

@@ -69,6 +69,7 @@ struct aquabsd_alps_win_t {
 	xcb_pixmap_t egl_pixmap;
 	uint32_t /* GLuint */ egl_texture;
 	void* /* EGLImageKHR */ egl_image;
+	// void* /* EGLSurface */ egl_surface;
 
 	// potential WM stuff, if needed
 	// these fields are used by the aquabsd.alps.wm device, and we should use them for what they are intended
