@@ -59,6 +59,8 @@ static void update_client_list(wm_t* wm) {
 
 static win_t* add_win(wm_t* wm, xcb_window_t id) {
 	win_t* win = calloc(1, sizeof *win);
+
+	win->connection = wm->root->connection;
 	win->win = id;
 
 	if (!wm->win_head) {
@@ -260,16 +262,21 @@ dynamic wm_t* create(void) {
 	// we also need to specify which atoms are supported in '_NET_SUPPORTED'
 
 	wm->client_list_atom = get_intern_atom(wm, "_NET_CLIENT_LIST");
-	xcb_atom_t supported_atoms_list_atom = get_intern_atom(wm, "_NET_SUPPORTED");
+	wm->supported_atoms_list_atom = get_intern_atom(wm, "_NET_SUPPORTED");
+
+	aquabsd_alps_win_get_ewmh_atoms(wm->root);
 
 	const xcb_atom_t supported_atoms[] = {
-		supported_atoms_list_atom,
+		wm->supported_atoms_list_atom,
 		wm->client_list_atom,
-		get_intern_atom(wm, "_NET_WM_NAME"),
-		get_intern_atom(wm, "_NET_WM_VISIBLE_NAME")
+
+		// from aquabsd.alps.win
+
+		wm->root->_net_wm_visible_name_atom,
+		wm->root->_net_wm_name_atom,
 	};
 
-	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supported_atoms_list_atom, XCB_ATOM_ATOM, 32, sizeof(supported_atoms) / sizeof(*supported_atoms), supported_atoms);
+	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->supported_atoms_list_atom, XCB_ATOM_ATOM, 32, sizeof(supported_atoms) / sizeof(*supported_atoms), supported_atoms);
 
 	// now, we move on to '_NET_SUPPORTING_WM_CHECK'
 	// this is a bit weird, but it's all specified by the EWMH spec: https://developer.gnome.org/wm-spec/

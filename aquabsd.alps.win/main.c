@@ -6,6 +6,7 @@ typedef enum {
 	CMD_DELETE      = 0x6477, // 'dw'
 
 	CMD_SET_CAPTION = 0x7363, // 'sc'
+	CMD_GET_CAPTION = 0x6763, // 'gc'
 
 	CMD_REGISTER_CB = 0x7263, // 'rc'
 	CMD_LOOP        = 0x6C6F, // 'lo'
@@ -62,7 +63,12 @@ uint64_t send(uint16_t _cmd, void* data) {
 		const char* caption = (void*) args[1];
 
 		return set_caption(win, caption);
-	}	
+	}
+
+	else if (cmd == CMD_GET_CAPTION) {
+		win_t* win = (void*) args[0];
+		return (uint64_t) get_caption(win);
+	}
 
 	else if (cmd == CMD_REGISTER_CB) {
 		win_t* win = (void*) args[0];

@@ -15,6 +15,27 @@ static inline xcb_atom_t get_intern_atom(win_t* win, const char* name) {
 	return xcb_intern_atom_reply(win->connection, atom_cookie, NULL)->atom;
 }
 
+static inline char* atom_to_str(win_t* win, xcb_atom_t atom) {
+	if (!atom) {
+		return NULL;
+	}
+
+	xcb_get_property_cookie_t cookie = xcb_get_property(win->connection, 0, win->win, atom, XCB_ATOM_STRING, 0, ~0);
+
+	xcb_generic_error_t* error;
+	xcb_get_property_reply_t* reply = xcb_get_property_reply(win->connection, cookie, &error);
+
+	if (error) {
+		return NULL;
+	}
+
+	unsigned len = xcb_get_property_value_length(reply);
+	char* str = calloc(1, len + 1); // +1 because no guarantee this value is null-terminated
+	memcpy(str, xcb_get_property_value(reply), len);
+
+	return str;
+}
+
 // functions exposed to devices & apps
 
 dynamic int delete(win_t* win) {
@@ -87,12 +108,12 @@ static win_t* _create_setup(void) {
 	}
 
 	XSetEventQueueOwner(win->display, XCBOwnsEventQueue);
-	
+
 	// get screen
 
 	xcb_screen_iterator_t it = xcb_setup_roots_iterator(xcb_get_setup(win->connection));
 	for (int i = win->default_screen; it.rem && i > 0; i--, xcb_screen_next(&it));
-	
+
 	win->screen = it.data;
 
 	// register a new mouse
@@ -108,6 +129,11 @@ static win_t* _create_setup(void) {
 	}
 
 	return win;
+}
+
+static void _get_ewmh_atoms(win_t* win) {
+	win->_net_wm_visible_name_atom = get_intern_atom(win, "_NET_WM_VISIBLE_NAME");
+	win->_net_wm_name_atom = get_intern_atom(win, "_NET_WM_NAME"); // EWMH spec says it's better to use this than just 'WM_NAME'
 }
 
 dynamic win_t* create(unsigned x_res, unsigned y_res) {
@@ -133,13 +159,18 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 		0, 0, win->x_res, win->y_res, 0, // window geometry
 		XCB_WINDOW_CLASS_INPUT_OUTPUT, win->screen->root_visual,
 		XCB_CW_EVENT_MASK, win_attribs);
-	
-	// setup 'WM_DELETE_WINDOW' protocol (yes this is dumb, thank you XCB & X11)
 
-	xcb_atom_t wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
+	// get the atoms we'll probably need
+
+	win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
 	win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
 
-	xcb_icccm_set_wm_protocols(win->connection, win->win, wm_protocols_atom, 1, &win->wm_delete_win_atom);
+	_get_ewmh_atoms(win);
+
+	// setup 'WM_DELETE_WINDOW' protocol (yes this is dumb, thank you XCB & X11)
+	// also show we support all those other atoms
+
+	xcb_icccm_set_wm_protocols(win->connection, win->win, win->wm_protocols_atom, 1, &win->wm_delete_win_atom);
 
 	// set sensible minimum and maximum sizes for the window
 
@@ -163,15 +194,36 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 dynamic int set_caption(win_t* win, const char* caption) {
 	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
 
-	xcb_atom_t atom = get_intern_atom(win, "_NET_WM_NAME"); // EWMH spec says it's better to use this than just 'WM_NAME'
-	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, atom, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
-
-	atom = get_intern_atom(win, "_NET_WM_VISIBLE_NAME");
-	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, atom, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
+	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, win->_net_wm_name_atom, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
+	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, win->_net_wm_visible_name_atom, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
 
 	xcb_flush(win->connection);
 
 	return 0;
+}
+
+dynamic char* get_caption(win_t* win) {
+	char* caption = NULL;
+
+	// first try '_NET_WM_VISIBLE_NAME'
+
+	if ((caption = atom_to_str(win, win->_net_wm_visible_name_atom))) {
+		return caption;
+	}
+
+	// then, '_NET_WM_NAME'
+
+	if ((caption = atom_to_str(win, win->_net_wm_name_atom))) {
+		return caption;
+	}
+
+	// if all else fails, try 'WM_NAME'
+
+	if ((caption = atom_to_str(win, XCB_ATOM_WM_NAME))) {
+		return caption;
+	}
+
+	return NULL;
 }
 
 dynamic int register_cb(win_t* win, cb_t type, uint64_t cb, uint64_t param) {
@@ -243,7 +295,7 @@ static int process_events(win_t* win) {
 		else if (type == XCB_BUTTON_PRESS) {
 			xcb_button_press_event_t* detail = (void*) event;
 			xcb_button_t button = detail->detail;
-			
+
 			if (button == 1) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_LEFT  ] = 1;
 			if (button == 3) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_RIGHT ] = 1;
 			if (button == 2) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_MIDDLE] = 1;
@@ -272,14 +324,14 @@ static int process_events(win_t* win) {
 
 		else if (type == XCB_LEAVE_NOTIFY) {
 			xcb_leave_notify_event_t* detail = (void*) event;
-			
+
 			win->mouse_x = detail->event_x;
 			win->mouse_y = detail->event_y;
 		}
 
 		else if (type == XCB_MOTION_NOTIFY) {
 			xcb_motion_notify_event_t* detail = (void*) event;
-			
+
 			win->mouse_x = detail->event_x;
 			win->mouse_y = detail->event_y;
 		}
@@ -295,7 +347,7 @@ static int process_events(win_t* win) {
 			if (index >= 0) {
 				win->kbd_buttons[index] = 1;
 			}
-			
+
 			// get unicode character and append it to the buffer
 			// XCB annoyingly doesn't have a function to do this, so we'll need to use Xlib to help us
 			// I'll stop my comment right here before I start ranting about XCB
@@ -314,7 +366,7 @@ static int process_events(win_t* win) {
 
 			unsigned prev_buf_len = win->kbd_buf_len;
 			win->kbd_buf_len += len;
-			
+
 			win->kbd_buf = realloc(win->kbd_buf, win->kbd_buf_len);
 			XLookupString(&xlib_event, win->kbd_buf + prev_buf_len, len, NULL, NULL);
 		}
@@ -366,6 +418,10 @@ dynamic int get_y_res(win_t* win) {
 
 dynamic win_t* create_setup(void) {
 	return _create_setup();
+}
+
+dynamic void get_ewmh_atoms(win_t* win) {
+	_get_ewmh_atoms(win);
 }
 
 dynamic int register_dev_cb(win_t* win, cb_t type, int (*cb) (win_t* win, void* param, uint64_t cb, uint64_t cb_param), void* param) {

@@ -39,7 +39,13 @@ struct aquabsd_alps_win_t {
 	xcb_window_t win;
 	xcb_window_t auxiliary; // in case we wanted to process events from one window but draw to another
 
+	// atoms
+
+	xcb_atom_t wm_protocols_atom;
 	xcb_atom_t wm_delete_win_atom;
+
+	xcb_atom_t _net_wm_visible_name_atom;
+	xcb_atom_t _net_wm_name_atom;
 
 	// app client callbacks
 	// a bit of data-orientated design here ;)
@@ -107,6 +113,8 @@ static unsigned (*aquabsd_alps_win_get_y_res) (aquabsd_alps_win_t* win);
 // functions exposed exclusively to devices
 
 static aquabsd_alps_win_t* (*aquabsd_alps_win_create_setup) (void);
+static void (*aquabsd_alps_win_get_ewmh_atoms) (aquabsd_alps_win_t* win);
+
 static int (*aquabsd_alps_win_register_dev_cb) (aquabsd_alps_win_t* win, aquabsd_alps_win_cb_t type, int (*cb) (aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param), void* param);
 
 static xcb_window_t (*aquabsd_alps_win_get_draw_win) (aquabsd_alps_win_t* win);

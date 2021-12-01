@@ -20,7 +20,9 @@ typedef struct {
 	// X11 atoms (used for communicating information between clients)
 
 	xcb_window_t support_win;
+
 	xcb_atom_t client_list_atom;
+	xcb_atom_t supported_atoms_list_atom;
 
 	// doubly-linked list with all windows
 
