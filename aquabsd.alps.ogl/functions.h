@@ -42,7 +42,9 @@ dynamic int delete(context_t* context) {
 
 dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	context_t* context = calloc(1, sizeof *context);
-	context->backend.win = win;
+	
+	context->win = win;
+	context->draw_win = aquabsd_alps_win_get_draw_win(win);
 
 	context->x_res = win->x_res;
 	context->y_res = win->y_res;
@@ -110,7 +112,7 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 		EGL_NONE
 	};
 
-	context->egl_surface = eglCreateWindowSurface(context->egl_display, config, win->win, surface_attribs);
+	context->egl_surface = eglCreateWindowSurface(context->egl_display, config, context->draw_win, surface_attribs);
 
 	if (!context->egl_surface) {
 		FATAL_ERROR("Failed to create EGL surface\n")
@@ -165,10 +167,10 @@ static void (*glGenTextures) (GLsizei n, GLuint* textures) = NULL;
 static void (*glBindTexture) (GLenum target, GLuint texture) = NULL;
 
 dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
-	aquabsd_alps_win_t* context_win = context->backend.win;
-	
-	if (!win) {
-		win = context_win;
+	xcb_window_t xcb_win = context->draw_win;
+
+	if (win) {
+		xcb_win = aquabsd_alps_win_get_draw_win(win);
 	}
 
 	#define CHECK_AND_GET(name) \
@@ -190,8 +192,8 @@ dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
 		goto bind;
 	}
 
-	win->egl_pixmap = xcb_generate_id(context_win->connection);
-	xcb_composite_name_window_pixmap(context_win->connection, win->win, win->egl_pixmap);
+	win->egl_pixmap = xcb_generate_id(context->win->connection);
+	xcb_composite_name_window_pixmap(context->win->connection, xcb_win, win->egl_pixmap);
 
 	const EGLint attribs[] = {
 		EGL_IMAGE_PRESERVED_KHR, EGL_FALSE,

@@ -6,9 +6,10 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
+// TODO is this backend stuff ever even necessary?
+
 typedef enum {
 	AQUABSD_ALPS_OGL_CONTEXT_TYPE_WIN,
-	AQUABSD_ALPS_OGL_CONTEXT_TYPE_WM,
 	AQUABSD_ALPS_OGL_CONTEXT_TYPE_LEN,
 } aquabsd_alps_ogl_context_type_t;
 
@@ -19,9 +20,8 @@ typedef struct {
 
 	aquabsd_alps_ogl_context_type_t backend_type;
 
-	union { // TODO is this union ever really necessary?
-		aquabsd_alps_win_t* win;
-	} backend;
+	aquabsd_alps_win_t* win;
+	xcb_window_t draw_win;
 
 	// EGL stuff
 

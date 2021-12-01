@@ -326,7 +326,11 @@ static int process_events(win_t* win) {
 }
 
 dynamic int loop(win_t* win) {
-	while (process_events(win));
+	while (process_events(win)) {
+		if (win->wm_object) {
+			call_cb(win, CB_DRAW);
+		}
+	}
 	return 0; // no more events to process
 }
 
@@ -346,4 +350,12 @@ dynamic int register_dev_cb(win_t* win, cb_t type, int (*cb) (win_t* win, void* 
 	win->dev_cb_params[type] = param;
 
 	return 0;
+}
+
+dynamic xcb_window_t get_draw_win(win_t* win) {
+	if (win->auxiliary) {
+		return win->auxiliary;
+	}
+
+	return win->win;
 }

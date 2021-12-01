@@ -30,6 +30,7 @@ struct aquabsd_alps_wm_win_t { // this is all the WM really cares about as for w
 
 typedef struct {
 	aquabsd_alps_win_t* root;
+	unsigned compositing; // explained in more detail in 'make_compositing'
 	
 	// X11 atoms (used for communicating information between clients)
 

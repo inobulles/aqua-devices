@@ -2,17 +2,17 @@
 #include <aquabsd.alps.wm/functions.h>
 
 typedef enum {
-	CMD_CREATE       = 0x6377, // 'cw'
-	CMD_DELETE       = 0x6477, // 'dw'
+	CMD_CREATE           = 0x6377, // 'cw'
+	CMD_DELETE           = 0x6477, // 'dw'
 
-	CMD_GET_ROOT_WIN = 0x7277, // 'rw'
+	CMD_GET_ROOT_WIN     = 0x7277, // 'rw'
 
-	CMD_GET_X_RES    = 0x7872, // 'xr'
-	CMD_GET_Y_RES    = 0x7972, // 'yr'
+	CMD_GET_X_RES        = 0x7872, // 'xr'
+	CMD_GET_Y_RES        = 0x7972, // 'yr'
 
-	CMD_REGISTER_CB  = 0x7263, // 'rc'
+	CMD_REGISTER_CB      = 0x7263, // 'rc'
 
-	CMD_GET_OVERLAY  = 0x6F77, // 'ow'
+	CMD_MAKE_COMPOSITING = 0x6D63, // 'mc'
 } cmd_t;
 
 int load(
@@ -74,9 +74,9 @@ uint64_t send(uint16_t _cmd, void* data) {
 		return register_cb(wm, type, cb, param);
 	}
 
-	else if (cmd == CMD_GET_OVERLAY) {
+	else if (cmd == CMD_MAKE_COMPOSITING) {
 		wm_t* wm = (void*) args[0];
-		return (uint64_t) get_overlay_win(wm);
+		return (uint64_t) make_compositing(wm);
 	}
 	
 	return -1;

@@ -288,7 +288,7 @@ dynamic int register_cb(wm_t* wm, cb_t type, uint64_t cb, uint64_t param) {
 
 // this function is for compositing window managers
 
-dynamic aquabsd_alps_win_t* get_overlay_win(wm_t* wm) {
+dynamic int make_compositing(wm_t* wm) {
 	// make it so that our compositing window manager can be recognized as such by other processes
 
 	xcb_window_t screen_owner = create_dumb_win(wm);
@@ -326,22 +326,12 @@ dynamic aquabsd_alps_win_t* get_overlay_win(wm_t* wm) {
 	xcb_shape_mask(wm->root->connection, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, overlay_win, 0, 0, 0);
 	xcb_shape_rectangles(wm->root->connection, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_INPUT, XCB_CLIP_ORDERING_UNSORTED, overlay_win, 0, 0, 0, NULL);
 
-	// phew! now, we simply create an output window with the help of 'aquabsd.alps.win'
-	// this window shouldn't be used for events or anything of the sorts, only for drawing
+	// phew! now, we simply set the auxiliary window (the draw window) of the root to our overlay
+	// this window shouldn't be used for events or anything of the sorts, only for drawing, which is why it mustn't replace the primary window
 	// use the root window for events instead
 
-	aquabsd_alps_win_t* win = calloc(1, sizeof *win);
+	wm->root->auxiliary = overlay_win;
+	wm->compositing = 1;
 
-	win->x_res = wm->root->x_res;
-	win->y_res = wm->root->y_res;
-
-	win->display = wm->root->display;
-	win->default_screen = wm->root->default_screen;
-
-	win->connection = wm->root->connection;
-	win->screen = wm->root->screen;
-
-	win->win = overlay_win;
-
-	return win;
+	return 0;
 }

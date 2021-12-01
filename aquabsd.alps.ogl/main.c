@@ -23,6 +23,7 @@ int load(
 
 	if (win_device != -1) {
     	aquabsd_alps_win_register_dev_cb = kos_load_device_function(win_device, "register_dev_cb");
+		aquabsd_alps_win_get_draw_win = kos_load_device_function(win_device, "get_draw_win");
 	}
 
     return 0;
