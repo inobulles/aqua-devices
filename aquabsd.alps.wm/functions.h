@@ -84,6 +84,13 @@ static win_t* add_win(wm_t* wm, xcb_window_t id) {
 }
 
 static win_t* search_win(wm_t* wm, xcb_window_t id) {
+	// in a compositing window manager, this means we're dealing with the overlay
+	// prevent that
+
+	if (id == wm->root->auxiliary) {
+		return NULL;
+	}
+
 	win_t* win = NULL;
 	
 	for (win = wm->win_head; win; win = win->next) {
@@ -100,10 +107,7 @@ static win_t* search_win(wm_t* wm, xcb_window_t id) {
 }
 
 static void show_win(wm_t* wm, win_t* win) {
-	// in a compositing window manager, this means we're trying to show the overlay
-	// prevent that
-
-	if (win->win == wm->root->auxiliary) {
+	if (!win) {
 		return;
 	}
 
@@ -112,16 +116,28 @@ static void show_win(wm_t* wm, win_t* win) {
 }
 
 static void hide_win(wm_t* wm, win_t* win) {
+	if (!win) {
+		return;
+	}
+
 	win->visible = 0;
 	call_cb(wm, win, CB_HIDE);
 }
 
 static void modify_win(wm_t* wm, win_t* win) {
+	if (!win) {
+		return;
+	}
+
 	win->pixmap_modified = 1;
 	call_cb(wm, win, CB_MODIFY);
 }
 
 static void rem_win(wm_t* wm, win_t* win) {
+	if (!win) {
+		return;
+	}
+
 	// was the window at the head or tail of the parent?
 	// if not, stitch the previous/next window to the next/previous window in the list
 
@@ -166,14 +182,22 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 	if (type == XCB_CREATE_NOTIFY) {
 		xcb_create_notify_event_t* detail = (void*) event;
 
+		if (detail->window == wm->root->auxiliary) {
+			return 0;
+		}
+
 		const uint32_t attribs[] = {
 			XCB_EVENT_MASK_FOCUS_CHANGE
 		};
 
 		// make it so that we receive this window's mouse events too
+		// this is saying we want focus change and button events from the window
 
-		xcb_change_window_attributes(wm->root->connection, detail->window, XCB_CW_EVENT_MASK, attribs);
-		xcb_grab_button(wm->root->connection, 1, detail->window, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+		XSelectInput(wm->root->display, detail->window, FocusChangeMask);
+		//xcb_change_window_attributes(wm->root->connection, detail->window, XCB_CW_EVENT_MASK, attribs);
+		xcb_grab_button(wm->root->connection, 1, detail->window, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+		//xcb_grab_pointer(wm->root->connection, 1, detail->window, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+		XGrabButton(wm->root->display, AnyButton, AnyModifier, detail->window, 1, ButtonPressMask | ButtonReleaseMask | ButtonMotionMask, GrabModeSync, GrabModeSync, 0, 0);
 
 		win_t* win = add_win(wm, detail->window);
 		WIN_CONFIG
@@ -247,11 +271,16 @@ dynamic wm_t* create(void) {
 		//XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE
 		XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
 		XCB_EVENT_MASK_EXPOSURE |
-		XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION |
+		XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION |
 		XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE
 	};
 
 	xcb_change_window_attributes(wm->root->connection, wm->root->win, XCB_CW_EVENT_MASK, attribs);
+
+	// grab the pointer
+
+	//xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+	//xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
 
 	// grab the keys we are interested in as a window manager (i.e. those with the super key modifier)
 
