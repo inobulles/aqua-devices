@@ -35,7 +35,7 @@ static int validate_pkg(struct dirent* pkg) {
 	return 1;
 }
 
-int app_count(void) {
+static int read_apps(char*** list_ref) {
 	// make sure an APPS_PATH directory
 
 	if (mkdir(APPS_PATH, 0700) < 0 && errno != EEXIST) {
@@ -54,13 +54,37 @@ int app_count(void) {
 	struct dirent* app;
 
 	while ((app = readdir(dp))) {
-		count += validate_pkg(app);
+		if (!validate_pkg(app)) {
+			continue;
+		}
+
+		count += 1;
+		
+		if (!list_ref) {
+			continue; // don't go any further if this is just a dryrun
+		}
+
+		char* path = malloc(strlen(APPS_PATH) + strlen(app->d_name) + 2 /* strlen("/") + 1 */);
+		sprintf(path, "%s/%s", APPS_PATH, app->d_name);
+
+		*list_ref = realloc(*list_ref, count * sizeof **list_ref);
+		(*list_ref)[count - 1] = path; // apparently indexing has a higher precedence than deferencing 🤷
 	}
 
 	closedir(dp);
 	return count;
 }
 
+int app_count(void) {
+	return read_apps(NULL);
+}
+
 char** app_list(void) {
-	return NULL;
+	char** list = NULL;
+	
+	if (read_apps(&list) < 0) {
+		return NULL;
+	}
+
+	return list;
 }
