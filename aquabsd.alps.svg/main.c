@@ -1,32 +1,41 @@
 #include <aquabsd.alps.svg/private.h>
 #include <aquabsd.alps.svg/functions.h>
 
-#define CMD_LOAD_SVG 0x6C73 // 'ls'
-#define CMD_DRAW_SVG 0x6473 // 'ds'
-#define CMD_FREE_SVG 0x6673 // 'fs'
+typedef enum {
+	CMD_LOAD_SVG = 0x6C73, // 'ls'
+	CMD_LOAD_STR = 0x6C64, // 'ld'
+	CMD_DRAW_SVG = 0x6473, // 'ds'
+	CMD_FREE_SVG = 0x6673, // 'fs'
+} cmd_t;
 
-uint64_t send(uint16_t command, void* data) {
-	uint64_t* arguments = (uint64_t*) data;
+uint64_t send(uint16_t _cmd, void* data) {
+	cmd_t cmd = _cmd;
+	uint64_t* args = data;
 
-	if (command == CMD_LOAD_SVG) {
-		const char* path = (const char*) arguments[0];
+	if (cmd == CMD_LOAD_SVG) {
+		const char* path = (void*) args[0];
 		return (uint64_t) load_svg(path);
 	}
 
-	else if (command == CMD_DRAW_SVG) {
-		svg_t* svg = (svg_t*) arguments[0];
-		uint64_t size = arguments[1];
+	else if (cmd == CMD_LOAD_STR) {
+		const char* str = (void*) args[0];
+		return (uint64_t) load_svg_str(str);
+	}
 
-		uint8_t** bitmap_reference = (uint8_t**) arguments[2];
+	else if (cmd == CMD_DRAW_SVG) {
+		svg_t* svg = (void*) args[0];
+		uint64_t size = args[1];
+
+		uint8_t** bitmap_reference = (void*) args[2];
 		
-		uint64_t* width_reference  = (uint64_t*) arguments[3];
-		uint64_t* height_reference = (uint64_t*) arguments[4];
+		uint64_t* width_reference  = (void*) args[3];
+		uint64_t* height_reference = (void*) args[4];
 
 		return (uint64_t) draw_svg(svg, size, bitmap_reference, width_reference, height_reference);
 	}
 
-	else if (command == CMD_FREE_SVG) {
-		svg_t* svg = (svg_t*) arguments[0];
+	else if (cmd == CMD_FREE_SVG) {
+		svg_t* svg = (svg_t*) args[0];
 		return (uint64_t) free_svg(svg);
 	}
 

@@ -11,14 +11,7 @@ dynamic int free_svg(svg_t* svg) {
 	return 0;
 }
 
-dynamic svg_t* load_svg(const char* path) {
-	GError* error = NULL;
-	RsvgHandle* handle = rsvg_handle_new_from_file(path, &error);
-
-	if (error) {
-		return (svg_t*) 0;
-	}
-
+static svg_t* _load_svg(RsvgHandle* handle) {
 	svg_t* svg = calloc(1, sizeof *svg);
 	svg->handle = handle;
 
@@ -33,11 +26,32 @@ dynamic svg_t* load_svg(const char* path) {
 #endif
 
 	return svg;
+}
 
-error:
+// load_svg and load_svg_str are both just wrappers around _load_svg
 
-	if (svg) free_svg(svg);
-	return (svg_t*) 0;
+dynamic svg_t* load_svg(const char* path) {
+	GError* error = NULL;
+	RsvgHandle* handle = rsvg_handle_new_from_file(path, &error);
+
+	if (error) {
+		return NULL;
+	}
+
+	return _load_svg(handle);
+}
+
+dynamic svg_t* load_svg_str(const char* str) {
+	gsize len = strlen(str);
+
+	GError* error = NULL;
+	RsvgHandle* handle = rsvg_handle_new_from_data((const guint8*) str, len, &error);
+
+	if (error) {
+		return NULL;
+	}
+
+	return _load_svg(handle);
 }
 
 dynamic int draw_svg(svg_t* svg, uint64_t size, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference) {
