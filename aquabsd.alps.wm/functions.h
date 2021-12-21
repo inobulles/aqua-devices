@@ -186,18 +186,15 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 			return 0;
 		}
 
+		// make it so that we receive this window's mouse events too
+		// this is saying we want focus change and button events from the window
+
 		const uint32_t attribs[] = {
 			XCB_EVENT_MASK_FOCUS_CHANGE
 		};
 
-		// make it so that we receive this window's mouse events too
-		// this is saying we want focus change and button events from the window
-
-		XSelectInput(wm->root->display, detail->window, FocusChangeMask);
-		//xcb_change_window_attributes(wm->root->connection, detail->window, XCB_CW_EVENT_MASK, attribs);
+		xcb_change_window_attributes(wm->root->connection, detail->window, XCB_CW_EVENT_MASK, attribs);
 		xcb_grab_button(wm->root->connection, 1, detail->window, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
-		//xcb_grab_pointer(wm->root->connection, 1, detail->window, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
-		XGrabButton(wm->root->display, AnyButton, AnyModifier, detail->window, 1, ButtonPressMask | ButtonReleaseMask | ButtonMotionMask, GrabModeSync, GrabModeSync, 0, 0);
 
 		win_t* win = add_win(wm, detail->window);
 		WIN_CONFIG
