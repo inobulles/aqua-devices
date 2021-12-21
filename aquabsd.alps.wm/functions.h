@@ -175,7 +175,7 @@ static void rem_win(wm_t* wm, win_t* win) {
 
 static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 	wm_t* wm = _wm;
-	
+
 	// window management events
 	// all of the definitions of these structs can be found in <xcb/xproto.h>
 

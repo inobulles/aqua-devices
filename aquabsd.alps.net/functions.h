@@ -18,7 +18,7 @@ dynamic response_t* get_response(const char* url) {
 
 	if (!resp->fp) {
 		// TODO actually get response code and return NULL here instead
-		resp->code = 404;
+		resp->status = 404;
 	}
 
 	return resp;

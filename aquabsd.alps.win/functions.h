@@ -273,122 +273,169 @@ static void invalidate(win_t* win) {
 	xcb_flush(win->connection);
 }
 
+// process a specific event
+
+static int __process_event(win_t* win, xcb_generic_event_t* event, int type) {
+	if (type == XCB_EXPOSE) {
+		call_cb(win, CB_DRAW);
+	}
+
+	else if (type == XCB_CLIENT_MESSAGE) {
+		xcb_client_message_event_t* specific = (void*) event;
+
+		if (specific->data.data32[0] == win->wm_delete_win_atom) {
+			return -1;
+		}
+	}
+
+	// mouse button press/release events
+
+	else if (type == XCB_BUTTON_PRESS) {
+		xcb_button_press_event_t* detail = (void*) event;
+		xcb_button_t button = detail->detail;
+
+		if (button == 1) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_LEFT  ] = 1;
+		if (button == 3) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_RIGHT ] = 1;
+		if (button == 2) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_MIDDLE] = 1;
+
+		if (button == 5) win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] = -1.0;
+		if (button == 4) win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] =  1.0;
+
+		// cf. process_events
+
+		if (win->wm_event_cb) {
+			win->wm_prev_button = button;
+		}
+	}
+
+	else if (type == XCB_BUTTON_RELEASE) {
+		xcb_button_release_event_t* detail = (void*) event;
+		xcb_button_t button = detail->detail;
+
+		if (button == 1) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_LEFT  ] = 0;
+		if (button == 3) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_RIGHT ] = 0;
+		if (button == 2) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_MIDDLE] = 0;
+	}
+
+	// mouse motion events
+
+	else if (type == XCB_ENTER_NOTIFY) {
+		xcb_enter_notify_event_t* detail = (void*) event;
+
+		win->mouse_x = detail->event_x;
+		win->mouse_y = detail->event_y;
+	}
+
+	else if (type == XCB_LEAVE_NOTIFY) {
+		xcb_leave_notify_event_t* detail = (void*) event;
+
+		win->mouse_x = detail->event_x;
+		win->mouse_y = detail->event_y;
+	}
+
+	else if (type == XCB_MOTION_NOTIFY) {
+		xcb_motion_notify_event_t* detail = (void*) event;
+
+		win->mouse_x = detail->event_x;
+		win->mouse_y = detail->event_y;
+	}
+
+	// keyboard button press/release events
+
+	else if (type == XCB_KEY_PRESS) {
+		xcb_key_press_event_t* detail = (void*) event;
+		xcb_keycode_t key = detail->detail;
+
+		int index = x11_kbd_map(key);
+
+		if (index >= 0) {
+			win->kbd_buttons[index] = 1;
+		}
+
+		// get unicode character and append it to the buffer
+		// XCB annoyingly doesn't have a function to do this, so we'll need to use Xlib to help us
+		// I'll stop my comment right here before I start ranting about XCB
+
+		XKeyEvent xlib_event;
+
+		xlib_event.display = win->display;
+		xlib_event.keycode = detail->detail;
+		xlib_event.state = detail->state;
+
+		int len = XLookupString(&xlib_event, NULL, 0, NULL, NULL);
+
+		if (len <= 0) {
+			return 0;
+		}
+
+		unsigned prev_buf_len = win->kbd_buf_len;
+		win->kbd_buf_len += len;
+
+		win->kbd_buf = realloc(win->kbd_buf, win->kbd_buf_len);
+		XLookupString(&xlib_event, win->kbd_buf + prev_buf_len, len, NULL, NULL);
+	}
+
+	else if (type == XCB_KEY_RELEASE) {
+		xcb_key_release_event_t* detail = (void*) event;
+		xcb_keycode_t key = detail->detail;
+
+		int index = x11_kbd_map(key);
+
+		if (index >= 0) {
+			win->kbd_buttons[index] = 0;
+		}
+	}
+
+	// if we've got 'wm_event_cb', this means a window manager is attached to us
+	// pass on all the other events we receive to it, it probably knows better what to do with them than us
+
+	if (win->wm_event_cb) {
+		return win->wm_event_cb(win->wm_object, type, event);
+	}
+
+	return 0;
+}
+
+// poll for events until there are none left (fancy wrapper around __process_event basically)
+
 static int process_events(win_t* win) {
+	// if we've got 'wm_event_cb', this means a window manager is attached to us
+	// XXX because of obscure reasons I'm not too sure of (read: not at all sure of), XCB window managers won't catch release events, *sometimes*
+	//     works fine with Xlib (cf. x-compositing-wm), but idk XCB just doesn't
+	//     and because XCB and X11 in general is a steaming pile of shit documentation-wise and in terms of debugging, this is the solution I've came up with for the meantime 💩
+
+	unsigned cancel_button_release = 0;
+
+	if (win->wm_event_cb) {
+		xcb_query_pointer_cookie_t cookie = xcb_query_pointer(win->connection, win->win);
+		
+		xcb_generic_error_t* error;
+		xcb_query_pointer_reply_t* reply = xcb_query_pointer_reply(win->connection, cookie, &error);
+
+		if (!error && reply->mask == 0 && win->wm_prev_button) { // simulate XCB_BUTTON_RELEASE
+			xcb_button_release_event_t event = {
+				.detail = win->wm_prev_button
+			};
+
+			win->wm_prev_button = 0;
+
+			if (__process_event(win, (xcb_generic_event_t*) &event, XCB_BUTTON_RELEASE) == 0) {
+				cancel_button_release = 1; // since we've already processed it, stop it from going through a second time on the off chance it decides to magically work
+			}
+		}
+	}
+
 	for (xcb_generic_event_t* event; (event = xcb_poll_for_event(win->connection)); free(event)) {
 		int type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
 
-		if (type == XCB_EXPOSE) {
-			call_cb(win, CB_DRAW);
-			invalidate(win);
-		}
-
-		else if (type == XCB_CLIENT_MESSAGE) {
-			xcb_client_message_event_t* specific = (void*) event;
-
-			if (specific->data.data32[0] == win->wm_delete_win_atom) {
-				return 0;
-			}
-		}
-
-		// mouse button press/release events
-
-		else if (type == XCB_BUTTON_PRESS) {
-			xcb_button_press_event_t* detail = (void*) event;
-			xcb_button_t button = detail->detail;
-
-			if (button == 1) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_LEFT  ] = 1;
-			if (button == 3) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_RIGHT ] = 1;
-			if (button == 2) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_MIDDLE] = 1;
-
-			if (button == 5) win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] = -1.0;
-			if (button == 4) win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] =  1.0;
-		}
-
-		else if (type == XCB_BUTTON_RELEASE) {
-			xcb_button_release_event_t* detail = (void*) event;
-			xcb_button_t button = detail->detail;
-
-			if (button == 1) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_LEFT  ] = 0;
-			if (button == 3) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_RIGHT ] = 0;
-			if (button == 2) win->mouse_buttons[AQUABSD_ALPS_MOUSE_BUTTON_MIDDLE] = 0;
-		}
-
-		// mouse motion events
-
-		else if (type == XCB_ENTER_NOTIFY) {
-			xcb_enter_notify_event_t* detail = (void*) event;
-
-			win->mouse_x = detail->event_x;
-			win->mouse_y = detail->event_y;
-		}
-
-		else if (type == XCB_LEAVE_NOTIFY) {
-			xcb_leave_notify_event_t* detail = (void*) event;
-
-			win->mouse_x = detail->event_x;
-			win->mouse_y = detail->event_y;
-		}
-
-		else if (type == XCB_MOTION_NOTIFY) {
-			xcb_motion_notify_event_t* detail = (void*) event;
-
-			win->mouse_x = detail->event_x;
-			win->mouse_y = detail->event_y;
-		}
-
-		// keyboard button press/release events
-
-		else if (type == XCB_KEY_PRESS) {
-			xcb_key_press_event_t* detail = (void*) event;
-			xcb_keycode_t key = detail->detail;
-
-			int index = x11_kbd_map(key);
-
-			if (index >= 0) {
-				win->kbd_buttons[index] = 1;
-			}
-
-			// get unicode character and append it to the buffer
-			// XCB annoyingly doesn't have a function to do this, so we'll need to use Xlib to help us
-			// I'll stop my comment right here before I start ranting about XCB
-
-			XKeyEvent xlib_event;
-
-			xlib_event.display = win->display;
-			xlib_event.keycode = detail->detail;
-			xlib_event.state = detail->state;
-
-			int len = XLookupString(&xlib_event, NULL, 0, NULL, NULL);
-
-			if (len <= 0) {
-				continue;
-			}
-
-			unsigned prev_buf_len = win->kbd_buf_len;
-			win->kbd_buf_len += len;
-
-			win->kbd_buf = realloc(win->kbd_buf, win->kbd_buf_len);
-			XLookupString(&xlib_event, win->kbd_buf + prev_buf_len, len, NULL, NULL);
-		}
-
-		else if (type == XCB_KEY_RELEASE) {
-			xcb_key_release_event_t* detail = (void*) event;
-			xcb_keycode_t key = detail->detail;
-
-			int index = x11_kbd_map(key);
-
-			if (index >= 0) {
-				win->kbd_buttons[index] = 0;
-			}
-		}
-
-		// if we've got 'wm_event_cb', this means a window manager is attached to us
-		// pass on all the other events we receive to it, it probably knows better what to do with them than us
-
-		if (win->wm_event_cb) {
-			win->wm_event_cb(win->wm_object, type, event);
+		if (__process_event(win, event, type) < 0) {
+			return 0;
 		}
 	}
+
+	// only invalidate after all events are processed so that we don't get stuck in a loop
+
+	invalidate(win);
 
 	return 1;
 }

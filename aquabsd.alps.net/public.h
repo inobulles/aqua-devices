@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 typedef struct {
-	int code;
+	int status;
 	FILE* fp;
 } aquabsd_alps_net_response_t;
 

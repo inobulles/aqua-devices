@@ -90,6 +90,7 @@ struct aquabsd_alps_win_t {
 	// potential WM stuff, if needed
 	// these fields are used by the aquabsd.alps.wm device, and we should use them for what they are intended
 
+	xcb_button_t wm_prev_button; // cf. process_events
 	void* wm_object;
 	int (*wm_event_cb) (void* _wm, int type, xcb_generic_event_t* event);
 };
