@@ -2,23 +2,24 @@
 #include <aquabsd.alps.win/functions.h>
 
 typedef enum {
-	CMD_CREATE      = 0x6377, // 'cw'
-	CMD_DELETE      = 0x6477, // 'dw'
+	CMD_CREATE       = 0x6377, // 'cw'
+	CMD_DELETE       = 0x6477, // 'dw'
 
-	CMD_SET_CAPTION = 0x7363, // 'sc'
-	CMD_GET_CAPTION = 0x6763, // 'gc'
+	CMD_SET_CAPTION  = 0x7363, // 'sc'
+	CMD_GET_CAPTION  = 0x6763, // 'gc'
 
-	CMD_REGISTER_CB = 0x7263, // 'rc'
-	CMD_LOOP        = 0x6C6F, // 'lo'
+	CMD_REGISTER_CB  = 0x7263, // 'rc'
+	CMD_LOOP         = 0x6C6F, // 'lo'
 
-	CMD_GRAB_FOCUS  = 0x6667, // 'gf'
-	CMD_MOVE        = 0x6D76, // 'mv'
+	CMD_GRAB_FOCUS   = 0x6667, // 'gf'
+	CMD_MOVE         = 0x6D76, // 'mv'
+	CMD_RESIZE       = 0x727A, // 'rz'
 
-	CMD_GET_X_POS   = 0x7870, // 'xp'
-	CMD_GET_Y_POS   = 0x7970, // 'yp'
+	CMD_GET_X_POS    = 0x7870, // 'xp'
+	CMD_GET_Y_POS    = 0x7970, // 'yp'
 
-	CMD_GET_X_RES   = 0x7872, // 'xr'
-	CMD_GET_Y_RES   = 0x7972, // 'yr'
+	CMD_GET_X_RES    = 0x7872, // 'xr'
+	CMD_GET_Y_RES    = 0x7972, // 'yr'
 } cmd_t;
 
 int load(
@@ -100,6 +101,15 @@ uint64_t send(uint16_t _cmd, void* data) {
 		float y = *(float*) &args[2];
 
 		return move(win, x, y);
+	}
+
+	else if (cmd == CMD_RESIZE) {
+		win_t* win = (void*) args[0];
+
+		float x = *(float*) &args[1];
+		float y = *(float*) &args[2];
+
+		return resize(win, x, y);
 	}
 
 	else if (cmd == CMD_GET_X_POS) {

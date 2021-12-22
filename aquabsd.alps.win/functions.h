@@ -470,6 +470,16 @@ dynamic int move(win_t* win, float x, float y) {
 	return 0;
 }
 
+dynamic int resize(win_t* win, float x, float y) {
+	const uint32_t transformed[] = {
+		x * win->wm_x_res,
+		y * win->wm_y_res,
+	};
+
+	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, transformed);
+	return 0;
+}
+
 dynamic int get_x_pos(win_t* win) {
 	return win->x_pos;
 }
