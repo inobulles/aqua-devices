@@ -461,6 +461,8 @@ dynamic int grab_focus(win_t* win) {
 }
 
 dynamic int move(win_t* win, float x, float y) {
+	printf("MOVE %d %f %f %d %d\n", win->win, x, y, win->wm_x_res, win->wm_y_res);
+	
 	const uint32_t transformed[] = {
 		x * win->wm_x_res,
 		y * win->wm_y_res,

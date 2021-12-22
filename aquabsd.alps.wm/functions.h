@@ -171,7 +171,10 @@ static void rem_win(wm_t* wm, win_t* win) {
 	win->y_pos = detail->y; \
 	\
 	win->x_res = detail->width; \
-	win->y_res = detail->height;
+	win->y_res = detail->height; \
+	\
+	win->wm_x_res = wm->root->x_res; \
+	win->wm_y_res = wm->root->y_res;
 
 static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 	wm_t* wm = _wm;
