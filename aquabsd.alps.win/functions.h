@@ -89,7 +89,7 @@ static int x11_kbd_map(xcb_keycode_t key) {
 	return -1;
 }
 
-static win_t* _create_setup(void) {
+static win_t* __create_setup(void) {
 	win_t* win = calloc(1, sizeof *win);
 
 	// get connection to X server
@@ -147,7 +147,7 @@ static void _get_ewmh_atoms(win_t* win) {
 }
 
 dynamic win_t* create(unsigned x_res, unsigned y_res) {
-	win_t* win = _create_setup();
+	win_t* win = __create_setup();
 
 	if (!win) {
 		return NULL;
@@ -507,7 +507,7 @@ dynamic int get_wm_y_res(win_t* win) {
 // functions exposed exclusively to devices
 
 dynamic win_t* create_setup(void) {
-	return _create_setup();
+	return __create_setup();
 }
 
 dynamic void get_ewmh_atoms(win_t* win) {

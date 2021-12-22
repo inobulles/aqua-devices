@@ -256,7 +256,7 @@ dynamic wm_t* create(void) {
 	// get width & height of root window
 
 	wm->root->x_res = wm->root->wm_x_res;
-	wm->root->y_res = wm->root->wm_x_res;
+	wm->root->y_res = wm->root->wm_y_res;
 
 	// TODO make this comment correct
 	// tell X to send us all 'CreateNotify', 'ConfigureNotify', and 'DestroyNotify' events ('SubstructureNotifyMask' also sends back some other events but we're not using those)
@@ -312,7 +312,7 @@ dynamic wm_t* create(void) {
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supporting_wm_check_atom, XCB_ATOM_WINDOW, 32, 1, support_win_list);
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->support_win, supporting_wm_check_atom, XCB_ATOM_WINDOW, 32, 1, support_win_list);
 
-	// TODO get all monitors and their individual resolutions with Xinerama
+	// TODO get all monitors and their individual resolutions with Xinerama (or xrandr? idk whichever one's newer)
 
 	// flush
 

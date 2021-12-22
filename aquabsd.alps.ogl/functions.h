@@ -27,11 +27,15 @@ static int win_cb_draw(aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64
 }
 
 dynamic int delete(context_t* context) {
-	if (context->egl_context) eglDestroyContext(context->egl_display, context->egl_context);
-	if (context->egl_surface) eglDestroySurface(context->egl_display, context->egl_surface);
+	if (context->egl_context) {
+		eglDestroyContext(context->egl_display, context->egl_context);
+	}
+
+	if (context->egl_surface) {
+		eglDestroySurface(context->egl_display, context->egl_surface);
+	}
 
 	free(context);
-
 	return 0;
 }
 
@@ -156,6 +160,7 @@ dynamic void* get_function(context_t* context, const char* name) {
 
 // TODO check if 'EGL_KHR_image_pixmap' extension is supported
 // TODO add this to public.h
+// TODO well idk just clean all of this up basically because this is janky as hell
 
 #include <xcb/xcb.h>
 #include <xcb/composite.h>
