@@ -426,9 +426,18 @@ static int process_events(win_t* win) {
 				xcb_generic_error_t* error;
 				xcb_query_pointer_reply_t* reply = xcb_query_pointer_reply(win->connection, cookie, &error);
 
+				if (!error) { // simulate XCB_MOTION_NOTIFY
+					xcb_motion_notify_event_t event = {
+						.event_x = reply->root_x,
+						.event_y = reply->root_y,
+					};
+
+					__process_event(win, (xcb_generic_event_t*) &event, XCB_MOTION_NOTIFY);
+				}
+
 				if (!error && reply->mask == 0 && win->wm_prev_button) { // simulate XCB_BUTTON_RELEASE
 					xcb_button_release_event_t event = {
-						.detail = win->wm_prev_button
+						.detail = win->wm_prev_button,
 					};
 
 					win->wm_prev_button = 0;
@@ -461,11 +470,9 @@ dynamic int grab_focus(win_t* win) {
 }
 
 dynamic int move(win_t* win, float x, float y) {
-	printf("MOVE %d %f %f %d %d\n", win->win, x, y, win->wm_x_res, win->wm_y_res);
-	
 	const uint32_t transformed[] = {
 		x * win->wm_x_res,
-		y * win->wm_y_res,
+		(1 - y) * win->wm_y_res - win->y_res,
 	};
 
 	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, transformed);
