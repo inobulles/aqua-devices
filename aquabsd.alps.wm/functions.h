@@ -255,11 +255,8 @@ dynamic wm_t* create(void) {
 
 	// get width & height of root window
 
-	xcb_get_geometry_cookie_t root_geom_cookie = xcb_get_geometry(wm->root->connection, wm->root->win);
-	xcb_get_geometry_reply_t* root_geom = xcb_get_geometry_reply(wm->root->connection, root_geom_cookie, NULL);
-
-	wm->root->x_res = root_geom->width;
-	wm->root->y_res = root_geom->height;
+	wm->root->x_res = wm->root->wm_x_res;
+	wm->root->y_res = wm->root->wm_x_res;
 
 	// TODO make this comment correct
 	// tell X to send us all 'CreateNotify', 'ConfigureNotify', and 'DestroyNotify' events ('SubstructureNotifyMask' also sends back some other events but we're not using those)
@@ -332,6 +329,9 @@ dynamic wm_t* create(void) {
 dynamic win_t* get_root_win(wm_t* wm) {
 	return wm->root;
 }
+
+// TODO should these functions be in aquabsd.alps.win?
+//      then, the client can call 'get_root_win' to access the window object and call 'get_x/y_res' on that instead
 
 dynamic unsigned get_x_res(wm_t* wm) {
 	return wm->root->x_res;

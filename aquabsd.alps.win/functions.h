@@ -116,6 +116,16 @@ static win_t* _create_setup(void) {
 
 	win->screen = it.data;
 
+	// get information about the window manager (i.e. the root window)
+
+	xcb_window_t root = win->screen->root;
+
+	xcb_get_geometry_cookie_t root_geom_cookie = xcb_get_geometry(win->connection, root);
+	xcb_get_geometry_reply_t* root_geom = xcb_get_geometry_reply(win->connection, root_geom_cookie, NULL);
+
+	win->wm_x_res = root_geom->width;
+	win->wm_y_res = root_geom->height;
+
 	// register a new mouse
 
 	if (aquabsd_alps_mouse_register_mouse) {
@@ -447,6 +457,16 @@ dynamic int grab_focus(win_t* win) {
 	xcb_set_input_focus(win->connection, XCB_INPUT_FOCUS_PARENT, win->win, XCB_CURRENT_TIME);
 	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_STACK_MODE, (unsigned[]) { XCB_STACK_MODE_ABOVE });
 
+	return 0;
+}
+
+dynamic int move(win_t* win, float x, float y) {
+	const uint32_t transformed[] = {
+		x * win->wm_x_res,
+		y * win->wm_y_res,
+	};
+
+	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, transformed);
 	return 0;
 }
 

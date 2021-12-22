@@ -12,6 +12,7 @@ typedef enum {
 	CMD_LOOP        = 0x6C6F, // 'lo'
 
 	CMD_GRAB_FOCUS  = 0x6667, // 'gf'
+	CMD_MOVE        = 0x6D76, // 'mv'
 
 	CMD_GET_X_POS   = 0x7870, // 'xp'
 	CMD_GET_Y_POS   = 0x7970, // 'yp'
@@ -90,6 +91,15 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_GRAB_FOCUS) {
 		win_t* win = (void*) args[0];
 		return grab_focus(win);
+	}
+
+	else if (cmd == CMD_MOVE) {
+		win_t* win = (void*) args[0];
+
+		float x = *(float*) &args[1];
+		float y = *(float*) &args[2];
+
+		return move(win, x, y);
 	}
 
 	else if (cmd == CMD_GET_X_POS) {

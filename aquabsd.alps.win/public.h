@@ -28,6 +28,10 @@ struct aquabsd_alps_win_t {
 	unsigned x_pos, y_pos;
 	unsigned x_res, y_res;
 
+	// information about the window manager
+	
+	unsigned wm_x_res, wm_y_res;
+
 	// X11 stuff
 
 	Display* display;
@@ -107,6 +111,7 @@ static int (*aquabsd_alps_win_register_cb) (aquabsd_alps_win_t* win, aquabsd_alp
 static int (*aquabsd_alps_win_loop) (aquabsd_alps_win_t* win);
 
 static int (*aquabsd_alps_win_grab_focus) (aquabsd_alps_win_t* win);
+static int (*aquabsd_alps_win_move) (aquabsd_alps_win_t* win, float x, float y);
 
 static int (*aquabsd_alps_win_get_x_pos) (aquabsd_alps_win_t* win);
 static int (*aquabsd_alps_win_get_y_pos) (aquabsd_alps_win_t* win);
