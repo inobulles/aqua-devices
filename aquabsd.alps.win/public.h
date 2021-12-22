@@ -120,6 +120,9 @@ static int (*aquabsd_alps_win_get_y_pos) (aquabsd_alps_win_t* win);
 static unsigned (*aquabsd_alps_win_get_x_res) (aquabsd_alps_win_t* win);
 static unsigned (*aquabsd_alps_win_get_y_res) (aquabsd_alps_win_t* win);
 
+static unsigned (*aquabsd_alps_win_get_wm_x_res) (aquabsd_alps_win_t* win);
+static unsigned (*aquabsd_alps_win_get_wm_y_res) (aquabsd_alps_win_t* win);
+
 // functions exposed exclusively to devices
 
 static aquabsd_alps_win_t* (*aquabsd_alps_win_create_setup) (void);

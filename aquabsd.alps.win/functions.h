@@ -496,6 +496,14 @@ dynamic int get_y_res(win_t* win) {
 	return win->y_res;
 }
 
+dynamic int get_wm_x_res(win_t* win) {
+	return win->wm_x_res;
+}
+
+dynamic int get_wm_y_res(win_t* win) {
+	return win->wm_y_res;
+}
+
 // functions exposed exclusively to devices
 
 dynamic win_t* create_setup(void) {

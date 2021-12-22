@@ -20,6 +20,9 @@ typedef enum {
 
 	CMD_GET_X_RES    = 0x7872, // 'xr'
 	CMD_GET_Y_RES    = 0x7972, // 'yr'
+
+	CMD_GET_WM_X_RES = 0x7778, // 'wx'
+	CMD_GET_WM_Y_RES = 0x7779, // 'wy'
 } cmd_t;
 
 int load(
@@ -130,6 +133,16 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_GET_Y_RES) {
 		win_t* win = (void*) args[0];
 		return get_y_res(win);
+	}
+
+	else if (cmd == CMD_GET_WM_X_RES) {
+		win_t* win = (void*) args[0];
+		return get_wm_x_res(win);
+	}
+
+	else if (cmd == CMD_GET_WM_Y_RES) {
+		win_t* win = (void*) args[0];
+		return get_wm_y_res(win);
 	}
 
 	return -1;
