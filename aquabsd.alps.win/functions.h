@@ -294,7 +294,7 @@ static int __process_event(win_t* win, xcb_generic_event_t* event, int type) {
 	else if (type == XCB_CLIENT_MESSAGE) {
 		xcb_client_message_event_t* specific = (void*) event;
 
-		if (specific->data.data32[0] == win->wm_delete_win_atom) {
+		if (specific->data.data32[0] == win->wm_delete_win_atom && !win->wm_event_cb /* make sure we don't have a wm attached */) {
 			return -1;
 		}
 	}
