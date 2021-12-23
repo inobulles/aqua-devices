@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define SUPER_MOD XCB_MOD_MASK_4 // looks like this is the super key
+
 #define FATAL_ERROR(...) fprintf(stderr, "[aquabsd.alps.wm] FATAL ERROR "__VA_ARGS__); delete(wm); return NULL;
 #define WARNING(...) fprintf(stderr, "[aquabsd.alps.wm] WARNING "__VA_ARGS__);
 
@@ -25,7 +27,9 @@ static inline xcb_window_t create_dumb_win(wm_t* wm) {
 // actual functions
 
 dynamic int delete(wm_t* wm) {
-	if (wm->root) aquabsd_alps_win_delete(wm->root);
+	if (wm->root) {
+		aquabsd_alps_win_delete(wm->root);
+	}
 
 	free(wm);
 
@@ -197,6 +201,7 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		};
 
 		xcb_change_window_attributes(wm->root->connection, detail->window, XCB_CW_EVENT_MASK, attribs);
+		xcb_grab_button(wm->root->connection, 1, detail->window, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
 
 		win_t* win = add_win(wm, detail->window);
 		WIN_CONFIG
@@ -250,6 +255,20 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		//      once XCB_BUTTON_RELEASE is received though, we need to ungrab the pointer:
 		//      xcb_ungrab_pointer(wm->root->connection);
 		//      so that operations can resume normally
+
+		if (detail->state & SUPER_MOD) {
+			// prevent event from passing through to the client
+			xcb_allow_events(wm->root->connection, XCB_ALLOW_SYNC_POINTER, detail->time);
+		}
+
+		else {
+			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
+
+			// cancel any processed mouse events
+
+			// memset(wm->root->mouse_buttons, 0, sizeof wm->root->mouse_buttons);
+			// memset(wm->root->mouse_axes,    0, sizeof wm->root->mouse_axes);
+		}
 	}
 
 	else if (type == XCB_BUTTON_RELEASE) {
@@ -257,6 +276,15 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 		wm->root->mouse_x = detail->root_x;
 		wm->root->mouse_y = detail->root_y;
+
+		if (detail->state & SUPER_MOD) {
+			// prevent event from passing through to the client
+			xcb_allow_events(wm->root->connection, XCB_ALLOW_SYNC_POINTER, detail->time);
+		}
+
+		else {
+			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
+		}
 	}
 
 	return 0;
@@ -294,8 +322,6 @@ dynamic wm_t* create(void) {
 	xcb_change_window_attributes(wm->root->connection, wm->root->win, XCB_CW_EVENT_MASK, attribs);
 
 	// grab the pointer
-
-	const int SUPER_MOD = XCB_MOD_MASK_4; // looks like this is the super key
 
 	// xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
 	xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, SUPER_MOD);
