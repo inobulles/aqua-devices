@@ -279,6 +279,7 @@ static void invalidate(win_t* win) {
 	event.width  = win->x_res;
 	event.height = win->y_res;
 
+	// TODO what is the 'propagate' parameter for?
 	xcb_send_event(win->connection, 0, win->win, XCB_EVENT_MASK_EXPOSURE, (const char*) &event);
 	xcb_flush(win->connection);
 }
@@ -287,11 +288,7 @@ static void invalidate(win_t* win) {
 
 static int __process_event(win_t* win, xcb_generic_event_t* event, int type) {
 	if (type == XCB_EXPOSE) {
-		if (call_cb(win, CB_DRAW) == 1) {
-			return -1;
-		}
-
-		invalidate(win);
+		// do nothing (?)
 	}
 
 	else if (type == XCB_CLIENT_MESSAGE) {
@@ -453,6 +450,12 @@ static int process_events(win_t* win) {
 			return 0;
 		}
 	}
+
+	if (call_cb(win, CB_DRAW) == 1) {
+		return 0;
+	}
+
+	invalidate(win);
 
 	return 1;
 }
