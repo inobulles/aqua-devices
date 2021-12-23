@@ -229,10 +229,16 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 	else if (type == XCB_MOTION_NOTIFY) {
 		xcb_motion_notify_event_t* detail = (void*) event;
+
+		wm->root->mouse_x = detail->root_x;
+		wm->root->mouse_y = detail->root_y;
 	}
 
 	else if (type == XCB_BUTTON_PRESS) {
 		xcb_button_press_event_t* detail = (void*) event;
+
+		wm->root->mouse_x = detail->root_x;
+		wm->root->mouse_y = detail->root_y;
 
 		// TODO basically, as far as I understand it, the WM must decide if a button press is for itself of a client over here
 		//      if it's for the client (e.g. we clicked on the contents of the window), no problem, just replay the pointer event:
@@ -248,6 +254,9 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 	else if (type == XCB_BUTTON_RELEASE) {
 		xcb_button_release_event_t* detail = (void*) event;
+
+		wm->root->mouse_x = detail->root_x;
+		wm->root->mouse_y = detail->root_y;
 	}
 
 	return 0;
