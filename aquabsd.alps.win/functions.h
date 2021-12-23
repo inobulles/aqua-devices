@@ -287,7 +287,10 @@ static void invalidate(win_t* win) {
 
 static int __process_event(win_t* win, xcb_generic_event_t* event, int type) {
 	if (type == XCB_EXPOSE) {
-		call_cb(win, CB_DRAW);
+		if (call_cb(win, CB_DRAW) == 1) {
+			return -1;
+		}
+
 		invalidate(win);
 	}
 
