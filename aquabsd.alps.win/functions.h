@@ -413,39 +413,6 @@ static int process_events(win_t* win) {
 	for (xcb_generic_event_t* event; (event = xcb_poll_for_event(win->connection)); free(event)) {
 		int type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
 
-		if (type == XCB_EXPOSE) {
-			// if we've got 'wm_event_cb', this means a window manager is attached to us
-			// XXX because of obscure reasons I'm not too sure of (read: not at all sure of), XCB window managers won't catch release events, *sometimes*
-			//     works fine with Xlib (cf. x-compositing-wm), but idk XCB just doesn't
-			//     and because XCB and X11 in general is a steaming pile of shit documentation-wise and in terms of debugging, this is the solution I've came up with for the meantime 💩
-			// TODO try putting this back before the for loop because it seems it only does *not* want to break when running as a WM... something I'm missing perhaps?
-			
-			if (win->wm_event_cb) {
-				xcb_query_pointer_cookie_t cookie = xcb_query_pointer(win->connection, win->win);
-				
-				xcb_generic_error_t* error;
-				xcb_query_pointer_reply_t* reply = xcb_query_pointer_reply(win->connection, cookie, &error);
-
-				if (!error) { // simulate XCB_MOTION_NOTIFY
-					xcb_motion_notify_event_t event = {
-						.event_x = reply->root_x,
-						.event_y = reply->root_y,
-					};
-
-					__process_event(win, (xcb_generic_event_t*) &event, XCB_MOTION_NOTIFY);
-				}
-
-				if (!error && reply->mask == 0 && win->wm_prev_button) { // simulate XCB_BUTTON_RELEASE
-					xcb_button_release_event_t event = {
-						.detail = win->wm_prev_button,
-					};
-
-					win->wm_prev_button = 0;
-					__process_event(win, (xcb_generic_event_t*) &event, XCB_BUTTON_RELEASE);
-				}
-			}
-		}
-
 		if (__process_event(win, event, type) < 0) {
 			return 0;
 		}

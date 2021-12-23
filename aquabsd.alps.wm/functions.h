@@ -53,7 +53,7 @@ static void update_client_list(wm_t* wm) {
 
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->client_list_atom, XCB_ATOM_WINDOW, 32, wm->win_count, client_list);
 	xcb_flush(wm->root->connection);
-	
+
 	free(client_list);
 }
 
@@ -92,7 +92,7 @@ static win_t* search_win(wm_t* wm, xcb_window_t id) {
 	}
 
 	win_t* win = NULL;
-	
+
 	for (win = wm->win_head; win; win = win->next) {
 		if (win->win == id) {
 			return win;
@@ -197,7 +197,6 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		};
 
 		xcb_change_window_attributes(wm->root->connection, detail->window, XCB_CW_EVENT_MASK, attribs);
-		xcb_grab_button(wm->root->connection, 1, detail->window, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
 
 		win_t* win = add_win(wm, detail->window);
 		WIN_CONFIG
@@ -228,16 +227,27 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 	// mouse events
 
+	else if (type == XCB_MOTION_NOTIFY) {
+		xcb_motion_notify_event_t* detail = (void*) event;
+	}
+
 	else if (type == XCB_BUTTON_PRESS) {
 		xcb_button_press_event_t* detail = (void*) event;
 
-		xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME); // pass on event to client
-		// xcb_allow_events(wm->root->connection, XCB_ALLOW_SYNC_POINTER, XCB_CURRENT_TIME); // don't pass on event to client
+		// TODO basically, as far as I understand it, the WM must decide if a button press is for itself of a client over here
+		//      if it's for the client (e.g. we clicked on the contents of the window), no problem, just replay the pointer event:
+		//      xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
+		//      otherwise, things get a little more complicated; we must then grab the pointer:
+		//      xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+		//      (both pointer and keyboard must be asynchronous)
+		//      then, until we receive an XCB_BUTTON_RELEASE event, we can process the mouse events as if they were ours
+		//      once XCB_BUTTON_RELEASE is received though, we need to ungrab the pointer:
+		//      xcb_ungrab_pointer(wm->root->connection);
+		//      so that operations can resume normally
 	}
 
 	else if (type == XCB_BUTTON_RELEASE) {
 		xcb_button_release_event_t* detail = (void*) event;
-		xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, XCB_CURRENT_TIME);
 	}
 
 	return 0;
@@ -276,13 +286,15 @@ dynamic wm_t* create(void) {
 
 	// grab the pointer
 
-	//xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
-	//xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_SYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+	const int SUPER_MOD = XCB_MOD_MASK_4; // looks like this is the super key
+
+	// xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+	xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, SUPER_MOD);
 
 	// grab the keys we are interested in as a window manager (i.e. those with the super key modifier)
 
 	xcb_ungrab_key(wm->root->connection, XCB_GRAB_ANY, wm->root->win, XCB_MOD_MASK_ANY);
-	xcb_grab_key(wm->root->connection, 1, wm->root->win, XCB_MOD_MASK_4 /* looks like this is the super key */, XCB_GRAB_ANY, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(wm->root->connection, 1, wm->root->win, SUPER_MOD, XCB_GRAB_ANY, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
 	// setup our atoms
 	// we also need to specify which atoms are supported in '_NET_SUPPORTED'
