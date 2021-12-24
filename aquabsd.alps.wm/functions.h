@@ -179,19 +179,22 @@ static void focus_win(wm_t* wm, win_t* win) {
 }
 
 #define WIN_CONFIG \
-	win->x_pos = detail->x; \
-	win->y_pos = detail->y; \
-	\
-	win->x_res = detail->width; \
-	win->y_res = detail->height; \
-	\
-	win->wm_x_res = wm->root->x_res; \
-	win->wm_y_res = wm->root->y_res;
+	if (win) { \
+		win->x_pos = detail->x; \
+		win->y_pos = detail->y; \
+		\
+		win->x_res = detail->width; \
+		win->y_res = detail->height; \
+		\
+		win->wm_x_res = wm->root->x_res; \
+		win->wm_y_res = wm->root->y_res; \
+	}
 
 static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 	wm_t* wm = _wm;
 
 	// window management events
+	// these are in a way "requests" by clients to perform certain actions (change their size, hide themselves, &c)
 	// all of the definitions of these structs can be found in <xcb/xproto.h>
 
 	if (type == XCB_CREATE_NOTIFY) {
@@ -236,6 +239,11 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 		WIN_CONFIG
 		modify_win(wm, win);
+	}
+
+	else if (type == XCB_FOCUS_IN) { // focus window
+		xcb_focus_in_event_t* detail = (void*) event;
+		focus_win(wm, search_win(wm, detail->event));
 	}
 
 	// mouse events
