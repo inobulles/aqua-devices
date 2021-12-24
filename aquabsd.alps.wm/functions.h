@@ -271,18 +271,19 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 		else {
 			// allow mouse click to go through to window
-			// TODO except scroll wheel?
 
 			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
 			
 			// focus the window
 			// TODO what's the difference between 'xcb_button_press_event_t.event' & 'xcb_button_press_event_t.child'?
 
-			win_t* win = search_win(wm, detail->event);
+			if (!wm->root->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z]) { // we don't wanna focus when sending a scrollwheel event
+				win_t* win = search_win(wm, detail->event);
 
-			if (win) {
-				aquabsd_alps_win_grab_focus(win);
-				focus_win(wm, win);
+				if (win) {
+					aquabsd_alps_win_grab_focus(win);
+					focus_win(wm, win);
+				}
 			}
 
 			// cancel any processed mouse events
