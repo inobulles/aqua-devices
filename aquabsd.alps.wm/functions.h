@@ -16,7 +16,12 @@ static inline xcb_atom_t get_intern_atom(wm_t* wm, const char* name) {
 	//      at some point, refactor this so that... well all this work converting from Xlib to XCB isn't for nothing
 
 	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(wm->root->connection, 0, strlen(name), name);
-	return xcb_intern_atom_reply(wm->root->connection, atom_cookie, NULL)->atom;
+	xcb_intern_atom_reply_t* atom_reply = xcb_intern_atom_reply(wm->root->connection, atom_cookie, NULL);
+	
+	xcb_atom_t atom = atom_reply->atom;
+	free(atom_reply);
+
+	return atom;
 }
 
 static inline xcb_window_t create_dumb_win(wm_t* wm) {
@@ -424,8 +429,6 @@ dynamic wm_t* create(void) {
 		free(info);
 	}
 
-	// TODO free all the other XCB objects I've been neglecting to free
-
 	free(providers);
 	free(res);
 
@@ -508,7 +511,10 @@ dynamic int make_compositing(wm_t* wm) {
 	// (in that case we would do that by getting an OpenGL texture with their contents through 'CMD_BIND_WIN_TEX')
 
 	xcb_composite_get_overlay_window_cookie_t overlay_win_cookie = xcb_composite_get_overlay_window(wm->root->connection, wm->root->win);
-	xcb_window_t overlay_win = xcb_composite_get_overlay_window_reply(wm->root->connection, overlay_win_cookie, NULL)->overlay_win;
+	xcb_composite_get_overlay_window_reply_t* overlay_win_reply = xcb_composite_get_overlay_window_reply(wm->root->connection, overlay_win_cookie, NULL);
+
+	xcb_window_t overlay_win = overlay_win_reply->overlay_win;
+	free(overlay_win_reply);
 
 	// for whatever reason, X (and even Xcomposite, which is even weirder) doesn't include a way to make windows transparent to events
 	// so we must use the Xfixes extension to make the overlay window transparent to events and pass them on through to lower windows
