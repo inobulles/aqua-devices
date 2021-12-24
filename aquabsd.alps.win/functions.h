@@ -11,8 +11,8 @@ static inline xcb_atom_t get_intern_atom(win_t* win, const char* name) {
 	// TODO obviously, this function isn't super ideal for leveraging the benefits XCB provides over Xlib
 	//      at some point, refactor this so that... well all this work converting from Xlib to XCB isn't for nothing
 
-	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(wm->root->connection, 0, strlen(name), name);
-	xcb_intern_atom_reply_t* atom_reply = xcb_intern_atom_reply(wm->root->connection, atom_cookie, NULL);
+	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(win->connection, 0, strlen(name), name);
+	xcb_intern_atom_reply_t* atom_reply = xcb_intern_atom_reply(win->connection, atom_cookie, NULL);
 	
 	xcb_atom_t atom = atom_reply->atom;
 	free(atom_reply);

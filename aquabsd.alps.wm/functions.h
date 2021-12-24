@@ -38,6 +38,10 @@ dynamic int delete(wm_t* wm) {
 		aquabsd_alps_win_delete(wm->root);
 	}
 
+	if (wm->providers) {
+		free(wm->providers);
+	}
+
 	free(wm);
 
 	return 0;
@@ -411,7 +415,21 @@ dynamic wm_t* create(void) {
 	xcb_randr_get_screen_resources_reply_t* res = xcb_randr_get_screen_resources_reply(wm->root->connection, res_cookie, NULL);
 
 	if (!res) {
-		goto skip_geom; // too bad 😥
+		// too bad 😥
+		// if we can't get a list of all providers, at least create one "virtual" provider which covers the root window
+
+		const provider_t VIRTUAL_PROVIDER = {
+			.x = 0,
+			.y = 0,
+
+			.x_res = wm->root->x_res,
+			.y_res = wm->root->y_res,
+		};
+
+		wm->providers = malloc(sizeof *wm->providers);
+		memcpy(&wm->providers[0], &VIRTUAL_PROVIDER, sizeof VIRTUAL_PROVIDER);
+
+		goto skip_geom;
 	}
 
 	int provider_count = xcb_randr_get_screen_resources_crtcs_length(res);
@@ -421,10 +439,14 @@ dynamic wm_t* create(void) {
 		xcb_randr_get_crtc_info_cookie_t info_cookie = xcb_randr_get_crtc_info(wm->root->connection, providers[i], 0);
 		xcb_randr_get_crtc_info_reply_t* info = xcb_randr_get_crtc_info_reply(wm->root->connection, info_cookie, 0);
 
-		// info->x
-		// info->y
-		// info->width
-		// info->height
+		wm->providers = realloc(wm->providers, ++wm->provider_count * sizeof *wm->providers);
+		provider_t* provider = &wm->providers[wm->provider_count - 1];
+
+		provider->x = info->x;
+		provider->y = info->y;
+
+		provider->x_res = info->width;
+		provider->y_res = info->height;
 
 		free(info);
 	}

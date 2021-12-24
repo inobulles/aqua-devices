@@ -15,6 +15,7 @@ static uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
 #define CB_LEN    AQUABSD_ALPS_WM_CB_LEN
 
 #define cb_t aquabsd_alps_wm_cb_t
+#define provider_t aquabsd_alps_wm_provider_t
 #define wm_t aquabsd_alps_wm_t
 
 #define win_t aquabsd_alps_win_t // from aquabsd.alps.win
