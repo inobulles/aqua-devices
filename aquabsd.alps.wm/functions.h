@@ -266,8 +266,8 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 			// cancel any processed mouse events
 
-			// memset(wm->root->mouse_buttons, 0, sizeof wm->root->mouse_buttons);
-			// memset(wm->root->mouse_axes,    0, sizeof wm->root->mouse_axes);
+			memset(wm->root->mouse_buttons, 0, sizeof wm->root->mouse_buttons);
+			memset(wm->root->mouse_axes,    0, sizeof wm->root->mouse_axes);
 		}
 	}
 
@@ -284,6 +284,11 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 		else {
 			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
+
+			// cancel any processed mouse events
+
+			memset(wm->root->mouse_buttons, 0, sizeof wm->root->mouse_buttons);
+			memset(wm->root->mouse_axes,    0, sizeof wm->root->mouse_axes);
 		}
 	}
 
