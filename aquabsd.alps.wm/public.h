@@ -64,4 +64,14 @@ static int (*aquabsd_alps_wm_set_name) (aquabsd_alps_wm_t* wm, const char* name)
 static int (*aquabsd_alps_wm_register_cb) (aquabsd_alps_wm_t* wm, aquabsd_alps_wm_cb_t type, uint64_t cb, uint64_t param);
 static int (*aquabsd_alps_wm_make_compositing) (aquabsd_alps_wm_t* wm);
 
+// provider stuff
+
+static int (*aquabsd_alps_wm_provider_count) (aquabsd_alps_wm_t* wm);
+
+static int (*aquabsd_alps_wm_provider_x) (aquabsd_alps_wm_t* wm, unsigned id);
+static int (*aquabsd_alps_wm_provider_y) (aquabsd_alps_wm_t* wm, unsigned id);
+
+static int (*aquabsd_alps_wm_provider_x_res) (aquabsd_alps_wm_t* wm, unsigned id);
+static int (*aquabsd_alps_wm_provider_y_res) (aquabsd_alps_wm_t* wm, unsigned id);
+
 #endif
