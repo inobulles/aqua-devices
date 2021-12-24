@@ -35,6 +35,7 @@ int load(
 	aquabsd_alps_win_get_ewmh_atoms = kos_load_device_function(win_device, "get_ewmh_atoms");
 
 	aquabsd_alps_win_set_caption = kos_load_device_function(win_device, "set_caption");
+	aquabsd_alps_win_grab_focus = kos_load_device_function(win_device, "grab_focus");
 	aquabsd_alps_win_delete = kos_load_device_function(win_device, "delete");
 
 	return 0;

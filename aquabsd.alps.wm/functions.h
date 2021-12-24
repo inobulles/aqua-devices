@@ -170,6 +170,14 @@ static void rem_win(wm_t* wm, win_t* win) {
 	update_client_list(wm);
 }
 
+static void focus_win(wm_t* wm, win_t* win) {
+	if (!win) {
+		return;
+	}
+
+	call_cb(wm, win, CB_FOCUS);
+}
+
 #define WIN_CONFIG \
 	win->x_pos = detail->x; \
 	win->y_pos = detail->y; \
@@ -262,7 +270,20 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		}
 
 		else {
+			// allow mouse click to go through to window
+			// TODO except scroll wheel?
+
 			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
+			
+			// focus the window
+			// TODO what's the difference between 'xcb_button_press_event_t.event' & 'xcb_button_press_event_t.child'?
+
+			win_t* win = search_win(wm, detail->event);
+
+			if (win) {
+				aquabsd_alps_win_grab_focus(win);
+				focus_win(wm, win);
+			}
 
 			// cancel any processed mouse events
 
