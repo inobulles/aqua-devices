@@ -557,3 +557,25 @@ dynamic int make_compositing(wm_t* wm) {
 
 	return 0;
 }
+
+// provider stuff
+
+dynamic int provider_count(wm_t* wm) {
+	return wm->provider_count;
+}
+
+dynamic int provider_x(wm_t* wm, unsigned id) {
+	return wm->providers[id].x;
+}
+
+dynamic int provider_y(wm_t* wm, unsigned id) {
+	return wm->providers[id].y;
+}
+
+dynamic int provider_x_res(wm_t* wm, unsigned id) {
+	return wm->providers[id].x_res;
+}
+
+dynamic int provider_y_res(wm_t* wm, unsigned id) {
+	return wm->providers[id].y_res;
+}

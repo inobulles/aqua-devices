@@ -14,6 +14,16 @@ typedef enum {
 	CMD_REGISTER_CB      = 0x7263, // 'rc'
 
 	CMD_MAKE_COMPOSITING = 0x6D63, // 'mc'
+
+	// provider stuff
+
+	CMD_PROVIDER_COUNT   = 0x7064, // 'pc'
+
+	CMD_PROVIDER_X       = 0x7078, // 'px'
+	CMD_PROVIDER_Y       = 0x7079, // 'py'
+
+	CMD_PROVIDER_X_RES   = 0x707A, // 'pz'
+	CMD_PROVIDER_Y_RES   = 0x707B, // 'pw'
 } cmd_t;
 
 int load(
@@ -90,6 +100,41 @@ uint64_t send(uint16_t _cmd, void* data) {
 		wm_t* wm = (void*) args[0];
 		return (uint64_t) make_compositing(wm);
 	}
-	
+
+	// provider stuff
+
+	else if (cmd == CMD_PROVIDER_COUNT) {
+		wm_t* wm = (void*) args[0];
+		return (uint64_t) provider_count(wm);
+	}
+
+	else if (cmd == CMD_PROVIDER_X) {
+		wm_t* wm = (void*) args[0];
+		unsigned id = args[1];
+
+		return (uint64_t) provider_x(wm, id);
+	}
+
+	else if (cmd == CMD_PROVIDER_Y) {
+		wm_t* wm = (void*) args[0];
+		unsigned id = args[1];
+
+		return (uint64_t) provider_y(wm, id);
+	}
+
+	else if (cmd == CMD_PROVIDER_X_RES) {
+		wm_t* wm = (void*) args[0];
+		unsigned id = args[1];
+
+		return (uint64_t) provider_x_res(wm, id);
+	}
+
+	else if (cmd == CMD_PROVIDER_Y_RES) {
+		wm_t* wm = (void*) args[0];
+		unsigned id = args[1];
+
+		return (uint64_t) provider_y_res(wm, id);
+	}
+
 	return -1;
 }
