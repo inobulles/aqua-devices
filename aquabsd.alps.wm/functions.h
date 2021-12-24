@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <xcb/randr.h>
+
 #define SUPER_MOD XCB_MOD_MASK_4 // looks like this is the super key
 
 #define FATAL_ERROR(...) fprintf(stderr, "[aquabsd.alps.wm] FATAL ERROR "__VA_ARGS__); delete(wm); return NULL;
@@ -397,7 +399,37 @@ dynamic wm_t* create(void) {
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supporting_wm_check_atom, XCB_ATOM_WINDOW, 32, 1, support_win_list);
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->support_win, supporting_wm_check_atom, XCB_ATOM_WINDOW, 32, 1, support_win_list);
 
-	// TODO get all monitors and their individual resolutions with Xinerama (or xrandr? idk whichever one's newer)
+	// get all monitors and their geometries
+	// CRTC stands for "Cathode Ray Tube Controller", which is a dumb name, so AQUA calls them "providers"
+
+	xcb_randr_get_screen_resources_cookie_t res_cookie = xcb_randr_get_screen_resources(wm->root->connection, wm->root->win);
+	xcb_randr_get_screen_resources_reply_t* res = xcb_randr_get_screen_resources_reply(wm->root->connection, res_cookie, NULL);
+
+	if (!res) {
+		goto skip_geom; // too bad 😥
+	}
+
+	int provider_count = xcb_randr_get_screen_resources_crtcs_length(res);
+	xcb_randr_crtc_t* providers = xcb_randr_get_screen_resources_crtcs(res);
+
+	for (int i = 0; i < provider_count; i++) {
+		xcb_randr_get_crtc_info_cookie_t info_cookie = xcb_randr_get_crtc_info(wm->root->connection, providers[i], 0);
+		xcb_randr_get_crtc_info_reply_t* info = xcb_randr_get_crtc_info_reply(wm->root->connection, info_cookie, 0);
+
+		// info->x
+		// info->y
+		// info->width
+		// info->height
+
+		free(info);
+	}
+
+	// TODO free all the other XCB objects I've been neglecting to free
+
+	free(providers);
+	free(res);
+
+skip_geom:
 
 	// flush
 
