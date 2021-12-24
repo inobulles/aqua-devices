@@ -451,7 +451,6 @@ dynamic wm_t* create(void) {
 		free(info);
 	}
 
-	free(providers);
 	free(res);
 
 skip_geom:
