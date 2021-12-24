@@ -439,6 +439,10 @@ dynamic wm_t* create(void) {
 		xcb_randr_get_crtc_info_cookie_t info_cookie = xcb_randr_get_crtc_info(wm->root->connection, providers[i], 0);
 		xcb_randr_get_crtc_info_reply_t* info = xcb_randr_get_crtc_info_reply(wm->root->connection, info_cookie, 0);
 
+		if (!info->width || !info->height) { // ??? reports 4 providers when there are only two so discard the bs ones
+			goto skip;
+		}
+
 		wm->providers = realloc(wm->providers, ++wm->provider_count * sizeof *wm->providers);
 		provider_t* provider = &wm->providers[wm->provider_count - 1];
 
@@ -447,6 +451,8 @@ dynamic wm_t* create(void) {
 
 		provider->x_res = info->width;
 		provider->y_res = info->height;
+
+	skip:
 
 		free(info);
 	}
