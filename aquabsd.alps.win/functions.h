@@ -196,24 +196,6 @@ static int x11_kbd_map(xcb_keycode_t key) {
 	return -1;
 }
 
-// TODO what's the usefulness of this function now we're not following an expose/invalidate model for drawing?
-
-static void invalidate(win_t* win) {
-	xcb_expose_event_t event;
-
-	event.window = win->win;
-	event.response_type = XCB_EXPOSE;
-
-	event.x = 0;
-	event.y = 0;
-
-	event.width  = win->x_res;
-	event.height = win->y_res;
-
-	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? (cf. 'close_win') */, win->win, XCB_EVENT_MASK_EXPOSURE, (const char*) &event);
-	xcb_flush(win->connection);
-}
-
 static int _close_win(win_t* win) {
 	xcb_client_message_event_t event;
 
@@ -228,7 +210,7 @@ static int _close_win(win_t* win) {
 	event.data.data32[0] = win->wm_delete_win_atom;
 	event.data.data32[1] = XCB_CURRENT_TIME;
 
-	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? (cf. 'invalidate') */, win->win, XCB_EVENT_MASK_NO_EVENT, (const char*) &event);
+	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? */, win->win, XCB_EVENT_MASK_NO_EVENT, (const char*) &event);
 	xcb_flush(win->connection);
 
 	return 0;
@@ -236,12 +218,8 @@ static int _close_win(win_t* win) {
 
 // process a specific event
 
-static int _process_event(win_t* win, xcb_generic_event_t* event, int type) {
-	if (type == XCB_EXPOSE) {
-		// TODO do nothing (?)
-	}
-
-	else if (type == XCB_CLIENT_MESSAGE) {
+static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
+	if (type == XCB_CLIENT_MESSAGE) {
 		xcb_client_message_event_t* specific = (void*) event;
 
 		if (specific->data.data32[0] == win->wm_delete_win_atom && !win->wm_event_cb /* make sure we don't have a wm attached */) {
@@ -363,12 +341,12 @@ static void* event_thread(void* _win) {
 	win_t* win = _win;
 
 	while (win->running) {
-		// poll for events until there are none left (fancy wrapper around _process_event basically)
+		// poll for events until there are none left (fancy wrapper around process_event basically)
 
 		for (xcb_generic_event_t* event; (event = xcb_wait_for_event(win->connection)); free(event)) {
 			int type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
 
-			if (_process_event(win, event, type) < 0) {
+			if (process_event(win, event, type) < 0) {
 				win->running = 0;
 				return NULL;
 			}
@@ -386,7 +364,7 @@ dynamic int loop(win_t* win) {
 	
 		if (sigint_received) {
 			_close_win(win);
-			// don't exit straight away; wait until the event thread has gracefully exitted
+			// don't return straight away; wait until the event thread has gracefully exitted
 		}
 
 		// actually draw
