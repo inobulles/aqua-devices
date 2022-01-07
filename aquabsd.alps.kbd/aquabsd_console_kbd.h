@@ -5,7 +5,13 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 
+static unsigned aquabsd_console_kbd_initialized = 0;
+
 static inline int init_aquabsd_console_kbd(void) {
+	if (aquabsd_console_kbd_initialized) {
+		return 0;
+	}
+	
 	// set TTY how we want it
 
 	struct termios tty;
@@ -26,10 +32,17 @@ static inline int init_aquabsd_console_kbd(void) {
 
 	tcsetattr(0, TCSANOW | TCSAFLUSH, &tty);
 
+	aquabsd_console_kbd_initialized = 1;
 	return 0;
 }
 
-static inline int update_aquabsd_console_kbd(kbd_t* kbd, void* _) {
+static int update_aquabsd_console_kbd(kbd_t* kbd, void* _) {
+	// make sure the keyboard has already been initialized
+
+	if (init_aquabsd_console_kbd() < 0) {
+		return -1;
+	}
+
 	uint8_t ch;
 
 	// reset keyboard structure
