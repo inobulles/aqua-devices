@@ -4,6 +4,8 @@
 #include <aquabsd.alps.mouse/public.h>
 #include <aquabsd.alps.kbd/public.h>
 
+#include <pthread.h>
+
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_event.h>
@@ -50,6 +52,11 @@ struct aquabsd_alps_win_t {
 
 	xcb_atom_t _net_wm_visible_name_atom;
 	xcb_atom_t _net_wm_name_atom;
+
+	// multithreading stuff
+
+	unsigned threading_enabled;
+	pthread_t event_thread;
 
 	// app client callbacks
 	// a bit of data-orientated design here ;)

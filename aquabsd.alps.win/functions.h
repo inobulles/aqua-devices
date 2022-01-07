@@ -2,14 +2,37 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <errno.h>
 
 #define FATAL_ERROR(...) \
 	fprintf(stderr, "[aquabsd.alps.win] FATAL ERROR "__VA_ARGS__); \
+	\
 	delete(win); \
 	return NULL;
 
-#define WARNING(...) \
+#define WARN(...) \
 	fprintf(stderr, "[aquabsd.alps.win] WARNING "__VA_ARGS__);
+
+// once we've received SIGINT, we must exit as soon as possible;
+// there's no going back
+
+static unsigned sigint_received = 0;
+
+static void sigint_handler(int sig) {
+	if (sig != SIGINT) {
+		WARN("Got unexpected signal %s (should only be %s)\n", strsignal(sig), strsignal(SIGINT))
+	}
+
+	sigint_received = 1;
+
+	// unset the signal handler so that it can (perhaps?) act a bit more forcefully
+
+	struct sigaction sa = {
+		.sa_handler = SIG_DFL,
+	};
+
+	sigaction(SIGINT, &sa, NULL);
+}
 
 // helper functions (for XCB)
 
@@ -60,192 +83,6 @@ dynamic int delete(win_t* win) {
 	free(win);
 
 	return 0;
-}
-
-static int mouse_update_callback(aquabsd_alps_mouse_t* mouse, void* _win) {
-	win_t* win = _win;
-
-	win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_X] =       (float) win->mouse_x / win->x_res;
-	win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Y] = 1.0 - (float) win->mouse_y / win->y_res;
-
-	memcpy(mouse->buttons, win->mouse_buttons, sizeof mouse->buttons);
-	memcpy(mouse->axes, win->mouse_axes, sizeof mouse->axes);
-
-	memset(win->mouse_axes, 0, sizeof win->mouse_axes);
-
-	return 0;
-}
-
-static int kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _win) {
-	win_t* win = _win;
-
-	memcpy(kbd->buttons, win->kbd_buttons, sizeof kbd->buttons);
-
-	kbd->buf_len = win->kbd_buf_len;
-	kbd->buf = win->kbd_buf;
-
-	// we're passing this on to the keyboard device, so reset
-
-	win->kbd_buf_len = 0;
-	win->kbd_buf = NULL;
-
-	return 0;
-}
-
-static int x11_kbd_map(xcb_keycode_t key) {
-	switch (key) {
-		case 9: return AQUABSD_ALPS_KBD_BUTTON_ESC;
-
-		case 111: return AQUABSD_ALPS_KBD_BUTTON_UP;
-		case 116: return AQUABSD_ALPS_KBD_BUTTON_DOWN;
-		case 113: return AQUABSD_ALPS_KBD_BUTTON_LEFT;
-		case 114: return AQUABSD_ALPS_KBD_BUTTON_RIGHT;
-	}
-
-	return -1;
-}
-
-// once we've received SIGINT, we must exit as soon as possible;
-// there's no going back
-
-static unsigned sigint_received = 0;
-
-static void sigint_handler(int sig) {
-	if (sig != SIGINT) {
-		WARNING("Got unexpected signal %s (should only be %s)\n", strsignal(sig), strsignal(SIGINT))
-	}
-
-	sigint_received = 1;
-
-	// unset the signal handler so that it can (perhaps?) act a bit more forcefully
-
-	struct sigaction sa = {
-		.sa_handler = SIG_DFL,
-	};
-
-	sigaction(SIGINT, &sa, NULL);
-}
-
-static win_t* __create_setup(void) {
-	win_t* win = calloc(1, sizeof *win);
-
-	// get connection to X server
-
-	win->display = XOpenDisplay(NULL /* default to 'DISPLAY' environment variable */);
-
-	if (!win->display) {
-		FATAL_ERROR("Failed to open X display\n")
-	}
-
-	win->default_screen = DefaultScreen(win->display);
-	win->connection = XGetXCBConnection(win->display);
-
-	if (!win->connection) {
-		FATAL_ERROR("Failed to get XCB connection from X display\n")
-	}
-
-	XSetEventQueueOwner(win->display, XCBOwnsEventQueue);
-
-	// get screen
-
-	xcb_screen_iterator_t it = xcb_setup_roots_iterator(xcb_get_setup(win->connection));
-	for (int i = win->default_screen; it.rem && i > 0; i--, xcb_screen_next(&it));
-
-	win->screen = it.data;
-
-	// get information about the window manager (i.e. the root window)
-
-	xcb_window_t root = win->screen->root;
-
-	xcb_get_geometry_cookie_t root_geom_cookie = xcb_get_geometry(win->connection, root);
-	xcb_get_geometry_reply_t* root_geom = xcb_get_geometry_reply(win->connection, root_geom_cookie, NULL);
-
-	win->wm_x_res = root_geom->width;
-	win->wm_y_res = root_geom->height;
-
-	free(root_geom);
-
-	// register a new mouse
-
-	if (aquabsd_alps_mouse_register_mouse) {
-		aquabsd_alps_mouse_register_mouse("aquabsd.alps.win mouse", mouse_update_callback, win, 1);
-	}
-
-	// register a new keyboard
-
-	if (aquabsd_alps_kbd_register_kbd) {
-		aquabsd_alps_kbd_register_kbd("aquabsd.alps.win keyboard", kbd_update_callback, win, 1);
-	}
-
-	// register signal handlers
-
-	struct sigaction sa = {
-		.sa_handler = sigint_handler,
-	};
-
-	sigaction(SIGINT, &sa, NULL);
-
-	return win;
-}
-
-static void _get_ewmh_atoms(win_t* win) {
-	win->_net_wm_visible_name_atom = get_intern_atom(win, "_NET_WM_VISIBLE_NAME");
-	win->_net_wm_name_atom = get_intern_atom(win, "_NET_WM_NAME"); // EWMH spec says it's better to use this than just 'WM_NAME'
-}
-
-dynamic win_t* create(unsigned x_res, unsigned y_res) {
-	win_t* win = __create_setup();
-
-	if (!win) {
-		return NULL;
-	}
-
-	// create window
-
-	win->x_res = x_res;
-	win->y_res = y_res;
-
-	const uint32_t win_attribs[] = {
-		XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE,
-	};
-
-	win->win = xcb_generate_id(win->connection);
-
-	xcb_create_window(
-		win->connection, XCB_COPY_FROM_PARENT, win->win, win->screen->root,
-		0, 0, win->x_res, win->y_res, 0, // window geometry
-		XCB_WINDOW_CLASS_INPUT_OUTPUT, win->screen->root_visual,
-		XCB_CW_EVENT_MASK, win_attribs);
-
-	// get the atoms we'll probably need
-
-	win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
-	win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
-
-	_get_ewmh_atoms(win);
-
-	// setup 'WM_DELETE_WINDOW' protocol (yes this is dumb, thank you XCB & X11)
-	// also show we support all those other atoms
-
-	xcb_icccm_set_wm_protocols(win->connection, win->win, win->wm_protocols_atom, 1, &win->wm_delete_win_atom);
-
-	// set sensible minimum and maximum sizes for the window
-
-	xcb_size_hints_t hints = { 0 };
-
-	xcb_icccm_size_hints_set_min_size(&hints, 320, 200);
-	// no maximum size
-
-	xcb_icccm_set_wm_size_hints(win->connection, win->win, XCB_ATOM_WM_NORMAL_HINTS, &hints);
-
-	// finally (at least for the windowing part), map the window (show it basically) and flush
-
-	xcb_map_window(win->connection, win->win);
-	xcb_flush(win->connection);
-
-	win->visible = 1;
-
-	return win;
 }
 
 dynamic int set_caption(win_t* win, const char* caption) {
@@ -314,6 +151,53 @@ static inline int call_cb(win_t* win, cb_t type) {
 	return kos_callback(cb, 2, (uint64_t) win, param);
 }
 
+// event stuff
+
+static int mouse_update_callback(aquabsd_alps_mouse_t* mouse, void* _win) {
+	win_t* win = _win;
+
+	win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_X] =       (float) win->mouse_x / win->x_res;
+	win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Y] = 1.0 - (float) win->mouse_y / win->y_res;
+
+	memcpy(mouse->buttons, win->mouse_buttons, sizeof mouse->buttons);
+	memcpy(mouse->axes, win->mouse_axes, sizeof mouse->axes);
+
+	memset(win->mouse_axes, 0, sizeof win->mouse_axes);
+
+	return 0;
+}
+
+static int kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _win) {
+	win_t* win = _win;
+
+	memcpy(kbd->buttons, win->kbd_buttons, sizeof kbd->buttons);
+
+	kbd->buf_len = win->kbd_buf_len;
+	kbd->buf = win->kbd_buf;
+
+	// we're passing this on to the keyboard device, so reset
+
+	win->kbd_buf_len = 0;
+	win->kbd_buf = NULL;
+
+	return 0;
+}
+
+static int x11_kbd_map(xcb_keycode_t key) {
+	switch (key) {
+		case 9: return AQUABSD_ALPS_KBD_BUTTON_ESC;
+
+		case 111: return AQUABSD_ALPS_KBD_BUTTON_UP;
+		case 116: return AQUABSD_ALPS_KBD_BUTTON_DOWN;
+		case 113: return AQUABSD_ALPS_KBD_BUTTON_LEFT;
+		case 114: return AQUABSD_ALPS_KBD_BUTTON_RIGHT;
+	}
+
+	return -1;
+}
+
+// TODO what's the usefulness of this function now we're not following an expose/invalidate model for drawing?
+
 static void invalidate(win_t* win) {
 	xcb_expose_event_t event;
 
@@ -326,25 +210,15 @@ static void invalidate(win_t* win) {
 	event.width  = win->x_res;
 	event.height = win->y_res;
 
-	// TODO what is the 'propagate' parameter for?
-	xcb_send_event(win->connection, 0, win->win, XCB_EVENT_MASK_EXPOSURE, (const char*) &event);
+	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? */, win->win, XCB_EVENT_MASK_EXPOSURE, (const char*) &event);
 	xcb_flush(win->connection);
 }
 
 // process a specific event
 
 static int __process_event(win_t* win, xcb_generic_event_t* event, int type) {
-	// signal events
-	
-	if (sigint_received) {
-		// once we've received SIGINT, all other events are irrelevant
-		return -1;
-	}
-	
-	// XCB events
-
 	if (type == XCB_EXPOSE) {
-		// do nothing (?)
+		// TODO do nothing (?)
 	}
 
 	else if (type == XCB_CLIENT_MESSAGE) {
@@ -463,62 +337,47 @@ static int __process_event(win_t* win, xcb_generic_event_t* event, int type) {
 	return 0;
 }
 
-// poll for events until there are none left (fancy wrapper around __process_event basically)
+// event loop
 
-static int process_events(win_t* win) {
-	for (xcb_generic_event_t* event; (event = xcb_poll_for_event(win->connection)); free(event)) {
-		int type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
+static void* event_thread(void* _win) {
+	win_t* win = _win;
 
-		if (type == XCB_EXPOSE) {
-			// if we've got 'wm_event_cb', this means a window manager is attached to us
-			// XXX because of obscure reasons I'm not too sure of (read: not at all sure of), XCB window managers won't catch release events, *sometimes*
-			//     works fine with Xlib (cf. x-compositing-wm), but idk XCB just doesn't
-			//     and because XCB and X11 in general is a steaming pile of shit documentation-wise and in terms of debugging, this is the solution I've came up with for the meantime 💩
-			// TODO try putting this back before the for loop because it seems it only does *not* want to break when running as a WM... something I'm missing perhaps?
-			
-			if (win->wm_event_cb) {
-				xcb_query_pointer_cookie_t cookie = xcb_query_pointer(win->connection, win->win);
-				
-				xcb_generic_error_t* error;
-				xcb_query_pointer_reply_t* reply = xcb_query_pointer_reply(win->connection, cookie, &error);
+	while (1) {
+		// poll for events until there are none left (fancy wrapper around __process_event basically)
 
-				if (!error && reply->mask == 0 && win->wm_prev_button) { // simulate XCB_BUTTON_RELEASE
-					xcb_button_release_event_t event = {
-						.detail = win->wm_prev_button,
+		for (xcb_generic_event_t* event; (event = xcb_wait_for_event(win->connection)); free(event)) {
+			int type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
 
-						.root_x = reply->root_x,
-						.root_y = reply->root_y,
-					};
-
-					win->wm_prev_button = 0;
-					__process_event(win, (xcb_generic_event_t*) &event, XCB_BUTTON_RELEASE);
-				}
-
-				if (error) {
-					free(error);
-				}
-
-				free(reply);
+			if (__process_event(win, event, type) < 0) {
+				sigint_received = 1; // TODO not like this lol
+				return NULL;
 			}
 		}
+	}
 
-		if (__process_event(win, event, type) < 0) {
+	return NULL;
+}
+
+// draw loop
+
+dynamic int loop(win_t* win) {
+	while (1) {
+		// signal events
+	
+		if (sigint_received) {
+			// once we've received SIGINT, all other events are irrelevant
+			// TODO send a close window event back to this window through some kind of new exposed window command
+			return 0;
+		}
+
+		// actually draw
+
+		if (call_cb(win, CB_DRAW) == 1) {
 			return 0;
 		}
 	}
-
-	if (call_cb(win, CB_DRAW) == 1) {
-		return 0;
-	}
-
-	invalidate(win);
-
-	return 1;
-}
-
-dynamic int loop(win_t* win) {
-	while (process_events(win));
-	return 0; // no more events to process
+	
+	return 0;
 }
 
 dynamic int grab_focus(win_t* win) {
@@ -573,6 +432,137 @@ dynamic int get_wm_x_res(win_t* win) {
 
 dynamic int get_wm_y_res(win_t* win) {
 	return win->wm_y_res;
+}
+
+static win_t* __create_setup(void) {
+	win_t* win = calloc(1, sizeof *win);
+
+	// get connection to X server
+
+	win->display = XOpenDisplay(NULL /* default to 'DISPLAY' environment variable */);
+
+	if (!win->display) {
+		FATAL_ERROR("Failed to open X display\n")
+	}
+
+	win->default_screen = DefaultScreen(win->display);
+	win->connection = XGetXCBConnection(win->display);
+
+	if (!win->connection) {
+		FATAL_ERROR("Failed to get XCB connection from X display\n")
+	}
+
+	XSetEventQueueOwner(win->display, XCBOwnsEventQueue);
+
+	// get screen
+
+	xcb_screen_iterator_t it = xcb_setup_roots_iterator(xcb_get_setup(win->connection));
+	for (int i = win->default_screen; it.rem && i > 0; i--, xcb_screen_next(&it));
+
+	win->screen = it.data;
+
+	// get information about the window manager (i.e. the root window)
+
+	xcb_window_t root = win->screen->root;
+
+	xcb_get_geometry_cookie_t root_geom_cookie = xcb_get_geometry(win->connection, root);
+	xcb_get_geometry_reply_t* root_geom = xcb_get_geometry_reply(win->connection, root_geom_cookie, NULL);
+
+	win->wm_x_res = root_geom->width;
+	win->wm_y_res = root_geom->height;
+
+	free(root_geom);
+
+	// register a new mouse
+
+	if (aquabsd_alps_mouse_register_mouse) {
+		aquabsd_alps_mouse_register_mouse("aquabsd.alps.win mouse", mouse_update_callback, win, 1);
+	}
+
+	// register a new keyboard
+
+	if (aquabsd_alps_kbd_register_kbd) {
+		aquabsd_alps_kbd_register_kbd("aquabsd.alps.win keyboard", kbd_update_callback, win, 1);
+	}
+
+	// register signal handlers
+
+	struct sigaction sa = {
+		.sa_handler = sigint_handler,
+	};
+
+	sigaction(SIGINT, &sa, NULL);
+
+	// setup event thread
+
+	win->threading_enabled = 1;
+
+	if (pthread_create(&win->event_thread, NULL, event_thread, win) < 0) {
+		win->threading_enabled = 0;
+		WARN("Failed to create event thread for window (%s) - threading will be disabled\n", strerror(errno))
+	}
+
+	return win;
+}
+
+static void _get_ewmh_atoms(win_t* win) {
+	win->_net_wm_visible_name_atom = get_intern_atom(win, "_NET_WM_VISIBLE_NAME");
+	win->_net_wm_name_atom = get_intern_atom(win, "_NET_WM_NAME"); // EWMH spec says it's better to use this than just 'WM_NAME'
+}
+
+dynamic win_t* create(unsigned x_res, unsigned y_res) {
+	win_t* win = __create_setup();
+
+	if (!win) {
+		return NULL;
+	}
+
+	// create window
+
+	win->x_res = x_res;
+	win->y_res = y_res;
+
+	const uint32_t win_attribs[] = {
+		XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE,
+	};
+
+	win->win = xcb_generate_id(win->connection);
+
+	xcb_create_window(
+		win->connection, XCB_COPY_FROM_PARENT, win->win, win->screen->root,
+		0, 0, win->x_res, win->y_res, 0, // window geometry
+		XCB_WINDOW_CLASS_INPUT_OUTPUT, win->screen->root_visual,
+		XCB_CW_EVENT_MASK, win_attribs);
+
+	// get the atoms we'll probably need
+
+	win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
+	win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
+
+	_get_ewmh_atoms(win);
+
+	// setup 'WM_DELETE_WINDOW' protocol (yes this is dumb, thank you XCB & X11)
+	// also show we support all those other atoms
+
+	xcb_icccm_set_wm_protocols(win->connection, win->win, win->wm_protocols_atom, 1, &win->wm_delete_win_atom);
+
+	// set sensible minimum and maximum sizes for the window
+
+	xcb_size_hints_t hints = { 0 };
+
+	xcb_icccm_size_hints_set_min_size(&hints, 320, 200);
+	// no maximum size
+
+	xcb_icccm_set_wm_size_hints(win->connection, win->win, XCB_ATOM_WM_NORMAL_HINTS, &hints);
+
+	// finally (at least for the windowing part), map the window (show it basically) and flush
+
+	xcb_map_window(win->connection, win->win);
+	xcb_flush(win->connection);
+
+	win->visible = 1;
+
+	return win;
 }
 
 // functions exposed exclusively to devices
