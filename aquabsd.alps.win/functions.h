@@ -210,13 +210,33 @@ static void invalidate(win_t* win) {
 	event.width  = win->x_res;
 	event.height = win->y_res;
 
-	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? */, win->win, XCB_EVENT_MASK_EXPOSURE, (const char*) &event);
+	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? (cf. 'close') */, win->win, XCB_EVENT_MASK_EXPOSURE, (const char*) &event);
 	xcb_flush(win->connection);
+}
+
+static int _close(win_t* win) {
+	xcb_client_message_event_t event;
+
+	event.response_type = XCB_CLIENT_MESSAGE;
+	event.window = win->win;
+
+	event.format = 32;
+	event.sequence = 0;
+
+	event.type = win->wm_protocols_atom;
+
+	event.data.data32[0] = win->wm_delete_win_atom;
+	event.data.data32[1] = XCB_CURRENT_TIME;
+
+	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? (cf. 'invalidate') */, win->win, XCB_EVENT_MASK_NO_EVENT, (const char*) &event);
+	xcb_flush(win->connection);
+
+	return 0;
 }
 
 // process a specific event
 
-static int __process_event(win_t* win, xcb_generic_event_t* event, int type) {
+static int _process_event(win_t* win, xcb_generic_event_t* event, int type) {
 	if (type == XCB_EXPOSE) {
 		// TODO do nothing (?)
 	}
@@ -342,14 +362,14 @@ static int __process_event(win_t* win, xcb_generic_event_t* event, int type) {
 static void* event_thread(void* _win) {
 	win_t* win = _win;
 
-	while (1) {
-		// poll for events until there are none left (fancy wrapper around __process_event basically)
+	while (win->running) {
+		// poll for events until there are none left (fancy wrapper around _process_event basically)
 
 		for (xcb_generic_event_t* event; (event = xcb_wait_for_event(win->connection)); free(event)) {
 			int type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
 
-			if (__process_event(win, event, type) < 0) {
-				sigint_received = 1; // TODO not like this lol
+			if (_process_event(win, event, type) < 0) {
+				win->running = 0;
 				return NULL;
 			}
 		}
@@ -361,13 +381,12 @@ static void* event_thread(void* _win) {
 // draw loop
 
 dynamic int loop(win_t* win) {
-	while (1) {
+	while (win->running) {
 		// signal events
 	
 		if (sigint_received) {
-			// once we've received SIGINT, all other events are irrelevant
-			// TODO send a close window event back to this window through some kind of new exposed window command
-			return 0;
+			_close(win);
+			// don't exit straight away; wait until the event thread has gracefully exitted
 		}
 
 		// actually draw
@@ -378,6 +397,12 @@ dynamic int loop(win_t* win) {
 	}
 	
 	return 0;
+}
+
+// state modification functions
+
+dynamic int close(win_t* win) {
+	return _close(win);
 }
 
 dynamic int grab_focus(win_t* win) {
@@ -410,6 +435,8 @@ dynamic int resize(win_t* win, float x, float y) {
 	return 0;
 }
 
+// getter functions
+
 dynamic int get_x_pos(win_t* win) {
 	return win->x_pos;
 }
@@ -434,7 +461,9 @@ dynamic int get_wm_y_res(win_t* win) {
 	return win->wm_y_res;
 }
 
-static win_t* __create_setup(void) {
+// creation & setup functions
+
+static win_t* _create_setup(void) {
 	win_t* win = calloc(1, sizeof *win);
 
 	// get connection to X server
@@ -502,6 +531,8 @@ static win_t* __create_setup(void) {
 		WARN("Failed to create event thread for window (%s) - threading will be disabled\n", strerror(errno))
 	}
 
+	win->running = 1;
+
 	return win;
 }
 
@@ -511,7 +542,7 @@ static void _get_ewmh_atoms(win_t* win) {
 }
 
 dynamic win_t* create(unsigned x_res, unsigned y_res) {
-	win_t* win = __create_setup();
+	win_t* win = _create_setup();
 
 	if (!win) {
 		return NULL;
@@ -568,7 +599,7 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 // functions exposed exclusively to devices
 
 dynamic win_t* create_setup(void) {
-	return __create_setup();
+	return _create_setup();
 }
 
 dynamic void get_ewmh_atoms(win_t* win) {
