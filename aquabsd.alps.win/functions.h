@@ -4,14 +4,23 @@
 #include <signal.h>
 #include <errno.h>
 
+#define LOG_SIGNATURE "[aquabsd.alps.win]"
+
+#define LOG_REGULAR "\033[0m"
+#define LOG_RED     "\033[0;31m"
+#define LOG_GREEN   "\033[0;32m"
+#define LOG_YELLOW  "\033[0;33m"
+
 #define FATAL_ERROR(...) \
-	fprintf(stderr, "[aquabsd.alps.win] FATAL ERROR "__VA_ARGS__); \
+	fprintf(stderr, LOG_SIGNATURE LOG_RED " FATAL ERROR "__VA_ARGS__); \
+	fprintf(stderr, LOG_REGULAR); \
 	\
 	delete(win); \
 	return NULL;
 
 #define WARN(...) \
-	fprintf(stderr, "[aquabsd.alps.win] WARNING "__VA_ARGS__);
+	fprintf(stderr, LOG_SIGNATURE LOG_YELLOW " WARNING "__VA_ARGS__); \
+	fprintf(stderr, LOG_REGULAR);
 
 // once we've received SIGINT, we must exit as soon as possible;
 // there's no going back
@@ -122,7 +131,7 @@ dynamic char* get_caption(win_t* win) {
 
 dynamic int register_cb(win_t* win, cb_t type, uint64_t cb, uint64_t param) {
 	if (type >= CB_LEN) {
-		fprintf(stderr, "[aquabsd.alps.win] Callback type %d doesn't exist\n", type);
+		WARN("Callback type %d doesn't exist\n", type)
 		return -1;
 	}
 
@@ -582,7 +591,7 @@ dynamic void get_ewmh_atoms(win_t* win) {
 
 dynamic int register_dev_cb(win_t* win, cb_t type, int (*cb) (win_t* win, void* param, uint64_t cb, uint64_t cb_param), void* param) {
 	if (type >= CB_LEN) {
-		fprintf(stderr, "[aquabsd.alps.win] Callback type %d doesn't exist\n", type);
+		WARN("Callback type %d doesn't exist\n", type)
 		return -1;
 	}
 
