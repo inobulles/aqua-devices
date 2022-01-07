@@ -239,12 +239,6 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 
 		if (button == 5) win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] = -1.0;
 		if (button == 4) win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] =  1.0;
-
-		// cf. process_events
-
-		if (win->wm_event_cb) {
-			win->wm_prev_button = button;
-		}
 	}
 
 	else if (type == XCB_BUTTON_RELEASE) {
@@ -348,7 +342,7 @@ static void* event_thread(void* _win) {
 
 			if (process_event(win, event, type) < 0) {
 				win->running = 0;
-				return NULL;
+				break;
 			}
 		}
 	}
@@ -359,18 +353,20 @@ static void* event_thread(void* _win) {
 // draw loop
 
 dynamic int loop(win_t* win) {
+	// don't ever explicitly break out of this loop or return from this function;
+	// instead, wait until the event thread has gracefully exitted
+
 	while (win->running) {
 		// signal events
 	
 		if (sigint_received) {
 			_close_win(win);
-			// don't return straight away; wait until the event thread has gracefully exitted
 		}
 
 		// actually draw
 
 		if (call_cb(win, CB_DRAW) == 1) {
-			return 0;
+			_close_win(win);
 		}
 	}
 	
