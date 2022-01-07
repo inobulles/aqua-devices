@@ -1,9 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
-#define FATAL_ERROR(...) fprintf(stderr, "[aquabsd.alps.win] FATAL ERROR "__VA_ARGS__); delete(win); return NULL;
-#define WARNING(...) fprintf(stderr, "[aquabsd.alps.win] WARNING "__VA_ARGS__);
+#define FATAL_ERROR(...) \
+	fprintf(stderr, "[aquabsd.alps.win] FATAL ERROR "__VA_ARGS__); \
+	delete(win); \
+	return NULL;
+
+#define WARNING(...) \
+	fprintf(stderr, "[aquabsd.alps.win] WARNING "__VA_ARGS__);
 
 // helper functions (for XCB)
 
@@ -47,7 +53,9 @@ static inline char* atom_to_str(win_t* win, xcb_atom_t atom) {
 // functions exposed to devices & apps
 
 dynamic int delete(win_t* win) {
-	if (win->display) XCloseDisplay(win->display);
+	if (win->display) {
+		XCloseDisplay(win->display);
+	}
 
 	free(win);
 
@@ -95,6 +103,27 @@ static int x11_kbd_map(xcb_keycode_t key) {
 	}
 
 	return -1;
+}
+
+// once we've received SIGINT, we must exit as soon as possible;
+// there's no going back
+
+static unsigned sigint_received = 0;
+
+static void sigint_handler(int sig) {
+	if (sig != SIGINT) {
+		WARNING("Got unexpected signal %s (should only be %s)\n", strsignal(sig), strsignal(SIGINT))
+	}
+
+	sigint_received = 1;
+
+	// unset the signal handler so that it can (perhaps?) act a bit more forcefully
+
+	struct sigaction sa = {
+		.sa_handler = SIG_DFL,
+	};
+
+	sigaction(SIGINT, &sa, NULL);
 }
 
 static win_t* __create_setup(void) {
@@ -147,6 +176,14 @@ static win_t* __create_setup(void) {
 	if (aquabsd_alps_kbd_register_kbd) {
 		aquabsd_alps_kbd_register_kbd("aquabsd.alps.win keyboard", kbd_update_callback, win, 1);
 	}
+
+	// register signal handlers
+
+	struct sigaction sa = {
+		.sa_handler = sigint_handler,
+	};
+
+	sigaction(SIGINT, &sa, NULL);
 
 	return win;
 }
@@ -297,6 +334,15 @@ static void invalidate(win_t* win) {
 // process a specific event
 
 static int __process_event(win_t* win, xcb_generic_event_t* event, int type) {
+	// signal events
+	
+	if (sigint_received) {
+		// once we've received SIGINT, all other events are irrelevant
+		return -1;
+	}
+	
+	// XCB events
+
 	if (type == XCB_EXPOSE) {
 		// do nothing (?)
 	}
