@@ -210,11 +210,11 @@ static void invalidate(win_t* win) {
 	event.width  = win->x_res;
 	event.height = win->y_res;
 
-	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? (cf. 'close') */, win->win, XCB_EVENT_MASK_EXPOSURE, (const char*) &event);
+	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? (cf. 'close_win') */, win->win, XCB_EVENT_MASK_EXPOSURE, (const char*) &event);
 	xcb_flush(win->connection);
 }
 
-static int _close(win_t* win) {
+static int _close_win(win_t* win) {
 	xcb_client_message_event_t event;
 
 	event.response_type = XCB_CLIENT_MESSAGE;
@@ -385,7 +385,7 @@ dynamic int loop(win_t* win) {
 		// signal events
 	
 		if (sigint_received) {
-			_close(win);
+			_close_win(win);
 			// don't exit straight away; wait until the event thread has gracefully exitted
 		}
 
@@ -401,8 +401,8 @@ dynamic int loop(win_t* win) {
 
 // state modification functions
 
-dynamic int close(win_t* win) {
-	return _close(win);
+dynamic int close_win(win_t* win) {
+	return _close_win(win);
 }
 
 dynamic int grab_focus(win_t* win) {

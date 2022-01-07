@@ -118,7 +118,7 @@ static char* (*aquabsd_alps_win_get_caption) (aquabsd_alps_win_t* win);
 static int (*aquabsd_alps_win_register_cb) (aquabsd_alps_win_t* win, aquabsd_alps_win_cb_t type, uint64_t cb, uint64_t param);
 static int (*aquabsd_alps_win_loop) (aquabsd_alps_win_t* win);
 
-static int (*aquabsd_alps_win_close) (aquabsd_alps_win_t* win);
+static int (*aquabsd_alps_win_close_win) (aquabsd_alps_win_t* win);
 static int (*aquabsd_alps_win_grab_focus) (aquabsd_alps_win_t* win);
 
 static int (*aquabsd_alps_win_move) (aquabsd_alps_win_t* win, float x, float y);

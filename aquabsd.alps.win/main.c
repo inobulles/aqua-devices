@@ -11,7 +11,9 @@ typedef enum {
 	CMD_REGISTER_CB  = 0x7263, // 'rc'
 	CMD_LOOP         = 0x6C6F, // 'lo'
 
+	CMD_CLOSE        = 0x636C, // 'cl'
 	CMD_GRAB_FOCUS   = 0x6667, // 'gf'
+
 	CMD_MOVE         = 0x6D76, // 'mv'
 	CMD_RESIZE       = 0x727A, // 'rz'
 
@@ -90,6 +92,11 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_LOOP) {
 		win_t* win = (void*) args[0];
 		return loop(win);
+	}
+
+	else if (cmd == CMD_CLOSE) {
+		win_t* win = (void*) args[0];
+		return close_win(win);
 	}
 
 	else if (cmd == CMD_GRAB_FOCUS) {
