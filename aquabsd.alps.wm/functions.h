@@ -289,7 +289,6 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 			// prevent event from passing through to the client
 
 			xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
-			xcb_flush(wm->root->connection);
 		}
 
 		else {
@@ -333,18 +332,18 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 			// prevent event from passing through to the client
 
 			xcb_allow_events(wm->root->connection, XCB_ALLOW_SYNC_POINTER, detail->time);
-			xcb_flush(wm->root->connection);
 		}
 
 		else {
 			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
-			xcb_flush(wm->root->connection);
 
 			// cancel any processed mouse events
 
 			memset(wm->root->mouse_buttons, 0, sizeof wm->root->mouse_buttons);
 			memset(wm->root->mouse_axes,    0, sizeof wm->root->mouse_axes);
 		}
+
+		xcb_flush(wm->root->connection);
 	}
 
 	return 0;
