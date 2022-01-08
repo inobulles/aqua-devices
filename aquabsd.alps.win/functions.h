@@ -374,8 +374,6 @@ static void* event_thread(void* _win) {
 		// we use xcb_wait_for_event here since we're threading;
 		// there's no point constantly polling for events because there's nothing else this thread has to do
 
-		printf("event loop\n");
-
 		process_events(win, xcb_wait_for_event);
 	}
 
@@ -405,8 +403,6 @@ dynamic int loop(win_t* win) {
 		}
 		
 		// actually draw
-
-		// printf("draw loop\n");
 
 		if (call_cb(win, CB_DRAW) == 1) {
 			_close_win(win);
