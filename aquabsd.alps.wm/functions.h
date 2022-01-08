@@ -519,6 +519,10 @@ dynamic int make_compositing(wm_t* wm) {
 	xcb_window_t screen_owner = create_dumb_win(wm);
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, screen_owner, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen("xcompmgr") /* don't need to include null */, "xcompmgr");
 
+	if (wm->root->default_screen > 99) {
+		return -1;
+	}
+
 	char name[] = "_NET_WM_CM_S##";
 	snprintf(name, sizeof(name), "_NET_WM_CM_S%d", wm->root->default_screen);
 

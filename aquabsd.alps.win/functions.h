@@ -209,18 +209,28 @@ static int _close_win(win_t* win) {
 	xcb_client_message_event_t event;
 
 	event.response_type = XCB_CLIENT_MESSAGE;
+
 	event.window = win->win;
 
 	event.format = 32;
 	event.sequence = 0;
 
-	event.type = win->wm_protocols_atom;
+	event.type = win->wm_delete_win_atom;
 
 	event.data.data32[0] = win->wm_delete_win_atom;
 	event.data.data32[1] = XCB_CURRENT_TIME;
 
-	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? */, win->win, XCB_EVENT_MASK_NO_EVENT, (const char*) &event);
+	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? */, win->auxiliary, XCB_EVENT_MASK_NO_EVENT, (const char*) &event);
 	xcb_flush(win->connection);
+
+	// if window manager:
+	// yes, this is super dirty and will result in a segfault, but I don't see any other way of doing it
+	// window managers completely ignore XCB_CLIENT_MESSAGE events, idk why
+	// I've probably spent the last 5 hours working on this problem (as is usually the case with XCB) with no solution, so I give up, not even going to mark this as TODO
+
+	if (win->wm_event_cb && win->threading_enabled) {
+		win->running = 0;
+	}
 
 	return 0;
 }
@@ -231,7 +241,7 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 	if (type == XCB_CLIENT_MESSAGE) {
 		xcb_client_message_event_t* specific = (void*) event;
 
-		if (specific->data.data32[0] == win->wm_delete_win_atom && !win->wm_event_cb /* make sure we don't have a wm attached */) {
+		if (specific->data.data32[0] == win->wm_delete_win_atom && specific->window == win->win /* make sure it is indeed us someone's trying to kill */) {
 			return -1;
 		}
 	}
@@ -364,6 +374,8 @@ static void* event_thread(void* _win) {
 		// we use xcb_wait_for_event here since we're threading;
 		// there's no point constantly polling for events because there's nothing else this thread has to do
 
+		printf("event loop\n");
+
 		process_events(win, xcb_wait_for_event);
 	}
 
@@ -375,9 +387,16 @@ static void* event_thread(void* _win) {
 dynamic int loop(win_t* win) {
 	// don't ever explicitly break out of this loop or return from this function;
 	// instead, wait until the event thread has gracefully exitted
+	// we call _close_win instead of just setting win->running to wake up the event thread
 
 	while (win->running) {
-		// actual events (if no event thread)
+		// signal events
+	
+		if (sigint_received) {
+			_close_win(win);
+		}
+		
+		// actual events (ONLY if no event thread, i.e. threading is disabled)
 		// we use xcb_poll_for_event here since we're not threading;
 		// if we wait for the next event, there's a chance we'll be blocked here for a while
 
@@ -385,16 +404,12 @@ dynamic int loop(win_t* win) {
 			process_events(win, xcb_poll_for_event);
 		}
 		
-		// signal events
-	
-		if (sigint_received) {
-			win->running = 0;
-		}
-
 		// actually draw
 
+		// printf("draw loop\n");
+
 		if (call_cb(win, CB_DRAW) == 1) {
-			win->running = 0;
+			_close_win(win);
 		}
 	}
 	
@@ -535,6 +550,11 @@ static win_t* _create_setup(void) {
 
 	win->running = 1;
 
+	// TODO REMME
+	
+	win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
+	win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
+
 	return win;
 }
 
@@ -572,10 +592,12 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
 	win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
 
+	// get extra windowing atoms
+	// TODO show we support these atoms? how does this work again?
+
 	_get_ewmh_atoms(win);
 
 	// setup 'WM_DELETE_WINDOW' protocol (yes this is dumb, thank you XCB & X11)
-	// also show we support all those other atoms
 
 	xcb_icccm_set_wm_protocols(win->connection, win->win, win->wm_protocols_atom, 1, &win->wm_delete_win_atom);
 
