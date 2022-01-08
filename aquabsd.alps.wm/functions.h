@@ -6,8 +6,10 @@
 
 #define SUPER_MOD XCB_MOD_MASK_4 // looks like this is the super key
 
+// TODO COLOURS
+
 #define FATAL_ERROR(...) fprintf(stderr, "[aquabsd.alps.wm] FATAL ERROR "__VA_ARGS__); delete(wm); return NULL;
-#define WARNING(...) fprintf(stderr, "[aquabsd.alps.wm] WARNING "__VA_ARGS__);
+#define WARN(...) fprintf(stderr, "[aquabsd.alps.wm] WARNING "__VA_ARGS__);
 
 // helper functions (for XCB)
 
@@ -115,7 +117,7 @@ static win_t* search_win(wm_t* wm, xcb_window_t id) {
 	}
 
 	if (!win) {
-		fprintf(stderr, "[aquabsd.alps.wm] WARNING Window of id 0x%x was not found\n", id);
+		fprintf(stderr, "[aquabsd.alps.wm] WARN Window of id 0x%x was not found\n", id);
 	}
 
 	return NULL; // something's probably gonna crash ;)
@@ -187,6 +189,29 @@ static void focus_win(wm_t* wm, win_t* win) {
 	}
 
 	call_cb(wm, win, CB_FOCUS);
+}
+
+static int click_intended_for_us(wm_t* wm, xcb_button_press_event_t* detail) {
+	// was the click intended for us or should we pass it on to the window?
+
+	if (detail->state & SUPER_MOD) {
+		return 1; // always intended for us if the super key is held
+	}
+
+	// check if the app has registered a CB_CLICK callback with special rules
+	// we can't use the regular 'call_cb' function here because this callback takes in pointer XY coordinated instead of a window pointer for arguments
+
+	uint64_t cb = wm->cbs[CB_CLICK];
+	uint64_t param = wm->cb_params[CB_CLICK];
+
+	if (!cb) {
+		return 0; // don't assume the click was intended for us if no callback
+	}
+
+	// TODO 4 arguments is too much for a KOS callback
+	// return kos_callback(cb, 4, (uint64_t) wm, detail->root_x, detail->root_y, param);
+
+	return kos_callback(cb, 3, detail->root_x, detail->root_y, param);
 }
 
 #define WIN_CONFIG \
@@ -264,6 +289,8 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 	else if (type == XCB_MOTION_NOTIFY) {
 		xcb_motion_notify_event_t* detail = (void*) event;
 
+		// TODO clean out this mouse_* stuff
+
 		wm->root->mouse_x = detail->root_x;
 		wm->root->mouse_y = detail->root_y;
 	}
@@ -285,10 +312,13 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		//      xcb_ungrab_pointer(wm->root->connection);
 		//      so that operations can resume normally
 
-		if (detail->state & SUPER_MOD) {
+		wm->in_wm_click = click_intended_for_us(wm, detail);
+
+		if (wm->in_wm_click) {
 			// prevent event from passing through to the client
 
 			xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+			xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_BUTTON_MASK_ANY);
 		}
 
 		else {
@@ -307,13 +337,14 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 			// allow mouse click to go through to window
 
 			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
-			xcb_flush(wm->root->connection);
 
 			// cancel any processed mouse events
 
 			memset(wm->root->mouse_buttons, 0, sizeof wm->root->mouse_buttons);
 			memset(wm->root->mouse_axes,    0, sizeof wm->root->mouse_axes);
 		}
+
+		xcb_flush(wm->root->connection);
 	}
 
 	else if (type == XCB_BUTTON_RELEASE) {
@@ -328,13 +359,16 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 		xcb_ungrab_pointer(wm->root->connection, XCB_CURRENT_TIME);
 
-		if (detail->state & SUPER_MOD) {
-			// prevent event from passing through to the client
+		if (wm->in_wm_click) {
+			wm->in_wm_click = 0;
 
-			xcb_allow_events(wm->root->connection, XCB_ALLOW_SYNC_POINTER, detail->time);
+			xcb_ungrab_button(wm->root->connection, XCB_BUTTON_INDEX_ANY, wm->root->win, XCB_GRAB_ANY);
+			xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, SUPER_MOD);
 		}
 
 		else {
+			// allow mouse release to go through to window
+			
 			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
 
 			// cancel any processed mouse events
@@ -382,7 +416,8 @@ dynamic wm_t* create(void) {
 
 	// grab the pointer
 
-	// xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+	// xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_BUTTON_MASK_ANY);
+	// xcb_ungrab_button(wm->root->connection, XCB_BUTTON_INDEX_ANY, wm->root->win, XCB_GRAB_ANY);
 	xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, SUPER_MOD);
 
 	// grab the keys we are interested in as a window manager (i.e. those with the super key modifier)
