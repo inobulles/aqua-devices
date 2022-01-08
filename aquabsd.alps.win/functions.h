@@ -338,22 +338,33 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 	return 0;
 }
 
+static void process_events(win_t* win, xcb_generic_event_t* (*xcb_event_func) (xcb_connection_t* c)) {
+	if (xcb_event_func != xcb_wait_for_event && xcb_event_func != xcb_poll_for_event) {
+		WARN("xcb_event_func passed to %s (%p) must either point to xcb_wait_for_event or xcb_poll_for_event\n", __func__, xcb_event_func)
+	}
+
+	// poll for events until there are none left (fancy wrapper around process_event basically)
+	
+	for (xcb_generic_event_t* event; (event = xcb_event_func(win->connection)); free(event)) {
+		int type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
+
+		if (process_event(win, event, type) < 0) {
+			win->running = 0;
+			break;
+		}
+	}
+}
+
 // event loop
 
 static void* event_thread(void* _win) {
 	win_t* win = _win;
 
 	while (win->running) {
-		// poll for events until there are none left (fancy wrapper around process_event basically)
+		// we use xcb_wait_for_event here since we're threading;
+		// there's no point constantly polling for events because there's nothing else this thread has to do
 
-		for (xcb_generic_event_t* event; (event = xcb_wait_for_event(win->connection)); free(event)) {
-			int type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
-
-			if (process_event(win, event, type) < 0) {
-				win->running = 0;
-				break;
-			}
-		}
+		process_events(win, xcb_wait_for_event);
 	}
 
 	return NULL;
@@ -366,16 +377,24 @@ dynamic int loop(win_t* win) {
 	// instead, wait until the event thread has gracefully exitted
 
 	while (win->running) {
+		// actual events (if no event thread)
+		// we use xcb_poll_for_event here since we're not threading;
+		// if we wait for the next event, there's a chance we'll be blocked here for a while
+
+		if (!win->threading_enabled) {
+			process_events(win, xcb_poll_for_event);
+		}
+		
 		// signal events
 	
 		if (sigint_received) {
-			_close_win(win);
+			win->running = 0;
 		}
 
 		// actually draw
 
 		if (call_cb(win, CB_DRAW) == 1) {
-			_close_win(win);
+			win->running = 0;
 		}
 	}
 	
