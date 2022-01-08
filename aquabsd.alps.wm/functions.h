@@ -6,10 +6,23 @@
 
 #define SUPER_MOD XCB_MOD_MASK_4 // looks like this is the super key
 
-// TODO COLOURS
+#define LOG_SIGNATURE "[aquabsd.alps.wm]"
 
-#define FATAL_ERROR(...) fprintf(stderr, "[aquabsd.alps.wm] FATAL ERROR "__VA_ARGS__); delete(wm); return NULL;
-#define WARN(...) fprintf(stderr, "[aquabsd.alps.wm] WARNING "__VA_ARGS__);
+#define LOG_REGULAR "\033[0m"
+#define LOG_RED     "\033[0;31m"
+#define LOG_GREEN   "\033[0;32m"
+#define LOG_YELLOW  "\033[0;33m"
+
+#define FATAL_ERROR(...) \
+	fprintf(stderr, LOG_SIGNATURE LOG_RED " FATAL ERROR "__VA_ARGS__); \
+	fprintf(stderr, LOG_REGULAR); \
+	\
+	delete(wm); \
+	return NULL;
+
+#define WARN(...) \
+	fprintf(stderr, LOG_SIGNATURE LOG_YELLOW " WARNING "__VA_ARGS__); \
+	fprintf(stderr, LOG_REGULAR);
 
 // helper functions (for XCB)
 
@@ -288,8 +301,6 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 	else if (type == XCB_MOTION_NOTIFY) {
 		xcb_motion_notify_event_t* detail = (void*) event;
-
-		// TODO clean out this mouse_* stuff
 
 		wm->root->mouse_x = detail->root_x;
 		wm->root->mouse_y = detail->root_y;
