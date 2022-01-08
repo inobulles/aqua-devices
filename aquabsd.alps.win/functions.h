@@ -435,6 +435,8 @@ dynamic int move(win_t* win, float x, float y) {
 	};
 
 	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, transformed);
+	xcb_flush(win->connection);
+
 	return 0;
 }
 
@@ -445,6 +447,8 @@ dynamic int resize(win_t* win, float x, float y) {
 	};
 
 	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, transformed);
+	xcb_flush(win->connection);
+
 	return 0;
 }
 
