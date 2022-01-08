@@ -202,6 +202,8 @@ static void focus_win(wm_t* wm, win_t* win) {
 	}
 
 static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
+	// TODO see if the fact that the event loop may start before the WM/compositor is setup poses a problem
+
 	wm_t* wm = _wm;
 
 	// window management events
@@ -215,16 +217,6 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 			return 0;
 		}
 
-		// make it so that we receive this window's mouse events too
-		// this is saying we want focus change and button events from the window
-
-		const uint32_t attribs[] = {
-			XCB_EVENT_MASK_FOCUS_CHANGE
-		};
-
-		xcb_change_window_attributes(wm->root->connection, detail->window, XCB_CW_EVENT_MASK, attribs);
-		xcb_grab_button(wm->root->connection, 1, detail->window, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
-
 		win_t* win = add_win(wm, detail->window);
 		WIN_CONFIG
 	}
@@ -237,6 +229,16 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 	else if (type == XCB_MAP_NOTIFY) { // show window
 		xcb_map_notify_event_t* detail = (void*) event;
 		show_win(wm, search_win(wm, detail->window));
+
+		// make it so that we receive this window's mouse events too
+		// this is saying we want focus change and button events from the window
+
+		const uint32_t attribs[] = {
+			XCB_EVENT_MASK_FOCUS_CHANGE
+		};
+
+		xcb_change_window_attributes(wm->root->connection, detail->window, XCB_CW_EVENT_MASK, attribs);
+		xcb_grab_button(wm->root->connection, 1, detail->window, XCB_EVENT_MASK_BUTTON_PRESS, XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE, XCB_CURSOR_NONE, XCB_BUTTON_INDEX_ANY, XCB_BUTTON_MASK_ANY);
 	}
 
 	else if (type == XCB_UNMAP_NOTIFY) { // hide window
@@ -285,14 +287,12 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 		if (detail->state & SUPER_MOD) {
 			// prevent event from passing through to the client
-			xcb_allow_events(wm->root->connection, XCB_ALLOW_SYNC_POINTER, detail->time);
+
+			xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+			xcb_flush(wm->root->connection);
 		}
 
 		else {
-			// allow mouse click to go through to window
-
-			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
-			
 			// focus the window
 			// TODO what's the difference between 'xcb_button_press_event_t.event' & 'xcb_button_press_event_t.child'?
 
@@ -304,6 +304,11 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 					focus_win(wm, win);
 				}
 			}
+			
+			// allow mouse click to go through to window
+
+			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
+			xcb_flush(wm->root->connection);
 
 			// cancel any processed mouse events
 
@@ -318,13 +323,22 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		wm->root->mouse_x = detail->root_x;
 		wm->root->mouse_y = detail->root_y;
 
+		// honestly don't ask me how/why this stuff works
+		// this is the fruit of essentially just randomly scrambling the following lines for a few hours to see what works
+		// there's no logic behind this, pure absurdity
+
+		xcb_ungrab_pointer(wm->root->connection, XCB_CURRENT_TIME);
+
 		if (detail->state & SUPER_MOD) {
 			// prevent event from passing through to the client
+
 			xcb_allow_events(wm->root->connection, XCB_ALLOW_SYNC_POINTER, detail->time);
+			xcb_flush(wm->root->connection);
 		}
 
 		else {
 			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
+			xcb_flush(wm->root->connection);
 
 			// cancel any processed mouse events
 

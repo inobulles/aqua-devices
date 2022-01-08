@@ -389,7 +389,7 @@ dynamic int loop(win_t* win) {
 
 	while (win->running) {
 		// signal events
-	
+
 		if (sigint_received) {
 			_close_win(win);
 		}
