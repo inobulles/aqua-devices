@@ -220,7 +220,7 @@ static int _close_win(win_t* win) {
 	event.data.data32[0] = win->wm_delete_win_atom;
 	event.data.data32[1] = XCB_CURRENT_TIME;
 
-	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? */, win->auxiliary, XCB_EVENT_MASK_NO_EVENT, (const char*) &event);
+	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? */, win->win, XCB_EVENT_MASK_NO_EVENT, (const char*) &event);
 	xcb_flush(win->connection);
 
 	// if window manager:
@@ -549,11 +549,6 @@ static win_t* _create_setup(void) {
 	}
 
 	win->running = 1;
-
-	// TODO REMME
-	
-	win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
-	win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
 
 	return win;
 }
