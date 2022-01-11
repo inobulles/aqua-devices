@@ -440,13 +440,8 @@ dynamic int move(win_t* win, float x, float y) {
 	return 0;
 }
 
-dynamic int resize(win_t* win, float x, float y) {
-	const uint32_t transformed[] = {
-		x * win->wm_x_res,
-		y * win->wm_y_res,
-	};
-
-	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, transformed);
+dynamic int resize(win_t* win, unsigned x, unsigned y) {
+	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, (uint32_t[]) { x, y });
 	xcb_flush(win->connection);
 
 	return 0;
@@ -454,12 +449,13 @@ dynamic int resize(win_t* win, float x, float y) {
 
 // getter functions
 
-dynamic int get_x_pos(win_t* win) {
-	return win->x_pos;
+dynamic float get_x_pos(win_t* win) {
+	return (float) win->x_pos / win->wm_x_res;
 }
 
-dynamic int get_y_pos(win_t* win) {
-	return win->y_pos;
+dynamic float get_y_pos(win_t* win) {
+	int transformed = win->wm_y_res - win->y_pos - win->y_res;
+	return (float) transformed / win->wm_y_res;
 }
 
 dynamic int get_x_res(win_t* win) {

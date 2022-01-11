@@ -116,20 +116,24 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_RESIZE) {
 		win_t* win = (void*) args[0];
 
-		float x = *(float*) &args[1];
-		float y = *(float*) &args[2];
+		unsigned x = args[1];
+		unsigned y = args[2];
 
 		return resize(win, x, y);
 	}
 
 	else if (cmd == CMD_GET_X_POS) {
 		win_t* win = (void*) args[0];
-		return get_x_pos(win);
+		
+		float x_pos = get_x_pos(win);
+		return *(uint64_t*) &x_pos;
 	}
 
 	else if (cmd == CMD_GET_Y_POS) {
 		win_t* win = (void*) args[0];
-		return get_y_pos(win);
+
+		float y_pos = get_y_pos(win);
+		return *(uint64_t*) &y_pos;
 	}
 
 	else if (cmd == CMD_GET_X_RES) {
