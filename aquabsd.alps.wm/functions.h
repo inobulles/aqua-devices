@@ -221,10 +221,13 @@ static int click_intended_for_us(wm_t* wm, xcb_button_press_event_t* detail) {
 		return 0; // don't assume the click was intended for us if no callback
 	}
 
-	// TODO 4 arguments is too much for a KOS callback
-	// return kos_callback(cb, 4, (uint64_t) wm, detail->root_x, detail->root_y, param);
+	float x = (float) detail->root_x / wm->root->x_res;
+	float y = 1.0 - (float) detail->root_y / wm->root->y_res;
 
-	return kos_callback(cb, 3, detail->root_x, detail->root_y, param);
+	// TODO 4 arguments is too much for a KOS callback
+	// return kos_callback(cb, 4, (uint64_t) wm, *(uint64_t*) &x, *(uint64_t*) &y, param);
+
+	return kos_callback(cb, 3, *(uint64_t*) &x, *(uint64_t*) &y, param);
 }
 
 #define WIN_CONFIG \
