@@ -206,6 +206,16 @@ static int x11_kbd_map(xcb_keycode_t key) {
 }
 
 static int _close_win(win_t* win) {
+	// this can happen if 'win' is not a complete window, so account for that
+
+	if (!win->wm_protocols_atom) {
+		win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
+	}
+
+	if (!win->wm_delete_win_atom) {
+		win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
+	}
+
 	xcb_client_message_event_t event;
 
 	event.response_type = XCB_CLIENT_MESSAGE;
@@ -215,7 +225,7 @@ static int _close_win(win_t* win) {
 	event.format = 32;
 	event.sequence = 0;
 
-	event.type = win->wm_delete_win_atom;
+	event.type = win->wm_protocols_atom;
 
 	event.data.data32[0] = win->wm_delete_win_atom;
 	event.data.data32[1] = XCB_CURRENT_TIME;
