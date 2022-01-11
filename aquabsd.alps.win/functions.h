@@ -206,7 +206,7 @@ static int x11_kbd_map(xcb_keycode_t key) {
 }
 
 static int _close_win(win_t* win) {
-	// this can happen if 'win' is not a complete window, so account for that
+	// this can happen if 'win' is not a complete window struct, so account for that
 
 	if (!win->wm_protocols_atom) {
 		win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
@@ -439,7 +439,7 @@ dynamic int grab_focus(win_t* win) {
 }
 
 dynamic int move(win_t* win, float x, float y) {
-	const uint32_t transformed[] = {
+	const int32_t transformed[] = {
 		x * win->wm_x_res,
 		(1 - y) * win->wm_y_res - win->y_res,
 	};

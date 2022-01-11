@@ -28,7 +28,7 @@ struct aquabsd_alps_win_t {
 	unsigned running;
 	unsigned visible;
 	
-	unsigned x_pos, y_pos;
+	int x_pos, y_pos;
 	unsigned x_res, y_res;
 
 	// information about the window manager
