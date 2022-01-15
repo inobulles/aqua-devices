@@ -14,8 +14,7 @@ typedef enum {
 	CMD_CLOSE        = 0x636C, // 'cl'
 	CMD_GRAB_FOCUS   = 0x6667, // 'gf'
 
-	CMD_MOVE         = 0x6D76, // 'mv'
-	CMD_RESIZE       = 0x727A, // 'rz'
+	CMD_MODIFY       = 0x6D76, // 'mv'
 
 	CMD_GET_X_POS    = 0x7870, // 'xp'
 	CMD_GET_Y_POS    = 0x7970, // 'yp'
@@ -104,22 +103,16 @@ uint64_t send(uint16_t _cmd, void* data) {
 		return grab_focus(win);
 	}
 
-	else if (cmd == CMD_MOVE) {
+	else if (cmd == CMD_MODIFY) {
 		win_t* win = (void*) args[0];
 
 		float x = *(float*) &args[1];
 		float y = *(float*) &args[2];
 
-		return move(win, x, y);
-	}
+		unsigned x_res = args[3];
+		unsigned y_res = args[4];
 
-	else if (cmd == CMD_RESIZE) {
-		win_t* win = (void*) args[0];
-
-		unsigned x = args[1];
-		unsigned y = args[2];
-
-		return resize(win, x, y);
+		return modify(win, x, y, x_res, y_res);
 	}
 
 	else if (cmd == CMD_GET_X_POS) {

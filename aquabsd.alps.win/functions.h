@@ -438,20 +438,15 @@ dynamic int grab_focus(win_t* win) {
 	return 0;
 }
 
-dynamic int move(win_t* win, float x, float y) {
+dynamic int modify(win_t* win, float x, float y, unsigned x_res, unsigned y_res) {
 	const int32_t transformed[] = {
 		x * win->wm_x_res,
-		(1 - y) * win->wm_y_res - win->y_res,
+		(1 - y) * win->wm_y_res - y_res,
+		x_res,
+		y_res
 	};
 
-	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, transformed);
-	xcb_flush(win->connection);
-
-	return 0;
-}
-
-dynamic int resize(win_t* win, unsigned x, unsigned y) {
-	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, (uint32_t[]) { x, y });
+	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, transformed);
 	xcb_flush(win->connection);
 
 	return 0;
