@@ -29,9 +29,6 @@ typedef struct {
 
 	xcb_window_t support_win;
 
-	xcb_atom_t client_list_atom;
-	xcb_atom_t supported_atoms_list_atom;
-
 	// event stuff
 
 	unsigned in_wm_click; // is the WM currently processing a click intended for itself?

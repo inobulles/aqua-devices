@@ -140,10 +140,7 @@ static unsigned (*aquabsd_alps_win_get_wm_y_res) (aquabsd_alps_win_t* win);
 // functions exposed exclusively to devices
 
 static aquabsd_alps_win_t* (*aquabsd_alps_win_create_setup) (void);
-static void (*aquabsd_alps_win_get_ewmh_atoms) (aquabsd_alps_win_t* win);
-
 static int (*aquabsd_alps_win_register_dev_cb) (aquabsd_alps_win_t* win, aquabsd_alps_win_cb_t type, int (*cb) (aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param), void* param);
-
 static xcb_window_t (*aquabsd_alps_win_get_draw_win) (aquabsd_alps_win_t* win);
 
 #endif

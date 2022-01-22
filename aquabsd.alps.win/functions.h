@@ -521,6 +521,17 @@ static win_t* _create_setup(void) {
 
 	free(root_geom);
 
+	// get EWMH atoms
+	// TODO show we support these atoms? how does this work again?
+
+	xcb_intern_atom_cookie_t* cookies = xcb_ewmh_init_atoms(win->connection, &win->ewmh);
+
+	if (!xcb_ewmh_init_atoms_replies(&win->ewmh, cookies, NULL)) {
+		FATAL_ERROR("Failed to get EWMH atoms\n")
+	}
+
+	free(cookies);
+
 	// register a new mouse
 
 	if (aquabsd_alps_mouse_register_mouse) {
@@ -555,14 +566,6 @@ static win_t* _create_setup(void) {
 	return win;
 }
 
-static void _get_ewmh_atoms(win_t* win) {
-	xcb_intern_atom_cookie_t* cookies = xcb_ewmh_init_atoms(win->connection, &win->ewmh);
-
-	if (!xcb_ewmh_init_atoms_replies(&win->ewmh, cookies, NULL)) {
-		return; // error
-	}
-}
-
 dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	win_t* win = _create_setup();
 
@@ -592,12 +595,8 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
 	win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
 
-	// get extra windowing atoms
-	// TODO show we support these atoms? how does this work again?
-
-	_get_ewmh_atoms(win);
-
 	// setup 'WM_DELETE_WINDOW' protocol (yes, this is dumb, thank you XCB & X11)
+	// TODO now that I think of it, is this maybe why window managers don't accept requests to die?
 
 	xcb_icccm_set_wm_protocols(win->connection, win->win, win->wm_protocols_atom, 1, &win->wm_delete_win_atom);
 
@@ -624,10 +623,6 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 
 dynamic win_t* create_setup(void) {
 	return _create_setup();
-}
-
-dynamic void get_ewmh_atoms(win_t* win) {
-	_get_ewmh_atoms(win);
 }
 
 dynamic int register_dev_cb(win_t* win, cb_t type, int (*cb) (win_t* win, void* param, uint64_t cb, uint64_t cb_param), void* param) {

@@ -81,7 +81,7 @@ static void update_client_list(wm_t* wm) {
 		client_list[i++] = win->win;
 	}
 
-	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->client_list_atom, XCB_ATOM_WINDOW, 32, wm->win_count, client_list);
+	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->root->ewmh._NET_CLIENT_LIST, XCB_ATOM_WINDOW, 32, wm->win_count, client_list);
 	xcb_flush(wm->root->connection);
 
 	free(client_list);
@@ -446,36 +446,29 @@ dynamic wm_t* create(void) {
 	xcb_ungrab_key(wm->root->connection, XCB_GRAB_ANY, wm->root->win, XCB_MOD_MASK_ANY);
 	xcb_grab_key(wm->root->connection, 1, wm->root->win, SUPER_MOD, XCB_GRAB_ANY, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
-	// setup our atoms
-	// we also need to specify which atoms are supported in '_NET_SUPPORTED'
-
-	wm->client_list_atom = get_intern_atom(wm, "_NET_CLIENT_LIST");
-	wm->supported_atoms_list_atom = get_intern_atom(wm, "_NET_SUPPORTED");
-
-	aquabsd_alps_win_get_ewmh_atoms(wm->root);
+	// specify which atoms are supported in '_NET_SUPPORTED'
 
 	const xcb_atom_t supported_atoms[] = {
-		wm->supported_atoms_list_atom,
-		wm->client_list_atom,
+		wm->root->ewmh._NET_SUPPORTED,
+		wm->root->ewmh._NET_CLIENT_LIST,
 
 		// from aquabsd.alps.win
 
 		wm->root->ewmh._NET_WM_VISIBLE_NAME,
 		wm->root->ewmh._NET_WM_NAME,
+		wm->root->ewmh._NET_WM_STATE,
 	};
 
-	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->supported_atoms_list_atom, XCB_ATOM_ATOM, 32, sizeof(supported_atoms) / sizeof(*supported_atoms), supported_atoms);
+	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->root->ewmh._NET_SUPPORTED, XCB_ATOM_ATOM, 32, sizeof(supported_atoms) / sizeof(*supported_atoms), supported_atoms);
 
 	// now, we move on to '_NET_SUPPORTING_WM_CHECK'
 	// this is a bit weird, but it's all specified by the EWMH spec: https://developer.gnome.org/wm-spec/
 
-	xcb_atom_t supporting_wm_check_atom = get_intern_atom(wm, "_NET_SUPPORTING_WM_CHECK");
 	wm->support_win = create_dumb_win(wm);
-
 	xcb_window_t support_win_list[1] = { wm->support_win };
 
-	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, supporting_wm_check_atom, XCB_ATOM_WINDOW, 32, 1, support_win_list);
-	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->support_win, supporting_wm_check_atom, XCB_ATOM_WINDOW, 32, 1, support_win_list);
+	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->root->ewmh._NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, support_win_list);
+	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->support_win, wm->root->ewmh._NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, support_win_list);
 
 	// get all monitors and their geometries
 	// CRTC stands for "Cathode Ray Tube Controller", which is a dumb name, so AQUA calls them "providers"
