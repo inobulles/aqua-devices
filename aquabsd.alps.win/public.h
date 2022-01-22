@@ -22,6 +22,12 @@ typedef enum {
 	AQUABSD_ALPS_WIN_CB_LEN
 } aquabsd_alps_win_cb_t;
 
+typedef enum {
+	AQUABSD_ALPS_WIN_STATE_REGULAR,
+	AQUABSD_ALPS_WIN_STATE_TRANSIENT,
+	AQUABSD_ALPS_WIN_STATE_FULLSCREEN,
+} aquabsd_alps_win_state_t;
+
 typedef struct aquabsd_alps_win_t aquabsd_alps_win_t; // forward declaration
 
 struct aquabsd_alps_win_t {
@@ -113,6 +119,8 @@ static int (*aquabsd_alps_win_delete) (aquabsd_alps_win_t* win);
 
 static int (*aquabsd_alps_win_set_caption) (aquabsd_alps_win_t* win, const char* caption);
 static char* (*aquabsd_alps_win_get_caption) (aquabsd_alps_win_t* win);
+
+static aquabsd_alps_win_state_t (*aquabsd_alps_win_get_state) (aquabsd_alps_win_t* win);
 
 static int (*aquabsd_alps_win_register_cb) (aquabsd_alps_win_t* win, aquabsd_alps_win_cb_t type, uint64_t cb, uint64_t param);
 static int (*aquabsd_alps_win_loop) (aquabsd_alps_win_t* win);
