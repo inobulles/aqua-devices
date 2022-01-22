@@ -130,6 +130,10 @@ dynamic char* get_caption(win_t* win) {
 	return NULL;
 }
 
+dynamic state_t get_state(win_t* win) {
+	return win->state;
+}
+
 dynamic int register_cb(win_t* win, cb_t type, uint64_t cb, uint64_t param) {
 	if (type >= CB_LEN) {
 		WARN("Callback type %d doesn't exist\n", type)
