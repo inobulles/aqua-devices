@@ -452,11 +452,8 @@ dynamic wm_t* create(void) {
 		wm->root->ewmh._NET_SUPPORTED,
 		wm->root->ewmh._NET_CLIENT_LIST,
 
-		// from aquabsd.alps.win
-
 		wm->root->ewmh._NET_WM_VISIBLE_NAME,
 		wm->root->ewmh._NET_WM_NAME,
-		wm->root->ewmh._NET_WM_STATE,
 	};
 
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->root->ewmh._NET_SUPPORTED, XCB_ATOM_ATOM, 32, sizeof(supported_atoms) / sizeof(*supported_atoms), supported_atoms);
