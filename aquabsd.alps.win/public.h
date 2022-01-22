@@ -9,6 +9,7 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_event.h>
+#include <xcb/xcb_ewmh.h>
 
 // for compatibility with EGL/GLX, we must use Xlib alongside XCB:
 // https://xcb.freedesktop.org/opengl/
@@ -57,8 +58,7 @@ struct aquabsd_alps_win_t {
 	xcb_atom_t wm_protocols_atom;
 	xcb_atom_t wm_delete_win_atom;
 
-	xcb_atom_t _net_wm_visible_name_atom;
-	xcb_atom_t _net_wm_name_atom;
+	xcb_ewmh_connection_t ewmh;
 
 	// multithreading stuff
 
@@ -119,8 +119,6 @@ static int (*aquabsd_alps_win_delete) (aquabsd_alps_win_t* win);
 
 static int (*aquabsd_alps_win_set_caption) (aquabsd_alps_win_t* win, const char* caption);
 static char* (*aquabsd_alps_win_get_caption) (aquabsd_alps_win_t* win);
-
-static aquabsd_alps_win_state_t (*aquabsd_alps_win_get_state) (aquabsd_alps_win_t* win);
 
 static int (*aquabsd_alps_win_register_cb) (aquabsd_alps_win_t* win, aquabsd_alps_win_cb_t type, uint64_t cb, uint64_t param);
 static int (*aquabsd_alps_win_loop) (aquabsd_alps_win_t* win);

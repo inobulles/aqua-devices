@@ -8,8 +8,6 @@ typedef enum {
 	CMD_SET_CAPTION  = 0x7363, // 'sc'
 	CMD_GET_CAPTION  = 0x6763, // 'gc'
 
-	CMD_GET_STATE    = 0x6773, // 'gs'
-
 	CMD_REGISTER_CB  = 0x7263, // 'rc'
 	CMD_LOOP         = 0x6C6F, // 'lo'
 
@@ -78,11 +76,6 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_GET_CAPTION) {
 		win_t* win = (void*) args[0];
 		return (uint64_t) get_caption(win);
-	}
-
-	else if (cmd == CMD_GET_STATE) {
-		win_t* win = (void*) args[0];
-		return get_state(win);
 	}
 
 	else if (cmd == CMD_REGISTER_CB) {

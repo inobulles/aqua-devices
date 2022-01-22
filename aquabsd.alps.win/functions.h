@@ -97,8 +97,8 @@ dynamic int delete(win_t* win) {
 dynamic int set_caption(win_t* win, const char* caption) {
 	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
 
-	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, win->_net_wm_name_atom, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
-	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, win->_net_wm_visible_name_atom, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
+	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, win->ewmh._NET_WM_NAME, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
+	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, win->ewmh._NET_WM_VISIBLE_NAME, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
 
 	xcb_flush(win->connection);
 
@@ -110,13 +110,14 @@ dynamic char* get_caption(win_t* win) {
 
 	// first try '_NET_WM_VISIBLE_NAME'
 
-	if ((caption = atom_to_str(win, win->_net_wm_visible_name_atom))) {
+	if ((caption = atom_to_str(win, win->ewmh._NET_WM_VISIBLE_NAME))) {
 		return caption;
 	}
 
 	// then, '_NET_WM_NAME'
+	// EWMH spec says it's better to use this than just 'WM_NAME'
 
-	if ((caption = atom_to_str(win, win->_net_wm_name_atom))) {
+	if ((caption = atom_to_str(win, win->ewmh._NET_WM_NAME))) {
 		return caption;
 	}
 
@@ -127,10 +128,6 @@ dynamic char* get_caption(win_t* win) {
 	}
 
 	return NULL;
-}
-
-dynamic state_t get_state(win_t* win) {
-
 }
 
 dynamic int register_cb(win_t* win, cb_t type, uint64_t cb, uint64_t param) {
@@ -253,9 +250,9 @@ static int _close_win(win_t* win) {
 
 static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 	if (type == XCB_CLIENT_MESSAGE) {
-		xcb_client_message_event_t* specific = (void*) event;
+		xcb_client_message_event_t* detail = (void*) event;
 
-		if (specific->data.data32[0] == win->wm_delete_win_atom && specific->window == win->win /* make sure it is indeed us someone's trying to kill */) {
+		if (detail->data.data32[0] == win->wm_delete_win_atom && detail->window == win->win /* make sure it is indeed us someone's trying to kill */) {
 			return -1;
 		}
 	}
@@ -559,8 +556,11 @@ static win_t* _create_setup(void) {
 }
 
 static void _get_ewmh_atoms(win_t* win) {
-	win->_net_wm_visible_name_atom = get_intern_atom(win, "_NET_WM_VISIBLE_NAME");
-	win->_net_wm_name_atom = get_intern_atom(win, "_NET_WM_NAME"); // EWMH spec says it's better to use this than just 'WM_NAME'
+	xcb_intern_atom_cookie_t* cookies = xcb_ewmh_init_atoms(win->connection, &win->ewmh);
+
+	if (!xcb_ewmh_init_atoms_replies(&win->ewmh, cookies, NULL)) {
+		return; // error
+	}
 }
 
 dynamic win_t* create(unsigned x_res, unsigned y_res) {
@@ -597,7 +597,7 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 
 	_get_ewmh_atoms(win);
 
-	// setup 'WM_DELETE_WINDOW' protocol (yes this is dumb, thank you XCB & X11)
+	// setup 'WM_DELETE_WINDOW' protocol (yes, this is dumb, thank you XCB & X11)
 
 	xcb_icccm_set_wm_protocols(win->connection, win->win, win->wm_protocols_atom, 1, &win->wm_delete_win_atom);
 

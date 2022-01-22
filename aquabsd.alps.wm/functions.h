@@ -394,6 +394,13 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		xcb_flush(wm->root->connection);
 	}
 
+	else if (type == XCB_CLIENT_MESSAGE) {
+		xcb_client_message_event_t* detail = (void*) event;
+		win_t* win = search_win(wm, detail->window);
+
+		// if (specific->data.data32[0] == _NET_WM_STATE_TOGGLE)
+	}
+
 	return 0;
 }
 
@@ -453,8 +460,8 @@ dynamic wm_t* create(void) {
 
 		// from aquabsd.alps.win
 
-		wm->root->_net_wm_visible_name_atom,
-		wm->root->_net_wm_name_atom,
+		wm->root->ewmh._NET_WM_VISIBLE_NAME,
+		wm->root->ewmh._NET_WM_NAME,
 	};
 
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->supported_atoms_list_atom, XCB_ATOM_ATOM, 32, sizeof(supported_atoms) / sizeof(*supported_atoms), supported_atoms);

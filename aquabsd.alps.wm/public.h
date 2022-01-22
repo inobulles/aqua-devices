@@ -12,6 +12,7 @@ typedef enum {
 	AQUABSD_ALPS_WM_CB_MODIFY, // window has been modified (i.e. resized or moved or both)
 	AQUABSD_ALPS_WM_CB_DELETE, // window has been closed
 	AQUABSD_ALPS_WM_CB_FOCUS,  // window has been focused
+	AQUABSD_ALPS_WM_CB_STATE,  // window's state has been changed
 	AQUABSD_ALPS_WM_CB_CLICK,  // determine whether a click event is intended for the WM or should be passed on to the window underneath the cursor
 	AQUABSD_ALPS_WM_CB_LEN
 } aquabsd_alps_wm_cb_t;
