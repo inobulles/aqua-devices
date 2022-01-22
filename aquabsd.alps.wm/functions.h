@@ -230,6 +230,37 @@ static int click_intended_for_us(wm_t* wm, xcb_button_press_event_t* detail) {
 	return kos_callback(cb, 3, *(uint64_t*) &x, *(uint64_t*) &y, param);
 }
 
+static int process_state(wm_t* wm, win_t* win, xcb_client_message_event_t* detail) {
+	if (!win) {
+		return -1;
+	}
+
+	uint32_t action = detail->data.data32[0];
+	uint32_t type = detail->data.data32[1];
+
+	if (type == wm->root->ewmh._NET_WM_STATE_FULLSCREEN) {
+		if (action == _NET_WM_STATE_ADD) {
+			win->state = AQUABSD_ALPS_WIN_STATE_FULLSCREEN;
+		}
+
+		else if (action == _NET_WM_STATE_REMOVE) {
+			win->state = AQUABSD_ALPS_WIN_STATE_REGULAR;
+		}
+
+		// ignore _NET_WM_STATE_TOGGLE, it's pointless & nobody likes it
+
+		else {
+			return -1;
+		}
+	}
+
+	else {
+		return -1; // not a type we know of
+	}
+
+	return call_cb(wm, win, CB_STATE);
+}
+
 #define WIN_CONFIG \
 	if (win) { \
 		win->x_pos = detail->x; \
@@ -398,7 +429,9 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		xcb_client_message_event_t* detail = (void*) event;
 		win_t* win = search_win(wm, detail->window);
 
-		// if (specific->data.data32[0] == _NET_WM_STATE_TOGGLE)
+		if (detail->type == wm->root->ewmh._NET_WM_STATE) {
+			process_state(wm, win, detail);
+		}
 	}
 
 	return 0;
@@ -454,6 +487,7 @@ dynamic wm_t* create(void) {
 
 		wm->root->ewmh._NET_WM_VISIBLE_NAME,
 		wm->root->ewmh._NET_WM_NAME,
+		wm->root->ewmh._NET_WM_STATE,
 	};
 
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->root->ewmh._NET_SUPPORTED, XCB_ATOM_ATOM, 32, sizeof(supported_atoms) / sizeof(*supported_atoms), supported_atoms);
@@ -582,10 +616,7 @@ dynamic int make_compositing(wm_t* wm) {
 		return -1;
 	}
 
-	char name[] = "_NET_WM_CM_S##";
-	snprintf(name, sizeof(name), "_NET_WM_CM_S%d", wm->root->default_screen);
-
-	xcb_atom_t atom = get_intern_atom(wm, name);
+	xcb_atom_t atom = wm->root->ewmh._NET_WM_CM_Sn[wm->root->default_screen];
 	xcb_set_selection_owner(wm->root->connection, screen_owner, atom, 0);
 
 	// we want to enable manual redirection, because we want to track damage and flush updates ourselves

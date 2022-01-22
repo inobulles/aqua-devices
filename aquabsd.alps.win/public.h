@@ -18,6 +18,12 @@
 #include <X11/Xutil.h> // for 'XLookupString'
 #include <X11/Xlib-xcb.h>
 
+// I'm not sure where these are supposed to be defined ... oh well, this is fine
+
+#define AQUABSD_ALPS_WIN__NET_WM_STATE_REMOVE 0
+#define AQUABSD_ALPS_WIN__NET_WM_STATE_ADD    1
+#define AQUABSD_ALPS_WIN__NET_WM_STATE_TOGGLE 2
+
 typedef enum {
 	AQUABSD_ALPS_WIN_CB_DRAW,
 	AQUABSD_ALPS_WIN_CB_LEN
@@ -37,6 +43,8 @@ struct aquabsd_alps_win_t {
 	
 	int x_pos, y_pos;
 	unsigned x_res, y_res;
+
+	aquabsd_alps_win_state_t state;
 
 	// information about the window manager
 

@@ -532,6 +532,8 @@ static win_t* _create_setup(void) {
 
 	free(cookies);
 
+	win->state = STATE_REGULAR;
+
 	// register a new mouse
 
 	if (aquabsd_alps_mouse_register_mouse) {

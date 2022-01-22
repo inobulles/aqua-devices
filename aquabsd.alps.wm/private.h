@@ -6,6 +6,10 @@ static uint64_t (*kos_query_device) (uint64_t, uint64_t name);
 static void* (*kos_load_device_function) (uint64_t device, const char* name);
 static uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
 
+#define _NET_WM_STATE_REMOVE AQUABSD_ALPS_WIN__NET_WM_STATE_REMOVE
+#define _NET_WM_STATE_ADD    AQUABSD_ALPS_WIN__NET_WM_STATE_ADD
+#define _NET_WM_STATE_TOGGLE AQUABSD_ALPS_WIN__NET_WM_STATE_TOGGLE
+
 #define CB_CREATE AQUABSD_ALPS_WM_CB_CREATE
 #define CB_SHOW   AQUABSD_ALPS_WM_CB_SHOW
 #define CB_HIDE   AQUABSD_ALPS_WM_CB_HIDE
