@@ -224,10 +224,39 @@ static int click_intended_for_us(wm_t* wm, xcb_button_press_event_t* detail) {
 	float x = (float) detail->root_x / wm->root->x_res;
 	float y = 1.0 - (float) detail->root_y / wm->root->y_res;
 
-	// TODO 4 arguments is too much for a KOS callback
+	// TODO 4 arguments is too much for a KOS callback (can probably remove the wm parameter; it's a bit redundant)
 	// return kos_callback(cb, 4, (uint64_t) wm, *(uint64_t*) &x, *(uint64_t*) &y, param);
 
 	return kos_callback(cb, 3, *(uint64_t*) &x, *(uint64_t*) &y, param);
+}
+
+static void _state_update(wm_t* wm, win_t* win) {
+	uint32_t len = 0;
+	xcb_atom_t atoms[16 /* provision */];
+
+	if (win->state == AQUABSD_ALPS_WIN_STATE_FULLSCREEN) {
+		atoms[len++] = wm->root->ewmh._NET_WM_STATE_FULLSCREEN;
+	}
+
+	xcb_ewmh_set_wm_state(&wm->root->ewmh, win->win, len, atoms);
+}
+
+static inline void __state_regular(wm_t* wm, win_t* win) {
+	if (win->state == AQUABSD_ALPS_WIN_STATE_REGULAR) {
+		return;
+	}
+
+	win->state = AQUABSD_ALPS_WIN_STATE_REGULAR;
+	_state_update(wm, win);
+}
+
+static inline void __state_fullscreen(wm_t* wm, win_t* win) {
+	if (win->state == AQUABSD_ALPS_WIN_STATE_FULLSCREEN) {
+		return;
+	}
+
+	win->state = AQUABSD_ALPS_WIN_STATE_FULLSCREEN;
+	_state_update(wm, win);
 }
 
 static int process_state(wm_t* wm, win_t* win, xcb_client_message_event_t* detail) {
@@ -239,15 +268,25 @@ static int process_state(wm_t* wm, win_t* win, xcb_client_message_event_t* detai
 	uint32_t type = detail->data.data32[1];
 
 	if (type == wm->root->ewmh._NET_WM_STATE_FULLSCREEN) {
-		if (action == _NET_WM_STATE_ADD) {
-			win->state = AQUABSD_ALPS_WIN_STATE_FULLSCREEN;
+		if (action == XCB_EWMH_WM_STATE_ADD) {
+			__state_fullscreen(wm, win);
 		}
 
-		else if (action == _NET_WM_STATE_REMOVE) {
-			win->state = AQUABSD_ALPS_WIN_STATE_REGULAR;
+		else if (action == XCB_EWMH_WM_STATE_REMOVE) {
+			__state_regular(wm, win);
 		}
 
-		// ignore _NET_WM_STATE_TOGGLE, it's pointless & nobody likes it
+		else if (action == XCB_EWMH_WM_STATE_TOGGLE) {
+			if (win->state == AQUABSD_ALPS_WIN_STATE_FULLSCREEN) {
+				__state_regular(wm, win);
+			}
+
+			else {
+				__state_fullscreen(wm, win);
+			}
+		}
+
+		// ignore XCB_EWMH_WM_STATE_TOGGLE - it's pointless & nobody likes it
 
 		else {
 			return -1;

@@ -9,10 +9,6 @@ static uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
 static uint64_t mouse_device = -1;
 static uint64_t kbd_device = -1;
 
-#define _NET_WM_STATE_REMOVE AQUABSD_ALPS_WIN__NET_WM_STATE_REMOVE
-#define _NET_WM_STATE_ADD    AQUABSD_ALPS_WIN__NET_WM_STATE_ADD
-#define _NET_WM_STATE_TOGGLE AQUABSD_ALPS_WIN__NET_WM_STATE_TOGGLE
-
 #define cb_t aquabsd_alps_win_cb_t
 
 #define CB_DRAW AQUABSD_ALPS_WIN_CB_DRAW
