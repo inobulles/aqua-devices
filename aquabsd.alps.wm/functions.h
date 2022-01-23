@@ -123,9 +123,37 @@ static win_t* search_win(wm_t* wm, xcb_window_t id) {
 	return NULL; // something's probably gonna crash ;)
 }
 
+static inline void __set_type(wm_t* wm, win_t* win, xcb_atom_t atom) {
+	unsigned transient = 1;
+
+	if (
+		atom == wm->root->ewmh._NET_WM_WINDOW_TYPE_DESKTOP ||
+		atom == wm->root->ewmh._NET_WM_WINDOW_TYPE_NORMAL
+	) {
+		transient = 0;
+	}
+
+	win->state &= ~AQUABSD_ALPS_WIN_STATE_TRANSIENT;
+	win->state |=  AQUABSD_ALPS_WIN_STATE_TRANSIENT * transient;
+}
+
 static void show_win(wm_t* wm, win_t* win) {
 	if (!win) {
 		return;
+	}
+
+	// get the window type (with the _NET_WM_WINDOW_TYPE atom)
+
+	xcb_get_property_cookie_t cookie = xcb_ewmh_get_wm_window_type(&wm->root->ewmh, win->win);
+	xcb_ewmh_get_atoms_reply_t reply;
+
+	if (xcb_ewmh_get_wm_window_type_reply(&wm->root->ewmh, cookie, &reply, NULL)) {
+		while (reply.atoms_len --> 0) {
+			xcb_atom_t atom = reply.atoms[reply.atoms_len];
+			__set_type(wm, win, atom);
+		}
+
+		xcb_ewmh_get_atoms_reply_wipe(&reply);
 	}
 
 	win->visible = 1;
@@ -512,6 +540,17 @@ dynamic wm_t* create(void) {
 
 		wm->root->ewmh._NET_WM_STATE,
 		wm->root->ewmh._NET_WM_STATE_FULLSCREEN,
+
+		wm->root->ewmh._NET_WM_WINDOW_TYPE,
+		wm->root->ewmh._NET_WM_WINDOW_TYPE_DESKTOP,
+		wm->root->ewmh._NET_WM_WINDOW_TYPE_DOCK,
+		wm->root->ewmh._NET_WM_WINDOW_TYPE_TOOLBAR,
+		wm->root->ewmh._NET_WM_WINDOW_TYPE_MENU,
+		wm->root->ewmh._NET_WM_WINDOW_TYPE_UTILITY,
+		wm->root->ewmh._NET_WM_WINDOW_TYPE_SPLASH,
+		wm->root->ewmh._NET_WM_WINDOW_TYPE_DIALOG,
+		wm->root->ewmh._NET_WM_WINDOW_TYPE_NORMAL,
+		wm->root->ewmh._NET_WM_WINDOW_TYPE_NOTIFICATION,
 	};
 
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->root->win, wm->root->ewmh._NET_SUPPORTED, XCB_ATOM_ATOM, 32, sizeof(supported_atoms) / sizeof(*supported_atoms), supported_atoms);

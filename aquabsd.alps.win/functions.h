@@ -527,6 +527,7 @@ static win_t* _create_setup(void) {
 
 	// get EWMH atoms
 	// TODO show we support these atoms? how does this work again?
+	// TODO do these atoms need to be freed at some point? somethingsomething_wipe?
 
 	xcb_intern_atom_cookie_t* cookies = xcb_ewmh_init_atoms(win->connection, &win->ewmh);
 
