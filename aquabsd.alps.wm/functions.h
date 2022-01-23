@@ -26,19 +26,6 @@
 
 // helper functions (for XCB)
 
-static inline xcb_atom_t get_intern_atom(wm_t* wm, const char* name) {
-	// TODO obviously, this function isn't super ideal for leveraging the benefits XCB provides over Xlib
-	//      at some point, refactor this so that... well all this work converting from Xlib to XCB isn't for nothing
-
-	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(wm->root->connection, 0, strlen(name), name);
-	xcb_intern_atom_reply_t* atom_reply = xcb_intern_atom_reply(wm->root->connection, atom_cookie, NULL);
-	
-	xcb_atom_t atom = atom_reply->atom;
-	free(atom_reply);
-
-	return atom;
-}
-
 static inline xcb_window_t create_dumb_win(wm_t* wm) {
 	xcb_window_t win = xcb_generate_id(wm->root->connection);
 	xcb_create_window(wm->root->connection, XCB_COPY_FROM_PARENT, win, wm->root->win, 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_COPY_FROM_PARENT, 0, 0, NULL);
