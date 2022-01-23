@@ -217,17 +217,6 @@ static int click_intended_for_us(wm_t* wm, xcb_button_press_event_t* detail) {
 	return kos_callback(cb, 3, *(uint64_t*) &x, *(uint64_t*) &y, param);
 }
 
-static void _state_update(wm_t* wm, win_t* win) {
-	uint32_t len = 0;
-	xcb_atom_t atoms[16 /* provision */];
-
-	if (win->state == AQUABSD_ALPS_WIN_STATE_FULLSCREEN) {
-		atoms[len++] = wm->root->ewmh._NET_WM_STATE_FULLSCREEN;
-	}
-
-	
-}
-
 static void _state_mod(wm_t* wm, win_t* win, aquabsd_alps_win_state_t state, unsigned action) {
 	unsigned value = win->state & state;
 
