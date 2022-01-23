@@ -286,8 +286,6 @@ static int process_state(wm_t* wm, win_t* win, xcb_client_message_event_t* detai
 			}
 		}
 
-		// ignore XCB_EWMH_WM_STATE_TOGGLE - it's pointless & nobody likes it
-
 		else {
 			return -1;
 		}
