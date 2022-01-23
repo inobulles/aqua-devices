@@ -238,25 +238,44 @@ static void _state_update(wm_t* wm, win_t* win) {
 		atoms[len++] = wm->root->ewmh._NET_WM_STATE_FULLSCREEN;
 	}
 
+	
+}
+
+static void _state_mod(wm_t* wm, win_t* win, aquabsd_alps_win_state_t state, unsigned action) {
+	unsigned value = win->state & state;
+
+	if (action == XCB_EWMH_WM_STATE_ADD) {
+		value = 1;
+	}
+
+	else if (action == XCB_EWMH_WM_STATE_REMOVE) {
+		value = 0;
+	}
+
+	else if (action == XCB_EWMH_WM_STATE_TOGGLE) {
+		value = !value;
+	}
+
+	if (!!(win->state & state) == value) {
+		return;
+	}
+
+	win->state &= ~state;
+	win->state |= value * state;
+
+	// update EWMH state
+
+	uint32_t len = 0;
+	xcb_atom_t atoms[16 /* provision */];
+
+	#define ADD_STATE_ATOM(atom_name) \
+		if (win->state & AQUABSD_ALPS_WIN_STATE_##atom_name) { \
+			atoms[len++] = wm->root->ewmh._NET_WM_STATE_##atom_name; \
+		}
+
+	ADD_STATE_ATOM(FULLSCREEN)
+
 	xcb_ewmh_set_wm_state(&wm->root->ewmh, win->win, len, atoms);
-}
-
-static inline void __state_regular(wm_t* wm, win_t* win) {
-	if (win->state == AQUABSD_ALPS_WIN_STATE_REGULAR) {
-		return;
-	}
-
-	win->state = AQUABSD_ALPS_WIN_STATE_REGULAR;
-	_state_update(wm, win);
-}
-
-static inline void __state_fullscreen(wm_t* wm, win_t* win) {
-	if (win->state == AQUABSD_ALPS_WIN_STATE_FULLSCREEN) {
-		return;
-	}
-
-	win->state = AQUABSD_ALPS_WIN_STATE_FULLSCREEN;
-	_state_update(wm, win);
 }
 
 static int process_state(wm_t* wm, win_t* win, xcb_client_message_event_t* detail) {
@@ -268,27 +287,7 @@ static int process_state(wm_t* wm, win_t* win, xcb_client_message_event_t* detai
 	uint32_t type = detail->data.data32[1];
 
 	if (type == wm->root->ewmh._NET_WM_STATE_FULLSCREEN) {
-		if (action == XCB_EWMH_WM_STATE_ADD) {
-			__state_fullscreen(wm, win);
-		}
-
-		else if (action == XCB_EWMH_WM_STATE_REMOVE) {
-			__state_regular(wm, win);
-		}
-
-		else if (action == XCB_EWMH_WM_STATE_TOGGLE) {
-			if (win->state == AQUABSD_ALPS_WIN_STATE_FULLSCREEN) {
-				__state_regular(wm, win);
-			}
-
-			else {
-				__state_fullscreen(wm, win);
-			}
-		}
-
-		else {
-			return -1;
-		}
+		_state_mod(wm, win, AQUABSD_ALPS_WIN_STATE_FULLSCREEN, action);
 	}
 
 	else {

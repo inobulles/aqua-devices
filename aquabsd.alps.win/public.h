@@ -24,10 +24,8 @@ typedef enum {
 } aquabsd_alps_win_cb_t;
 
 typedef enum {
-	AQUABSD_ALPS_WIN_STATE_REGULAR,
-	AQUABSD_ALPS_WIN_STATE_TRANSIENT,
-	AQUABSD_ALPS_WIN_STATE_FULLSCREEN,
-	AQUABSD_ALPS_WIN_STATE_LEN,
+	AQUABSD_ALPS_WIN_STATE_TRANSIENT  = 0b01,
+	AQUABSD_ALPS_WIN_STATE_FULLSCREEN = 0b10,
 } aquabsd_alps_win_state_t;
 
 typedef struct aquabsd_alps_win_t aquabsd_alps_win_t; // forward declaration

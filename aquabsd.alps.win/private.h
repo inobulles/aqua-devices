@@ -16,9 +16,7 @@ static uint64_t kbd_device = -1;
 
 #define state_t aquabsd_alps_win_state_t
 
-#define STATE_REGULAR    AQUABSD_ALPS_WIN_STATE_REGULAR
 #define STATE_TRANSIENT  AQUABSD_ALPS_WIN_STATE_TRANSIENT
 #define STATE_FULLSCREEN AQUABSD_ALPS_WIN_STATE_FULLSCREEN
-#define STATE_LEN        AQUABSD_ALPS_WIN_STATE_LEN
 
 #define win_t aquabsd_alps_win_t
