@@ -169,12 +169,15 @@ static void hide_win(wm_t* wm, win_t* win) {
 	call_cb(wm, win, CB_HIDE);
 }
 
-static void modify_win(wm_t* wm, win_t* win) {
+static void modify_win(wm_t* wm, win_t* win, unsigned resize) {
 	if (!win) {
 		return;
 	}
 
-	win->pixmap_modified = 1;
+	if (resize) {
+		win->pixmap_modified = 1;
+	}
+
 	call_cb(wm, win, CB_MODIFY);
 }
 
@@ -362,8 +365,12 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		xcb_configure_notify_event_t* detail = (void*) event;
 		win_t* win = search_win(wm, detail->window);
 
+		unsigned resize =
+			win->x_res != detail->width ||
+			win->y_res != detail->height;
+
 		WIN_CONFIG
-		modify_win(wm, win);
+		modify_win(wm, win, resize);
 	}
 
 	else if (type == XCB_FOCUS_IN) { // focus window
@@ -386,16 +393,18 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		wm->root->mouse_x = detail->root_x;
 		wm->root->mouse_y = detail->root_y;
 
-		// TODO basically, as far as I understand it, the WM must decide if a button press is for itself of a client over here
-		//      if it's for the client (e.g. we clicked on the contents of the window), no problem, just replay the pointer event:
-		//      xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
-		//      otherwise, things get a little more complicated; we must then grab the pointer:
-		//      xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
-		//      (both pointer and keyboard must be asynchronous)
-		//      then, until we receive an XCB_BUTTON_RELEASE event, we can process the mouse events as if they were ours
-		//      once XCB_BUTTON_RELEASE is received though, we need to ungrab the pointer:
-		//      xcb_ungrab_pointer(wm->root->connection);
-		//      so that operations can resume normally
+		// basically, as far as I understand it, the WM must decide if a button press is for itself of a client over here
+		// if it's for the client (e.g. we clicked on the contents of the window), no problem, just replay the pointer event:
+		// xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
+		// otherwise, things get a little more complicated; we must then grab the pointer:
+		// xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+		// (both pointer and keyboard must be asynchronous)
+		// then, until we receive an XCB_BUTTON_RELEASE event, we can process the mouse events as if they were ours
+		// once XCB_BUTTON_RELEASE is received though, we need to ungrab the pointer:
+		// xcb_ungrab_pointer(wm->root->connection);
+		// so that operations can resume normally
+
+		// TODO check out xcb_drag (https://github.com/i3/i3/issues/3086)
 
 		wm->in_wm_click = click_intended_for_us(wm, detail);
 
