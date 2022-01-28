@@ -287,7 +287,7 @@ static void _state_mod(wm_t* wm, win_t* win, aquabsd_alps_win_state_t state, uns
 	xcb_ewmh_set_wm_state(&wm->root->ewmh, win->win, len, atoms);
 }
 
-static int process_state(wm_t* wm, win_t* win, xcb_client_message_event_t* detail) {
+static inline int __process_state(wm_t* wm, win_t* win, xcb_client_message_event_t* detail) {
 	if (!win) {
 		return -1;
 	}
@@ -304,6 +304,16 @@ static int process_state(wm_t* wm, win_t* win, xcb_client_message_event_t* detai
 	}
 
 	return call_cb(wm, win, CB_STATE);
+}
+
+static inline int __process_caption(wm_t* wm, win_t* win, xcb_property_notify_event_t* detail) {
+	if (!win) {
+		return -1;
+	}
+
+	// frankly not much to do here lol
+
+	return call_cb(wm, win, CB_CAPTION);
 }
 
 #define WIN_CONFIG \
@@ -351,7 +361,8 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		// this is saying we want focus change and button events from the window
 
 		const uint32_t attribs[] = {
-			XCB_EVENT_MASK_FOCUS_CHANGE
+			XCB_EVENT_MASK_FOCUS_CHANGE |
+			XCB_EVENT_MASK_PROPERTY_CHANGE
 		};
 
 		xcb_change_window_attributes(wm->root->connection, detail->window, XCB_CW_EVENT_MASK, attribs);
@@ -399,7 +410,7 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		// if it's for the client (e.g. we clicked on the contents of the window), no problem, just replay the pointer event:
 		// xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
 		// otherwise, things get a little more complicated; we must then grab the pointer:
-		// xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+		// xcb_grab_pointer(wm->root->connection, 1, wm->root->win, event_mask, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
 		// (both pointer and keyboard must be asynchronous)
 		// then, until we receive an XCB_BUTTON_RELEASE event, we can process the mouse events as if they were ours
 		// once XCB_BUTTON_RELEASE is received though, we need to ungrab the pointer:
@@ -413,8 +424,12 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		if (wm->in_wm_click) {
 			// prevent event from passing through to the client
 
-			xcb_grab_pointer(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
-			xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, SUPER_MOD);
+			uint32_t event_mask =
+				XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
+				XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION;
+
+			xcb_grab_pointer(wm->root->connection, 1, wm->root->win, event_mask, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+			xcb_grab_button(wm->root->connection, 1, wm->root->win, event_mask, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, SUPER_MOD);
 		}
 
 		else {
@@ -459,7 +474,12 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 			wm->in_wm_click = 0;
 
 			xcb_ungrab_button(wm->root->connection, XCB_BUTTON_INDEX_ANY, wm->root->win, XCB_GRAB_ANY);
-			xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, SUPER_MOD);
+
+			uint32_t event_mask =
+				XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
+				XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION;
+
+			xcb_grab_button(wm->root->connection, 1, wm->root->win, event_mask, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, SUPER_MOD);
 		}
 
 		else {
@@ -481,7 +501,22 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		win_t* win = search_win(wm, detail->window);
 
 		if (detail->type == wm->root->ewmh._NET_WM_STATE) {
-			process_state(wm, win, detail);
+			__process_state(wm, win, detail);
+		}
+	}
+
+	else if (type == XCB_PROPERTY_NOTIFY) {
+		xcb_property_notify_event_t* detail = (void*) event;
+		win_t* win = search_win(wm, detail->window);
+
+		xcb_atom_t atom = detail->atom;
+
+		if (
+			atom == XCB_ATOM_WM_NAME ||
+			atom == wm->root->ewmh._NET_WM_NAME ||
+			atom == wm->root->ewmh._NET_WM_VISIBLE_NAME
+		) {
+			__process_caption(wm, win, detail);
 		}
 	}
 
@@ -510,11 +545,13 @@ dynamic wm_t* create(void) {
 	// tell X to send us all 'CreateNotify', 'ConfigureNotify', and 'DestroyNotify' events ('SubstructureNotifyMask' also sends back some other events but we're not using those)
 
 	const uint32_t attribs[] = {
-		//XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE
+		// XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY
 		XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
 		XCB_EVENT_MASK_EXPOSURE |
-		XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION |
-		XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE
+		XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
+		XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION |
+		XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
+		XCB_EVENT_MASK_PROPERTY_CHANGE
 	};
 
 	xcb_change_window_attributes(wm->root->connection, wm->root->win, XCB_CW_EVENT_MASK, attribs);
@@ -523,7 +560,12 @@ dynamic wm_t* create(void) {
 
 	// xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_BUTTON_MASK_ANY);
 	// xcb_ungrab_button(wm->root->connection, XCB_BUTTON_INDEX_ANY, wm->root->win, XCB_GRAB_ANY);
-	xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, SUPER_MOD);
+
+	uint32_t event_mask =
+		XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
+		XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION;
+
+	xcb_grab_button(wm->root->connection, 1, wm->root->win, event_mask, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, SUPER_MOD);
 
 	// grab the keys we are interested in as a window manager (i.e. those with the super key modifier)
 
@@ -546,8 +588,8 @@ dynamic wm_t* create(void) {
 		wm->root->ewmh._NET_SUPPORTING_WM_CHECK,
 		wm->root->ewmh._NET_CLIENT_LIST,
 
-		wm->root->ewmh._NET_WM_VISIBLE_NAME,
 		wm->root->ewmh._NET_WM_NAME,
+		wm->root->ewmh._NET_WM_VISIBLE_NAME,
 
 		wm->root->ewmh._NET_WM_STATE,
 		wm->root->ewmh._NET_WM_STATE_FULLSCREEN,
