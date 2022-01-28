@@ -142,6 +142,8 @@ static void show_win(wm_t* wm, win_t* win) {
 		return;
 	}
 
+	win->pixmap_modified = 1;
+
 	// get the window type (with the _NET_WM_WINDOW_TYPE atom)
 
 	xcb_get_property_cookie_t cookie = xcb_ewmh_get_wm_window_type(&wm->root->ewmh, win->win);
