@@ -95,6 +95,8 @@ dynamic int delete(win_t* win) {
 }
 
 dynamic int set_caption(win_t* win, const char* caption) {
+	// TODO replace with xcb_ewmh_set_wm_name
+
 	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
 
 	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, win->ewmh._NET_WM_NAME, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
@@ -106,6 +108,8 @@ dynamic int set_caption(win_t* win, const char* caption) {
 }
 
 dynamic char* get_caption(win_t* win) {
+	// TODO replace with xcb_ewmh_get_wm_name
+
 	char* caption = NULL;
 
 	// first try '_NET_WM_VISIBLE_NAME'
@@ -211,16 +215,6 @@ static int x11_kbd_map(xcb_keycode_t key) {
 }
 
 static int _close_win(win_t* win) {
-	// this can happen if 'win' is not a complete window struct, so account for that
-
-	if (!win->wm_protocols_atom) {
-		win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
-	}
-
-	if (!win->wm_delete_win_atom) {
-		win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
-	}
-
 	xcb_client_message_event_t event;
 
 	event.response_type = XCB_CLIENT_MESSAGE;
@@ -529,6 +523,17 @@ static win_t* _create_setup(void) {
 
 	free(root_geom);
 
+	// get the atoms we'll probably need
+	// these aren't included in XCB or even the EWMH atoms struct (xcb_ewmh_connection_t) from xcb-ewmh.h for whatever reason
+
+	win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
+	win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
+
+	// setup 'WM_DELETE_WINDOW' protocol (yes, this is dumb, thank you XCB & X11)
+	// TODO now that I think of it, is this maybe why window managers don't accept requests to die?
+
+	xcb_icccm_set_wm_protocols(win->connection, win->win, win->wm_protocols_atom, 1, &win->wm_delete_win_atom);
+
 	// get EWMH atoms
 	// TODO show we support these atoms? how does this work again?
 	// TODO do these atoms need to be freed at some point? somethingsomething_wipe?
@@ -601,16 +606,6 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 		0, 0, win->x_res, win->y_res, 0, // window geometry
 		XCB_WINDOW_CLASS_INPUT_OUTPUT, win->screen->root_visual,
 		XCB_CW_EVENT_MASK, win_attribs);
-
-	// get the atoms we'll probably need
-
-	win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
-	win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
-
-	// setup 'WM_DELETE_WINDOW' protocol (yes, this is dumb, thank you XCB & X11)
-	// TODO now that I think of it, is this maybe why window managers don't accept requests to die?
-
-	xcb_icccm_set_wm_protocols(win->connection, win->win, win->wm_protocols_atom, 1, &win->wm_delete_win_atom);
 
 	// set sensible minimum and maximum sizes for the window
 
