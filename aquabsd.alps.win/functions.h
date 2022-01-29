@@ -112,24 +112,20 @@ dynamic char* get_caption(win_t* win) {
 
 	char* caption = NULL;
 
+	#define TRY_ATOM(atom) \
+		caption = atom_to_str(win, (atom)); \
+		\
+		if (caption && *caption) { \
+			return caption; \
+		}
+
 	// first try '_NET_WM_VISIBLE_NAME'
-
-	if ((caption = atom_to_str(win, win->ewmh._NET_WM_VISIBLE_NAME))) {
-		return caption;
-	}
-
-	// then, '_NET_WM_NAME'
-	// EWMH spec says it's better to use this than just 'WM_NAME'
-
-	if ((caption = atom_to_str(win, win->ewmh._NET_WM_NAME))) {
-		return caption;
-	}
-
+	// then, '_NET_WM_NAME' (EWMH spec says it's better to use this than just 'WM_NAME')
 	// if all else fails, try 'WM_NAME'
 
-	if ((caption = atom_to_str(win, XCB_ATOM_WM_NAME))) {
-		return caption;
-	}
+	TRY_ATOM(win->ewmh._NET_WM_VISIBLE_NAME)
+	TRY_ATOM(win->ewmh._NET_WM_NAME)
+	TRY_ATOM(XCB_ATOM_WM_NAME)
 
 	return NULL;
 }
