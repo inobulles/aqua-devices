@@ -58,7 +58,7 @@ static inline xcb_atom_t get_intern_atom(win_t* win, const char* name) {
 	return atom;
 }
 
-static inline char* atom_to_str(win_t* win, xcb_atom_t atom) {
+static char* atom_to_str(win_t* win, xcb_atom_t atom) {
 	if (!atom) {
 		return NULL;
 	}
@@ -75,7 +75,7 @@ static inline char* atom_to_str(win_t* win, xcb_atom_t atom) {
 
 	unsigned len = xcb_get_property_value_length(reply);
 	char* str = calloc(1, len + 1); // +1 because no guarantee this value is null-terminated
-	
+
 	memcpy(str, xcb_get_property_value(reply), len);
 	free(reply);
 
@@ -451,7 +451,11 @@ dynamic int modify(win_t* win, float x, float y, unsigned x_res, unsigned y_res)
 		y_res
 	};
 
-	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, transformed);
+	uint32_t config =
+		XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+		XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
+
+	xcb_configure_window(win->connection, win->win, config, transformed);
 	xcb_flush(win->connection);
 
 	return 0;

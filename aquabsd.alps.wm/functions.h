@@ -77,8 +77,14 @@ static void update_client_list(wm_t* wm) {
 static win_t* add_win(wm_t* wm, xcb_window_t id) {
 	win_t* win = calloc(1, sizeof *win);
 
+	// copy over relevant information to the new shell window
+
 	win->connection = wm->root->connection;
 	win->win = id;
+
+	memcpy(&win->ewmh, &wm->root->ewmh, sizeof win->ewmh);
+
+	// add window to window linked list
 
 	if (!wm->win_head) {
 		wm->win_head = win;
@@ -508,6 +514,8 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 	else if (type == XCB_PROPERTY_NOTIFY) {
 		xcb_property_notify_event_t* detail = (void*) event;
 		win_t* win = search_win(wm, detail->window);
+
+		// TODO check out if we really want to process on each value of detail->state
 
 		xcb_atom_t atom = detail->atom;
 
