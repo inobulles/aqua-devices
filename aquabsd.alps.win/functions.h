@@ -540,8 +540,6 @@ static win_t* _create_setup(void) {
 		FATAL_ERROR("Failed to get EWMH atoms\n")
 	}
 
-	free(cookies);
-
 	// register a new mouse
 
 	if (aquabsd_alps_mouse_register_mouse) {
