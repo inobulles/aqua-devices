@@ -2,6 +2,7 @@
 #define __AQUABSD_ALPS_NET
 
 #include <stdio.h>
+#include <stdint.h>
 
 typedef struct {
 	int status;

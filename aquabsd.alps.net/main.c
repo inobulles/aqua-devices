@@ -1,5 +1,10 @@
 #include <aquabsd.alps.net/private.h>
-#include <aquabsd.alps.net/functions.h>
+
+#if defined(__FreeBSD__)
+	#include <aquabsd.alps.net/functions.h>
+#else
+	#include <aquabsd.alps.net/linux.h>
+#endif
 
 typedef enum {
 	CMD_GET  = 0x6872, // 'gr'
