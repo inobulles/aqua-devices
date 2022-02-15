@@ -2,34 +2,39 @@
 #include <aquabsd.alps.win/functions.h>
 
 typedef enum {
-	CMD_CREATE            = 0x6377, // 'cw'
-	CMD_DELETE            = 0x6477, // 'dw'
+	CMD_CREATE              = 0x6377, // 'cw'
+	CMD_DELETE              = 0x6477, // 'dw'
 
-	CMD_SET_CAPTION       = 0x7363, // 'sc'
-	CMD_GET_CAPTION       = 0x6763, // 'gc'
+	CMD_SET_CAPTION         = 0x7363, // 'sc'
+	CMD_GET_CAPTION         = 0x6763, // 'gc'
 
-	CMD_GET_STATE         = 0x6773, // 'gs'
+	CMD_GET_STATE           = 0x6773, // 'gs'
 
-	CMD_REGISTER_CB       = 0x7263, // 'rc'
-	CMD_LOOP              = 0x6C6F, // 'lo'
+	CMD_REGISTER_CB         = 0x7263, // 'rc'
+	CMD_LOOP                = 0x6C6F, // 'lo'
 
-	CMD_CLOSE             = 0x636C, // 'cl'
-	CMD_GRAB_FOCUS        = 0x6667, // 'gf'
+	CMD_CLOSE               = 0x636C, // 'cl'
+	CMD_GRAB_FOCUS          = 0x6667, // 'gf'
 
-	CMD_MODIFY            = 0x6D76, // 'mv'
+	CMD_MODIFY              = 0x6D76, // 'mv'
 
-	CMD_GET_X_POS         = 0x7870, // 'xp'
-	CMD_GET_Y_POS         = 0x7970, // 'yp'
+	CMD_GET_X_POS           = 0x7870, // 'xp'
+	CMD_GET_Y_POS           = 0x7970, // 'yp'
 
-	CMD_GET_X_RES         = 0x7872, // 'xr'
-	CMD_GET_Y_RES         = 0x7972, // 'yr'
+	CMD_GET_X_RES           = 0x7872, // 'xr'
+	CMD_GET_Y_RES           = 0x7972, // 'yr'
 
-	CMD_GET_WM_X_RES      = 0x7778, // 'wx'
-	CMD_GET_WM_Y_RES      = 0x7779, // 'wy'
+	CMD_GET_WM_X_RES        = 0x7778, // 'wx'
+	CMD_GET_WM_Y_RES        = 0x7779, // 'wy'
 
-	// AQUA DWD protocol stuff (start with - (0x2D))
+	// AQUA DWD protocol stuff (setters start with '-' (0x2D), getters start with '=' (0x3D))
 
-	CMD_SET_DWD_CLOSE_POS = 0x2D78, // '-x'
+	CMD_SUPPORTS_DWD        = 0x3D63, // '=s'
+
+	CMD_SET_DWD_CLOSE_POS   = 0x2D78, // '-x'
+
+	CMD_SET_DWD_CLOSE_POS_X = 0x3D78, // '=x'
+	CMD_SET_DWD_CLOSE_POS_Y = 0x3D79, // '=y'
 } cmd_t;
 
 int load(
@@ -161,6 +166,11 @@ uint64_t send(uint16_t _cmd, void* data) {
 	}
 
 	// AQUA DWD protocol stuff
+
+	else if (cmd == CMD_SUPPORTS_DWD) {
+		win_t* win = (void*) args[0];
+		return supports_dwd(win);
+	}
 
 	else if (cmd == CMD_SET_DWD_CLOSE_POS) {
 		win_t* win = (void*) args[0];

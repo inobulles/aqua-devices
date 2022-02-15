@@ -151,6 +151,8 @@ static unsigned (*aquabsd_alps_win_get_wm_y_res) (aquabsd_alps_win_t* win);
 
 // AQUA DWD protocol stuff
 
+static unsigned (*aquabsd_alps_win_supports_dwd) (aquabsd_alps_win_t* win);
+
 static int (*aquabsd_alps_win_set_dwd_close_pos) (aquabsd_alps_win_t* win, float x, float y);
 
 // functions exposed exclusively to devices

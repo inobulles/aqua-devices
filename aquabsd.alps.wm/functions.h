@@ -82,7 +82,7 @@ static win_t* add_win(wm_t* wm, xcb_window_t id) {
 	win->connection = wm->root->connection;
 	win->win = id;
 
-	win->wm_protocols_atom = wm->root->wm_protocols_atom;
+	win->wm_protocols_atom  = wm->root->wm_protocols_atom;
 	win->wm_delete_win_atom = wm->root->wm_delete_win_atom;
 
 	memcpy(&win->ewmh, &wm->root->ewmh, sizeof win->ewmh);

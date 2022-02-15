@@ -134,6 +134,23 @@ dynamic state_t get_state(win_t* win) {
 	return win->state;
 }
 
+dynamic unsigned supports_dwd(win_t* win) {
+	xcb_get_property_cookie_t cookie = xcb_get_property(win->connection, 0, win->win, win->dwd_supports_atom, XCB_ATOM_INTEGER, 0, ~0);
+
+	xcb_generic_error_t* error;
+	xcb_get_property_reply_t* reply = xcb_get_property_reply(win->connection, cookie, &error);
+
+	if (error) {
+		free(error);
+		return 0;
+	}
+
+	unsigned supports_dwd = *(uint32_t*) xcb_get_property_value(reply);
+	free(reply);
+
+	return supports_dwd;
+}
+
 static inline void __support_dwd(win_t* win, unsigned flush) {
 	// function called for each call to one of the DWD functions
 	// by calling them, the client implicitly acknowledged and accepts to partake in the AQUA DWD protocol
