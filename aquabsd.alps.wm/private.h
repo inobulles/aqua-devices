@@ -14,6 +14,7 @@ static uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
 #define CB_FOCUS   AQUABSD_ALPS_WM_CB_FOCUS
 #define CB_STATE   AQUABSD_ALPS_WM_CB_STATE
 #define CB_CAPTION AQUABSD_ALPS_WM_CB_CAPTION
+#define CB_DWD     AQUABSD_ALPS_WM_CB_DWD
 #define CB_CLICK   AQUABSD_ALPS_WM_CB_CLICK
 #define CB_LEN     AQUABSD_ALPS_WM_CB_LEN
 

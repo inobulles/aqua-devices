@@ -320,7 +320,7 @@ static inline int __process_state(wm_t* wm, win_t* win, xcb_client_message_event
 	return call_cb(wm, win, CB_STATE);
 }
 
-static inline int __process_caption(wm_t* wm, win_t* win, xcb_property_notify_event_t* detail) {
+static inline int __process_caption(wm_t* wm, win_t* win) {
 	if (!win) {
 		return -1;
 	}
@@ -328,6 +328,16 @@ static inline int __process_caption(wm_t* wm, win_t* win, xcb_property_notify_ev
 	// frankly not much to do here lol
 
 	return call_cb(wm, win, CB_CAPTION);
+}
+
+static inline int __process_dwd(wm_t* wm, win_t* win) {
+	if (!win) {
+		return -1;
+	}
+
+	// again, not much to do here
+
+	return call_cb(wm, win, CB_DWD);
 }
 
 #define WIN_CONFIG \
@@ -532,7 +542,14 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 			atom == wm->root->ewmh._NET_WM_NAME ||
 			atom == wm->root->ewmh._NET_WM_VISIBLE_NAME
 		) {
-			__process_caption(wm, win, detail);
+			__process_caption(wm, win);
+		}
+
+		else if (
+			atom == wm->root->dwd_supports_atom ||
+			atom == wm->root->dwd_close_pos_atom
+		) {
+			__process_dwd(wm, win);
 		}
 	}
 
