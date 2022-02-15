@@ -61,6 +61,15 @@ struct aquabsd_alps_win_t {
 
 	xcb_ewmh_connection_t ewmh;
 
+	// AQUA DWD protocol atoms
+	// size specifications are import, as values will be passed as n-bit XCB_ATOM_INTEGER, XCB_ATOM_POINT, &c to xcb_change_property
+
+	uint32_t /* size specification important, as will be passed as 32-bit XCB_ATOM_INTEGER */ supports_dwd;
+	xcb_atom_t dwd_supports_atom;
+
+	int16_t dwd_close_pos[2];
+	xcb_atom_t dwd_close_pos_atom;
+
 	// multithreading stuff
 
 	unsigned threading_enabled;
@@ -139,6 +148,10 @@ static unsigned (*aquabsd_alps_win_get_y_res) (aquabsd_alps_win_t* win);
 
 static unsigned (*aquabsd_alps_win_get_wm_x_res) (aquabsd_alps_win_t* win);
 static unsigned (*aquabsd_alps_win_get_wm_y_res) (aquabsd_alps_win_t* win);
+
+// AQUA DWD protocol stuff
+
+static int (*aquabsd_alps_win_set_dwd_close_pos) (aquabsd_alps_win_t* win, float x, float y);
 
 // functions exposed exclusively to devices
 

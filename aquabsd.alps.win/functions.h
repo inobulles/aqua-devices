@@ -45,11 +45,11 @@ static void sigint_handler(int sig) {
 
 // helper functions (for XCB)
 
-static inline xcb_atom_t get_intern_atom(win_t* win, const char* name) {
+static inline xcb_atom_t __get_intern_atom(win_t* win, const char* name) {
 	// TODO obviously, this function isn't super ideal for leveraging the benefits XCB provides over Xlib
 	//      at some point, refactor this so that... well all this work converting from Xlib to XCB isn't for nothing
 
-	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(win->connection, 0, strlen(name), name);
+	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(win->connection, 0 /* only_if_exists: don't create atom if it doesn't already exist */, strlen(name), name);
 	xcb_intern_atom_reply_t* atom_reply = xcb_intern_atom_reply(win->connection, atom_cookie, NULL);
 	
 	xcb_atom_t atom = atom_reply->atom;
@@ -132,6 +132,34 @@ dynamic char* get_caption(win_t* win) {
 
 dynamic state_t get_state(win_t* win) {
 	return win->state;
+}
+
+static inline void __support_dwd(win_t* win, unsigned flush) {
+	// function called for each call to one of the DWD functions
+	// by calling them, the client implicitly acknowledged and accepts to partake in the AQUA DWD protocol
+
+	if (win->supports_dwd) {
+		return;
+	}
+
+	win->supports_dwd = 1;
+	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, win->dwd_supports_atom, XCB_ATOM_INTEGER, 32, 1, &win->supports_dwd);
+
+	if (flush) {
+		xcb_flush(win->connection);
+	}
+}
+
+dynamic int set_dwd_close_pos(win_t* win, float x, float y) {
+	__support_dwd(win, 0);
+
+	win->dwd_close_pos[0] =      x  * win->x_res;
+	win->dwd_close_pos[1] = (1 - y) * win->y_res;
+
+	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, win->dwd_close_pos_atom, XCB_ATOM_POINT, 16, 2, &win->dwd_close_pos);
+	xcb_flush(win->connection);
+
+	return 0;
 }
 
 dynamic int register_cb(win_t* win, cb_t type, uint64_t cb, uint64_t param) {
@@ -522,8 +550,8 @@ static win_t* _create_setup(void) {
 	// get the atoms we'll probably need
 	// these aren't included in XCB or even the EWMH atoms struct (xcb_ewmh_connection_t) from xcb-ewmh.h for whatever reason
 
-	win->wm_protocols_atom = get_intern_atom(win, "WM_PROTOCOLS");
-	win->wm_delete_win_atom = get_intern_atom(win, "WM_DELETE_WINDOW");
+	win->wm_protocols_atom  = __get_intern_atom(win, "WM_PROTOCOLS");
+	win->wm_delete_win_atom = __get_intern_atom(win, "WM_DELETE_WINDOW");
 
 	// setup 'WM_DELETE_WINDOW' protocol (yes, this is dumb, thank you XCB & X11)
 	// TODO now that I think of it, is this maybe why window managers don't accept requests to die?
@@ -539,6 +567,13 @@ static win_t* _create_setup(void) {
 	if (!xcb_ewmh_init_atoms_replies(&win->ewmh, cookies, NULL)) {
 		FATAL_ERROR("Failed to get EWMH atoms\n")
 	}
+
+	// get AQUA DWD protocol atoms
+
+	win->supports_dwd = 0; // we don't support the DWD protocol by default
+
+	win->dwd_supports_atom  = __get_intern_atom(win, "_AQUA_DWD_SUPPORTS");
+	win->dwd_close_pos_atom = __get_intern_atom(win, "_AQUA_DWD_CLOSE_POS");
 
 	// register a new mouse
 
