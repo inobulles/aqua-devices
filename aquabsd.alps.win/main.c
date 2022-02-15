@@ -33,8 +33,8 @@ typedef enum {
 
 	CMD_SET_DWD_CLOSE_POS   = 0x2D78, // '-x'
 
-	CMD_SET_DWD_CLOSE_POS_X = 0x3D78, // '=x'
-	CMD_SET_DWD_CLOSE_POS_Y = 0x3D79, // '=y'
+	CMD_GET_DWD_CLOSE_POS_X = 0x3D78, // '=x'
+	CMD_GET_DWD_CLOSE_POS_Y = 0x3D79, // '=y'
 } cmd_t;
 
 int load(
@@ -179,6 +179,20 @@ uint64_t send(uint16_t _cmd, void* data) {
 		float y = *(float*) &args[2];
 
 		return set_dwd_close_pos(win, x, y);
+	}
+
+	else if (cmd == CMD_GET_DWD_CLOSE_POS_X) {
+		win_t* win = (void*) args[0];
+
+		float x = get_dwd_close_pos_x(win);
+		return *(uint64_t*) &x;
+	}
+
+	else if (cmd == CMD_GET_DWD_CLOSE_POS_Y) {
+		win_t* win = (void*) args[0];
+
+		float y = get_dwd_close_pos_y(win);
+		return *(uint64_t*) &y;
 	}
 
 	return -1;

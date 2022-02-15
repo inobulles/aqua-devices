@@ -145,10 +145,35 @@ dynamic unsigned supports_dwd(win_t* win) {
 		return 0;
 	}
 
-	unsigned supports_dwd = *(uint32_t*) xcb_get_property_value(reply);
+	win->supports_dwd = *(uint32_t*) xcb_get_property_value(reply);
 	free(reply);
 
-	return supports_dwd;
+	return win->supports_dwd;
+}
+
+static inline void __get_dwd_close_pos(win_t* win) {
+	xcb_get_property_cookie_t cookie = xcb_get_property(win->connection, 0, win->win, win->dwd_close_pos_atom, XCB_ATOM_POINT, 0, ~0);
+
+	xcb_generic_error_t* error;
+	xcb_get_property_reply_t* reply = xcb_get_property_reply(win->connection, cookie, &error);
+
+	if (error) {
+		free(error);
+		return;
+	}
+
+	memcpy(win->dwd_close_pos, xcb_get_property_value(reply), sizeof win->dwd_close_pos);
+	free(reply);
+}
+
+dynamic float get_dwd_close_pos_x(win_t* win) {
+	__get_dwd_close_pos(win);
+	return (float) win->dwd_close_pos[0] / win->x_res;
+}
+
+dynamic float get_dwd_close_pos_y(win_t* win) {
+	__get_dwd_close_pos(win);
+	return 1 - (float) win->dwd_close_pos[1] / win->y_res;
 }
 
 static inline void __support_dwd(win_t* win, unsigned flush) {
