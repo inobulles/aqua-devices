@@ -87,6 +87,11 @@ static win_t* add_win(wm_t* wm, xcb_window_t id) {
 
 	memcpy(&win->ewmh, &wm->root->ewmh, sizeof win->ewmh);
 
+	// copy over AQUA DWD protocol atoms
+
+	win->dwd_supports_atom  = wm->root->dwd_supports_atom;
+	win->dwd_close_pos_atom = wm->root->dwd_close_pos_atom;
+
 	// add window to window linked list
 
 	if (!wm->win_head) {
