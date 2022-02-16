@@ -35,7 +35,7 @@ uint64_t send(uint16_t _cmd, void* data) {
 	}
 
 	else if (cmd == CMD_FREE_SVG) {
-		svg_t* svg = (svg_t*) args[0];
+		svg_t* svg = (void*) args[0];
 		return (uint64_t) free_svg(svg);
 	}
 

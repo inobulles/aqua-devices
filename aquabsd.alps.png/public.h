@@ -2,10 +2,17 @@
 #define __AQUABSD_ALPS_PNG
 
 #include <stdint.h>
+#include <string.h>
+
 #include <png.h>
 
 typedef struct {
+	void* ptr;
+} aquabsd_alps_png_stream_t;
+
+typedef struct {
 	FILE* fp;
+	aquabsd_alps_png_stream_t stream;
 
 	png_structp png;
 	png_infop info;
