@@ -75,7 +75,7 @@ static inline void __read_info(png_t* png, size_t header_len) {
 dynamic png_t* load_png(const char* path) {
 	FILE* fp = fopen(path, "rb");
 
-	if (fp) {
+	if (!fp) {
 		return NULL;
 	}
 
