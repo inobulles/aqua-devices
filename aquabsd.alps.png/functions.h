@@ -7,6 +7,10 @@ dynamic int free_png(png_t* png) {
 		return -1;
 	}
 
+	if (png->bitmap) {
+		free(png->bitmap);
+	}
+
 	if (png->png) {
 		png_destroy_read_struct(&png->png, NULL, NULL);
 	}
@@ -89,6 +93,9 @@ dynamic png_t* load_png(const char* path) {
 		return NULL;
 	}
 
+	png->stream_kind = STREAM_KIND_FP;
+
+
 	png->fp = fp;
 	png_init_io(png->png, png->fp);
 
@@ -124,6 +131,8 @@ dynamic png_t* load_png_ptr(void* ptr) {
 		return NULL;
 	}
 
+	png->stream_kind = STREAM_KIND_PTR;
+
 	png->stream.ptr = ptr + sizeof header;
 	png_set_read_fn(png->png, &png->stream, _read_data_from_input_stream);
 
@@ -132,51 +141,60 @@ dynamic png_t* load_png_ptr(void* ptr) {
 	return png;
 }
 
-dynamic int draw_png(png_t* png, uint8_t** bitmap_reference, uint64_t* bpp_reference, uint64_t* width_reference, uint64_t* height_reference) {
-	// set references we already know about
-	// TODO maybe there's a better API to be made which isn't based off of aquabsd.alps.svg?
-	//      after further reflection, it would probably be nice to have some kind of "meta-device" which opaquely handles all image types
-	//      the only complication would be with SVG's, where we must explicitly specify the resolution at which to render the image
-
-	if (width_reference) {
-		*width_reference = png->width;
-	}
-
-	if (height_reference) {
-		*height_reference = png->height;
-	}
-
-	// read image data
-	// as a side note, what a wierd API
-
+static inline int __render_bitmap(png_t* png) {
 	if (setjmp(png_jmpbuf(png->png))) {
 		return -1;
 	}
 
-	unsigned row_bytes = png_get_rowbytes(png->png, png->info);
-	uint8_t* bitmap = malloc(row_bytes * png->height);
+	png->row_bytes = png_get_rowbytes(png->png, png->info);
+	png->bytes = png->row_bytes * png->height;
+
+	png->bitmap = malloc(png->bytes);
 
 	png_bytep* row_pointers = malloc(png->height * sizeof *row_pointers);
 
 	for (int i = 0; i < png->height; i++) {
-		row_pointers[i] = bitmap + row_bytes * i;
+		row_pointers[i] = png->bitmap + png->row_bytes * i;
 	}
 
 	png_read_image(png->png, row_pointers);
 	free(row_pointers);
 
+	return 0;
+}
+
+dynamic int draw_png(png_t* png, uint8_t** bitmap_ref, uint64_t* bpp_ref, uint64_t* width_ref, uint64_t* height_ref) {
+	// TODO maybe there's a better API to be made which isn't based off of aquabsd.alps.svg?
+	//      after further reflection, it would probably be nice to have some kind of "meta-device" which opaquely handles all image types
+	//      the only complication would be with SVG's, where we must explicitly specify the resolution at which to render the image
+	//      in which case maybe SVG's should be the only "image format" to have its own separate device
+
+	// set references we already know about
+
+	if (width_ref) {
+		*width_ref = png->width;
+	}
+
+	if (height_ref) {
+		*height_ref = png->height;
+	}
+
+	// read image data only if we haven't yet got a cached rendered bitmap
+	// as a side note, what a wierd API
+
+	if (!png->bitmap && __render_bitmap(png) < 0) {
+		return -1;
+	}
+
 	// set bitmap reference
 
-	if (bitmap_reference) {
-		*bitmap_reference = bitmap;
+	if (bitmap_ref) {
+		*bitmap_ref = malloc(png->bytes);
+		memcpy(*bitmap_ref, png->bitmap, png->bytes);
 	}
 
-	else {
-		free(bitmap);
-	}
-
-	if (bpp_reference) {
-		*bpp_reference = row_bytes / png->width * 8;
+	if (bpp_ref) {
+		*bpp_ref = png->row_bytes / png->width * 8;
 	}
 
 	// TODO in theory, free everything
