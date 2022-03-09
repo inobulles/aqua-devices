@@ -134,7 +134,7 @@ static win_t* search_win(wm_t* wm, xcb_window_t id) {
 		WARN("Window of id 0x%x was not found\n", id)
 	}
 
-	return NULL; // something's probably gonna crash ;)
+	return NULL;
 }
 
 static inline void __set_type(wm_t* wm, win_t* win, xcb_atom_t atom) {
@@ -402,12 +402,14 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		xcb_configure_notify_event_t* detail = (void*) event;
 		win_t* win = search_win(wm, detail->window);
 
-		unsigned resize =
-			win->x_res != detail->width ||
-			win->y_res != detail->height;
+		if (win) {
+			unsigned resize =
+				win->x_res != detail->width ||
+				win->y_res != detail->height;
 
-		WIN_CONFIG
-		modify_win(wm, win, resize);
+			WIN_CONFIG
+			modify_win(wm, win, resize);
+		}
 	}
 
 	else if (type == XCB_FOCUS_IN) { // focus window
@@ -524,7 +526,7 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		xcb_client_message_event_t* detail = (void*) event;
 		win_t* win = search_win(wm, detail->window);
 
-		if (detail->type == wm->root->ewmh._NET_WM_STATE) {
+		if (win && detail->type == wm->root->ewmh._NET_WM_STATE) {
 			__process_state(wm, win, detail);
 		}
 	}
@@ -537,18 +539,18 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 		xcb_atom_t atom = detail->atom;
 
-		if (
+		if (win && (
 			atom == XCB_ATOM_WM_NAME ||
 			atom == wm->root->ewmh._NET_WM_NAME ||
 			atom == wm->root->ewmh._NET_WM_VISIBLE_NAME
-		) {
+		)) {
 			__process_caption(wm, win);
 		}
 
-		else if (
+		else if (win && (
 			atom == wm->root->dwd_supports_atom ||
 			atom == wm->root->dwd_close_pos_atom
-		) {
+		)) {
 			__process_dwd(wm, win);
 		}
 	}
