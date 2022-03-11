@@ -13,6 +13,8 @@
 #include <librsvg/rsvg.h>
 
 typedef struct {
+	uint64_t hash;
+
 	RsvgHandle* handle;
 	double width, height;
 } aquabsd_alps_svg_t;

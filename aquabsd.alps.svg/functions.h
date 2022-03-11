@@ -11,8 +11,21 @@ dynamic int free_svg(svg_t* svg) {
 	return 0;
 }
 
-static inline svg_t* __load_svg(RsvgHandle* handle) {
+static inline uint64_t __hash_str(const char* str) { // djb2 algorithm
+	uint64_t hash = 5381;
+	char c;
+
+	while ((c = *str++)) {
+		hash = ((hash << 5) + hash) + c; // hash * 33 + c
+	}
+
+	return hash;
+}
+
+static inline svg_t* __load_svg(RsvgHandle* handle, const char* to_hash) {
 	svg_t* svg = calloc(1, sizeof *svg);
+
+	svg->hash = __hash_str(to_hash);
 	svg->handle = handle;
 
 #if defined(NEW_RSVG)
@@ -38,7 +51,7 @@ dynamic svg_t* load_svg(const char* path) {
 		return NULL;
 	}
 
-	return __load_svg(handle);
+	return __load_svg(handle, path);
 }
 
 dynamic svg_t* load_svg_str(const char* str) {
@@ -51,7 +64,7 @@ dynamic svg_t* load_svg_str(const char* str) {
 		return NULL;
 	}
 
-	return __load_svg(handle);
+	return __load_svg(handle, str);
 }
 
 dynamic int draw_svg(svg_t* svg, uint64_t size, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference) {
