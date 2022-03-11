@@ -78,7 +78,7 @@ dynamic int draw_svg(svg_t* svg, uint64_t size, uint8_t** bitmap_reference, uint
 	// copy data to bitmap
 
 	unsigned bytes = cairo_image_surface_get_stride(surface) * height;
-	uint8_t* bitmap = (uint8_t*) malloc(bytes);
+	uint8_t* bitmap = malloc(bytes);
 
 	memcpy(bitmap, cairo_image_surface_get_data(surface), bytes);
 

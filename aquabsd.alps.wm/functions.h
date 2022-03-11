@@ -122,18 +122,13 @@ static win_t* search_win(wm_t* wm, xcb_window_t id) {
 		return NULL;
 	}
 
-	win_t* win = NULL;
-
-	for (win = wm->win_head; win; win = win->next) {
+	for (win_t* win = wm->win_head; win; win = win->next) {
 		if (win->win == id) {
 			return win;
 		}
 	}
 
-	if (!win) {
-		WARN("Window of id 0x%x was not found\n", id)
-	}
-
+	WARN("Window of id 0x%x was not found\n", id)
 	return NULL;
 }
 

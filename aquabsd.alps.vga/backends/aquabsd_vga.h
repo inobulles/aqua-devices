@@ -52,10 +52,10 @@ static int aquabsd_vga_set_mode(video_mode_t* mode) {
 
 	ioctl(0, CONS_SETWINORG, 0);
 
-	aquabsd_vga_framebuffer = mmap((void*) 0, adapter_info.va_window_size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, 0, 0);
+	aquabsd_vga_framebuffer = mmap(NULL, adapter_info.va_window_size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, 0, 0);
 
 	if (aquabsd_vga_framebuffer == MAP_FAILED) {
-		printf("Map failed\n");
+		fprintf(stderr, "[aquabsd.alps.vga] ERROR Map failed\n");
 		return -1;
 	}
 

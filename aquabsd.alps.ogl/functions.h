@@ -44,6 +44,36 @@ dynamic int delete(context_t* context) {
 #define FATAL_ERROR(...) fprintf(stderr, "[aquabsd.alps.ogl] FATAL ERROR "__VA_ARGS__); delete(context); return NULL;
 #define WARNING(...) fprintf(stderr, "[aquabsd.alps.ogl] WARNING "__VA_ARGS__);
 
+static const char* egl_error_str(void) {
+	EGLint error = eglGetError();
+
+	#define ERROR_CASE(error) \
+		case error: return #error;
+
+	switch (error) {
+		ERROR_CASE(EGL_SUCCESS            )
+		ERROR_CASE(EGL_NOT_INITIALIZED    )
+		ERROR_CASE(EGL_BAD_ACCESS         )
+		ERROR_CASE(EGL_BAD_ALLOC          )
+		ERROR_CASE(EGL_BAD_ATTRIBUTE      )
+		ERROR_CASE(EGL_BAD_CONTEXT        )
+		ERROR_CASE(EGL_BAD_CONFIG         )
+		ERROR_CASE(EGL_BAD_CURRENT_SURFACE)
+		ERROR_CASE(EGL_BAD_DISPLAY        )
+		ERROR_CASE(EGL_BAD_SURFACE        )
+		ERROR_CASE(EGL_BAD_MATCH          )
+		ERROR_CASE(EGL_BAD_PARAMETER      )
+		ERROR_CASE(EGL_BAD_NATIVE_PIXMAP  )
+		ERROR_CASE(EGL_BAD_NATIVE_WINDOW  )
+		ERROR_CASE(EGL_CONTEXT_LOST       )
+
+	default:
+		return "unkown EGL error; consider setting 'EGL_LOG_LEVEL=debug'";
+	}
+
+	#undef ERROR_CASE
+}
+
 dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	context_t* context = calloc(1, sizeof *context);
 	
@@ -59,36 +89,36 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	// TODO ALSO still maintain a GLX backend as it seems to be significantly faster on some platforms
 
 	if (!eglBindAPI(EGL_OPENGL_ES_API)) {
-		FATAL_ERROR("Failed to bind EGL API\n")
+		FATAL_ERROR("Failed to bind EGL API (%s)\n", egl_error_str())
 	}
 
 	context->egl_display = eglGetDisplay(win->display);
 
 	if (context->egl_display == EGL_NO_DISPLAY) {
-		FATAL_ERROR("Failed to get EGL display from X11 display\n")
+		FATAL_ERROR("Failed to get EGL display from X11 display (%s)\n", egl_error_str())
 	}
 
 	__attribute__((unused)) int major;
 	__attribute__((unused)) int minor;
 
 	if (!eglInitialize(context->egl_display, &major, &minor)) {
-		FATAL_ERROR("Failed to initialize EGL\n")
+		FATAL_ERROR("Failed to initialize EGL (%s)\n", egl_error_str())
 	}
 
 	const int config_attribs[] = {
 		EGL_COLOR_BUFFER_TYPE, EGL_RGB_BUFFER,
-		EGL_BUFFER_SIZE, 32,
-		EGL_RED_SIZE, 8,
-		EGL_GREEN_SIZE, 8,
-		EGL_BLUE_SIZE, 8,
-		EGL_ALPHA_SIZE, 8,
-		EGL_DEPTH_SIZE, 16,
+		EGL_BUFFER_SIZE,       32,
+		EGL_RED_SIZE,          8,
+		EGL_GREEN_SIZE,        8,
+		EGL_BLUE_SIZE,         8,
+		EGL_ALPHA_SIZE,        8,
+		EGL_DEPTH_SIZE,        16,
 
-		EGL_SAMPLE_BUFFERS, 1,
-		EGL_SAMPLES, 4,
+		EGL_SAMPLE_BUFFERS,    1,
+		EGL_SAMPLES,           4,
 
-		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
+		EGL_SURFACE_TYPE,      EGL_WINDOW_BIT,
+		EGL_RENDERABLE_TYPE,   EGL_OPENGL_BIT,
 
 		EGL_NONE
 	};
@@ -97,7 +127,7 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	EGLint config_count;
 
 	if (!eglChooseConfig(context->egl_display, config_attribs, &config, 1, &config_count) || !config_count) {
-		FATAL_ERROR("Failed to find a suitable EGL config\n")
+		FATAL_ERROR("Failed to find a suitable EGL config (%s)\n", egl_error_str())
 	}
 
 	const int context_attribs[] = {
@@ -109,7 +139,7 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	context->egl_context = eglCreateContext(context->egl_display, config, EGL_NO_CONTEXT, context_attribs);
 
 	if (!context->egl_context) {
-		FATAL_ERROR("Failed to create EGL context\n")
+		FATAL_ERROR("Failed to create EGL context (%s)\n", egl_error_str())
 	}
 
 	const int surface_attribs[] = {
@@ -120,23 +150,23 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	context->egl_surface = eglCreateWindowSurface(context->egl_display, config, context->draw_win, surface_attribs);
 
 	if (!context->egl_surface) {
-		FATAL_ERROR("Failed to create EGL surface\n")
+		FATAL_ERROR("Failed to create EGL surface (%s)\n", egl_error_str())
 	}
 
 	if (!eglMakeCurrent(context->egl_display, context->egl_surface, context->egl_surface, context->egl_context)) {
-		FATAL_ERROR("Failed to make the EGL context the current GL context\n")
+		FATAL_ERROR("Failed to make the EGL context the current GL context (%s)\n", egl_error_str())
 	}
 
 	EGLint render_buffer;
 	
 	if (!eglQueryContext(context->egl_display, context->egl_context, EGL_RENDER_BUFFER, &render_buffer) || render_buffer == EGL_SINGLE_BUFFER) {
-		WARNING("EGL surface is single buffered\n")
+		WARNING("EGL surface is single buffered (%s)\n", egl_error_str())
 	}
 
 	// register callbacks with window
 
 	if (aquabsd_alps_win_register_dev_cb(win, AQUABSD_ALPS_WIN_CB_DRAW, win_cb_draw, context) < 0) {
-		FATAL_ERROR("Failed to register draw callback to window\n")
+		FATAL_ERROR("Failed to register draw callback to window (%s)\n", egl_error_str())
 	}
 
 	return context;
