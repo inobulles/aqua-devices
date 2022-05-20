@@ -33,7 +33,7 @@ typedef struct {
 static xcb_connection_t* x11_connection = NULL;
 static xcb_screen_t* x11_screen = NULL;
 
-static xcb_drawable_t x11_window = (xcb_drawable_t) 0; 
+static xcb_drawable_t x11_window = (xcb_drawable_t) 0;
 static xcb_gcontext_t x11_context = (xcb_gcontext_t) 0;
 
 static xcb_atom_t x11_wm_delete_window_atom;
@@ -59,9 +59,9 @@ static int x11_get_mode_count(void) {
 
 static video_mode_t* x11_get_modes(void) {
 	video_mode_t* modes = malloc(sizeof *modes);
-	
+
 	// 800x600x32@60
-	
+
 	video_mode_t* mode = &modes[0];
 	memset(mode, 0, sizeof(*mode));
 
@@ -78,12 +78,12 @@ static video_mode_t* x11_get_modes(void) {
 
 static void x11_close_window(void) {
 	// destroy image
-	
+
 	xcb_shm_detach(x11_connection, x11_image.shm_seg);
 	shmdt(x11_image.image->data);
 	shmctl(x11_image.shm_id, IPC_RMID, 0);
 	xcb_image_destroy(x11_image.image);
-	
+
 	// TODO close window
 }
 
@@ -91,7 +91,7 @@ static void x11_close_window(void) {
 
 static int x11_set_mode(video_mode_t* mode) {
 	// check to see if the mode actually makes sense
-	
+
 	if (mode->text ||
 		mode->bpp != 32 ||
 		mode->width < 1 ||
@@ -102,17 +102,17 @@ static int x11_set_mode(video_mode_t* mode) {
 	memcpy(&x11_mode, mode, sizeof(x11_mode));
 
 	// make sure we destroy any previous windows
-	
+
 	if (x11_window) {
 		x11_close_window();
 	}
-	
+
 	// actually create the window with the specified mode
-	
+
 	x11_window = xcb_generate_id(x11_connection);
 	xcb_create_window(x11_connection, XCB_COPY_FROM_PARENT, x11_window, x11_screen->root, 0, 0, mode->width, mode->height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, x11_screen->root_visual, XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK, (const uint32_t[]) { x11_screen->black_pixel, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE });
 
-	// hide cursor (yes this is needlessly complicated and hacky 😞)
+	// hide cursor (yes, this is needlessly complicated and hacky 😞)
 
 	xcb_pixmap_t empty_pixmap = xcb_generate_id(x11_connection);
 	xcb_create_pixmap(x11_connection, 1, empty_pixmap, x11_window, 1, 1);
@@ -129,7 +129,7 @@ static int x11_set_mode(video_mode_t* mode) {
 
 	char caption[256] = { 0 };
 	sprintf(caption, "[aquabsd.alps.vga] %ldx%ldx%ld@%ld", mode->width, mode->height, mode->bpp, mode->fps);
-	
+
 	xcb_change_property(x11_connection, XCB_PROP_MODE_REPLACE, x11_window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(caption), caption);
 
 	// make it so that the window isn't resizable by user
@@ -256,7 +256,7 @@ static int x11_flip(void) {
 
 		if (event_type == XCB_EXPOSE) {
 			memcpy(x11_image.image->data, x11_doublebuffer, x11_image.image->stride * x11_image.image->height);
-			
+
 			xcb_shm_put_image(x11_connection, x11_window, x11_context, x11_image.image->width, x11_image.image->height, 0, 0, x11_image.image->width, x11_image.image->height, 0, 0, x11_image.image->depth, x11_image.image->format, 0, x11_image.shm_seg, 0);
 			xcb_flush(x11_connection);
 
@@ -308,14 +308,14 @@ static int x11_flip(void) {
 
 		else if (event_type == XCB_LEAVE_NOTIFY) {
 			xcb_leave_notify_event_t* leave_notify_event = (xcb_leave_notify_event_t*) event;
-			
+
 			x11_mouse_x = leave_notify_event->event_x;
 			x11_mouse_y = leave_notify_event->event_y;
 		}
 
 		else if (event_type == XCB_MOTION_NOTIFY) {
 			xcb_motion_notify_event_t* motion_notify_event = (xcb_motion_notify_event_t*) event;
-			
+
 			x11_mouse_x = motion_notify_event->event_x;
 			x11_mouse_y = motion_notify_event->event_y;
 		}
@@ -393,7 +393,7 @@ static int x11_init(void) {
 	}
 
 	// set backend functions from 'private.h'
-	
+
 	backend_get_mode_count = x11_get_mode_count;
 	backend_get_modes = x11_get_modes;
 
@@ -405,7 +405,7 @@ static int x11_init(void) {
 	backend_reset = x11_reset;
 
 	// finish init process
-	
+
 	x11_screen = xcb_setup_roots_iterator(xcb_get_setup(x11_connection)).data;
 
 	// register new mouse
@@ -430,6 +430,6 @@ static int x11_init(void) {
 		aquabsd_alps_kbd_register_kbd = kos_load_device_function(kbd_device, "register_kbd");
 		aquabsd_alps_kbd_register_kbd("aquabsd.alps.vga X11 backend keyboard", x11_kbd_update_callback, NULL, 1);
 	}
-	
+
 	return 0;
 }

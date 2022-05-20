@@ -73,6 +73,8 @@ static char* atom_to_str(win_t* win, xcb_atom_t atom) {
 		return NULL;
 	}
 
+	// TODO evidently, I'm doing something incorrect here, as I recorded a crash in xcb_get_property_value_length or xcb_get_property_value (could be a thread safety issue? idk)
+
 	unsigned len = xcb_get_property_value_length(reply);
 	char* str = calloc(1, len + 1); // +1 because no guarantee this value is null-terminated
 

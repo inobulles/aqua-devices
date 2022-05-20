@@ -1,11 +1,15 @@
 // TODO freeing (possibly a new function for "closing" a mode, i.e. resetting it to its previous state?)
 
+#include <errno.h>
 #include <time.h>
 
-#include <sys/mman.h>
+#include <sys/param.h>
+
+#include <sys/consio.h>
 #include <sys/fbio.h>
 #include <sys/kbio.h>
-#include <sys/consio.h>
+#include <sys/linker.h>
+#include <sys/mman.h>
 
 #include <termios.h>
 
@@ -118,6 +122,18 @@ static int aquabsd_vga_reset(void) {
 }
 
 static int aquabsd_vga_init(void) {
+	// make sure the VESA kernel module is loaded
+	// no error messages; awaiting the new logging device ;)
+
+	if (kldload("vesa") < 0 && errno != EEXIST) {
+		if (errno == ENOEXEC) {
+			// an error occured while loading the vesa kernel module; please check dmesg(8) for details
+			return -1;
+		}
+
+		return -1;
+	}
+
 	// get modes ('show_mode_info' function in 'usr.sbin/vidcontrol/vidcontrol.c' for reference)
 
 	aquabsd_vga_modes = (video_mode_t*) 0;
