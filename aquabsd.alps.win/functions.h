@@ -4,23 +4,13 @@
 #include <signal.h>
 #include <errno.h>
 
-#define LOG_SIGNATURE "[aquabsd.alps.win]"
-
-#define LOG_REGULAR "\033[0m"
-#define LOG_RED     "\033[0;31m"
-#define LOG_GREEN   "\033[0;32m"
-#define LOG_YELLOW  "\033[0;33m"
+#include <umber.h>
+#define UMBER_COMPONENT "aquabsd.alps.win"
 
 #define FATAL_ERROR(...) \
-	fprintf(stderr, LOG_SIGNATURE LOG_RED " FATAL ERROR "__VA_ARGS__); \
-	fprintf(stderr, LOG_REGULAR); \
-	\
+	LOG_FATAL(__VA_ARGS__) \
 	delete(win); \
 	return NULL;
-
-#define WARN(...) \
-	fprintf(stderr, LOG_SIGNATURE LOG_YELLOW " WARNING "__VA_ARGS__); \
-	fprintf(stderr, LOG_REGULAR);
 
 // once we've received SIGINT, we must exit as soon as possible;
 // there's no going back
@@ -29,7 +19,7 @@ static unsigned sigint_received = 0;
 
 static void sigint_handler(int sig) {
 	if (sig != SIGINT) {
-		WARN("Got unexpected signal %s (should only be %s)\n", strsignal(sig), strsignal(SIGINT))
+		LOG_WARN("Got unexpected signal %s (should only be %s)", strsignal(sig), strsignal(SIGINT))
 	}
 
 	sigint_received = 1;
@@ -51,7 +41,7 @@ static inline xcb_atom_t __get_intern_atom(win_t* win, const char* name) {
 
 	xcb_intern_atom_cookie_t atom_cookie = xcb_intern_atom(win->connection, 0 /* only_if_exists: don't create atom if it doesn't already exist */, strlen(name), name);
 	xcb_intern_atom_reply_t* atom_reply = xcb_intern_atom_reply(win->connection, atom_cookie, NULL);
-	
+
 	xcb_atom_t atom = atom_reply->atom;
 	free(atom_reply);
 
@@ -208,7 +198,7 @@ dynamic int set_dwd_close_pos(win_t* win, float x, float y) {
 
 dynamic int register_cb(win_t* win, cb_t type, uint64_t cb, uint64_t param) {
 	if (type >= CB_LEN) {
-		WARN("Callback type %d doesn't exist\n", type)
+		LOG_WARN("Callback type %d doesn't exist", type)
 		return -1;
 	}
 
@@ -427,11 +417,11 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 
 static void process_events(win_t* win, xcb_generic_event_t* (*xcb_event_func) (xcb_connection_t* c)) {
 	if (xcb_event_func != xcb_wait_for_event && xcb_event_func != xcb_poll_for_event) {
-		WARN("xcb_event_func passed to %s (%p) must either point to xcb_wait_for_event or xcb_poll_for_event\n", __func__, xcb_event_func)
+		LOG_WARN("xcb_event_func passed to %s (%p) must either point to xcb_wait_for_event or xcb_poll_for_event", __func__, xcb_event_func)
 	}
 
 	// poll for events until there are none left (fancy wrapper around process_event basically)
-	
+
 	for (xcb_generic_event_t* event; (event = xcb_event_func(win->connection)); free(event)) {
 		int type = event->response_type & XCB_EVENT_RESPONSE_TYPE_MASK;
 
@@ -470,7 +460,7 @@ dynamic int loop(win_t* win) {
 		if (sigint_received) {
 			_close_win(win);
 		}
-		
+
 		// actual events (ONLY if no event thread, i.e. threading is disabled)
 		// we use xcb_poll_for_event here since we're not threading;
 		// if we wait for the next event, there's a chance we'll be blocked here for a while
@@ -478,14 +468,14 @@ dynamic int loop(win_t* win) {
 		if (!win->threading_enabled) {
 			process_events(win, xcb_poll_for_event);
 		}
-		
+
 		// actually draw
 
 		if (call_cb(win, CB_DRAW) == 1) {
 			_close_win(win);
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -560,14 +550,14 @@ static win_t* _create_setup(void) {
 	win->display = XOpenDisplay(NULL /* default to 'DISPLAY' environment variable */);
 
 	if (!win->display) {
-		FATAL_ERROR("Failed to open X display\n")
+		FATAL_ERROR("Failed to open X display")
 	}
 
 	win->default_screen = DefaultScreen(win->display);
 	win->connection = XGetXCBConnection(win->display);
 
 	if (!win->connection) {
-		FATAL_ERROR("Failed to get XCB connection from X display\n")
+		FATAL_ERROR("Failed to get XCB connection from X display")
 	}
 
 	XSetEventQueueOwner(win->display, XCBOwnsEventQueue);
@@ -609,7 +599,7 @@ static win_t* _create_setup(void) {
 	xcb_intern_atom_cookie_t* cookies = xcb_ewmh_init_atoms(win->connection, &win->ewmh);
 
 	if (!xcb_ewmh_init_atoms_replies(&win->ewmh, cookies, NULL)) {
-		FATAL_ERROR("Failed to get EWMH atoms\n")
+		FATAL_ERROR("Failed to get EWMH atoms")
 	}
 
 	// get AQUA DWD protocol atoms
@@ -645,7 +635,7 @@ static win_t* _create_setup(void) {
 
 	if (pthread_create(&win->event_thread, NULL, event_thread, win) < 0) {
 		win->threading_enabled = 0;
-		WARN("Failed to create event thread for window (%s) - threading will be disabled\n", strerror(errno))
+		LOG_WARN("Failed to create event thread for window (%s) - threading will be disabled", strerror(errno))
 	}
 
 	win->running = 1;
@@ -707,7 +697,7 @@ dynamic win_t* create_setup(void) {
 
 dynamic int register_dev_cb(win_t* win, cb_t type, int (*cb) (win_t* win, void* param, uint64_t cb, uint64_t cb_param), void* param) {
 	if (type >= CB_LEN) {
-		WARN("Callback type %d doesn't exist\n", type)
+		LOG_WARN("Callback type %d doesn't exist", type)
 		return -1;
 	}
 
