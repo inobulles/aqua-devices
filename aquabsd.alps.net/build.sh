@@ -1,2 +1,2 @@
 #!/bin/sh
-cc -shared -fPIC main.c -o device -lfetch "$@"
+cc -shared -fPIC -lfetch "$@"
