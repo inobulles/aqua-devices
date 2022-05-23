@@ -22,6 +22,8 @@ static void sigint_handler(int sig) {
 		LOG_WARN("Got unexpected signal %s (should only be %s)", strsignal(sig), strsignal(SIGINT))
 	}
 
+	LOG_VERBOSE("Received a SIGINT signal")
+
 	sigint_received = 1;
 
 	// unset the signal handler so that it can (perhaps?) act a bit more forcefully
@@ -77,6 +79,8 @@ static char* atom_to_str(win_t* win, xcb_atom_t atom) {
 // functions exposed to devices & apps
 
 dynamic int delete(win_t* win) {
+	LOG_VERBOSE("%p: Delete window", win);
+
 	if (win->display) {
 		XCloseDisplay(win->display);
 	}
@@ -88,6 +92,8 @@ dynamic int delete(win_t* win) {
 
 dynamic int set_caption(win_t* win, const char* caption) {
 	// TODO replace with xcb_ewmh_set_wm_name
+
+	LOG_VERBOSE("%p: Set caption to \"%s\"", win, caption)
 
 	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen(caption) /* don't need to include null */, caption);
 
@@ -102,12 +108,15 @@ dynamic int set_caption(win_t* win, const char* caption) {
 dynamic char* get_caption(win_t* win) {
 	// TODO replace with xcb_ewmh_get_wm_name
 
+	LOG_VERBOSE("%p: Get caption", win)
+
 	char* caption = NULL;
 
 	#define TRY_ATOM(atom) \
 		caption = atom_to_str(win, (atom)); \
 		\
 		if (caption && *caption) { \
+			LOG_INFO("%p: Window caption is \"%s\"", win, caption) \
 			return caption; \
 		}
 
@@ -118,6 +127,8 @@ dynamic char* get_caption(win_t* win) {
 	TRY_ATOM(win->ewmh._NET_WM_VISIBLE_NAME)
 	TRY_ATOM(win->ewmh._NET_WM_NAME)
 	TRY_ATOM(XCB_ATOM_WM_NAME)
+
+	LOG_WARN("%p: Could not find caption (checked _NET_WM_VISIBLE_NAME, _NET_WM_NAME, & WM_NAME atoms)", win)
 
 	return NULL;
 }
@@ -176,6 +187,8 @@ static inline void __support_dwd(win_t* win, unsigned flush) {
 		return;
 	}
 
+	LOG_VERBOSE("%p: Set the _AQUA_DWD_SUPPORTS atom to tell the window manager we support the AQUA DWD protocol", win)
+
 	win->supports_dwd = 1;
 	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, win->dwd_supports_atom, XCB_ATOM_INTEGER, 32, 1, &win->supports_dwd);
 
@@ -189,6 +202,8 @@ dynamic int set_dwd_close_pos(win_t* win, float x, float y) {
 
 	win->dwd_close_pos[0] =      x  * win->x_res;
 	win->dwd_close_pos[1] = (1 - y) * win->y_res;
+
+	LOG_VERBOSE("%p: Set the DWD close button position to %dx%d", win, win->dwd_close_pos[0], win->dwd_close_pos[1])
 
 	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, win->dwd_close_pos_atom, XCB_ATOM_POINT, 16, 2, &win->dwd_close_pos);
 	xcb_flush(win->connection);
@@ -273,6 +288,8 @@ static int x11_kbd_map(xcb_keycode_t key) {
 }
 
 static int _close_win(win_t* win) {
+	LOG_VERBOSE("%p: Close window (with the WM_DELETE_WINDOW protocol)")
+
 	xcb_client_message_event_t event;
 
 	event.response_type = XCB_CLIENT_MESSAGE;
@@ -437,6 +454,8 @@ static void process_events(win_t* win, xcb_generic_event_t* (*xcb_event_func) (x
 static void* event_thread(void* _win) {
 	win_t* win = _win;
 
+	LOG_VERBOSE("%p: Start event thread loop", win)
+
 	while (win->running) {
 		// we use xcb_wait_for_event here since we're threading;
 		// there's no point constantly polling for events because there's nothing else this thread has to do
@@ -453,6 +472,8 @@ dynamic int loop(win_t* win) {
 	// don't ever explicitly break out of this loop or return from this function;
 	// instead, wait until the event thread has gracefully exitted
 	// we call _close_win instead of just setting win->running to wake up the event thread
+
+	LOG_VERBOSE("%p: Start window loop", win)
 
 	while (win->running) {
 		// signal events
@@ -489,6 +510,8 @@ dynamic int grab_focus(win_t* win) {
 	// this could be helpful in the future:
 	// https://github.com/Cloudef/monsterwm-xcb/blob/master/monsterwm.c
 
+	LOG_VERBOSE("%p: Grab focus", win)
+
 	xcb_set_input_focus(win->connection, XCB_INPUT_FOCUS_PARENT, win->win, XCB_CURRENT_TIME);
 	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_STACK_MODE, (unsigned[]) { XCB_STACK_MODE_ABOVE });
 
@@ -496,11 +519,14 @@ dynamic int grab_focus(win_t* win) {
 }
 
 dynamic int modify(win_t* win, float x, float y, unsigned x_res, unsigned y_res) {
+	int32_t x_px =      x  * win->wm_x_res;
+	int32_t y_px = (1 - y) * win->wm_y_res;
+
+	LOG_VERBOSE("%p: Modify window geometry (%dx%d+%d+%d)", win, x_px, y_px, x_res, y_res)
+
 	const int32_t transformed[] = {
-		x * win->wm_x_res,
-		(1 - y) * win->wm_y_res - y_res,
-		x_res,
-		y_res
+		x_px,  y_px,
+		x_res, y_res
 	};
 
 	uint32_t config =
@@ -547,6 +573,8 @@ static win_t* _create_setup(void) {
 
 	// get connection to X server
 
+	LOG_VERBOSE("Get connection to X server")
+
 	win->display = XOpenDisplay(NULL /* default to 'DISPLAY' environment variable */);
 
 	if (!win->display) {
@@ -564,12 +592,16 @@ static win_t* _create_setup(void) {
 
 	// get screen
 
+	LOG_VERBOSE("Get screen")
+
 	xcb_screen_iterator_t it = xcb_setup_roots_iterator(xcb_get_setup(win->connection));
 	for (int i = win->default_screen; it.rem && i > 0; i--, xcb_screen_next(&it));
 
 	win->screen = it.data;
 
 	// get information about the window manager (i.e. the root window)
+
+	LOG_VERBOSE("Get information about the window manager (i.e. the root window)")
 
 	xcb_window_t root = win->screen->root;
 
@@ -581,8 +613,12 @@ static win_t* _create_setup(void) {
 
 	free(root_geom);
 
+	LOG_INFO("Window manager's total resolution is %dx%d", win->wm_x_res, win->wm_y_res)
+
 	// get the atoms we'll probably need
 	// these aren't included in XCB or even the EWMH atoms struct (xcb_ewmh_connection_t) from xcb-ewmh.h for whatever reason
+
+	LOG_VERBOSE("Get atoms")
 
 	win->wm_protocols_atom  = __get_intern_atom(win, "WM_PROTOCOLS");
 	win->wm_delete_win_atom = __get_intern_atom(win, "WM_DELETE_WINDOW");
@@ -590,11 +626,15 @@ static win_t* _create_setup(void) {
 	// setup 'WM_DELETE_WINDOW' protocol (yes, this is dumb, thank you XCB & X11)
 	// TODO now that I think of it, is this maybe why window managers don't accept requests to die?
 
+	LOG_VERBOSE("Setup WM_DELETE_WINDOW protocol")
+
 	xcb_icccm_set_wm_protocols(win->connection, win->win, win->wm_protocols_atom, 1, &win->wm_delete_win_atom);
 
 	// get EWMH atoms
 	// TODO show we support these atoms? how does this work again?
 	// TODO do these atoms need to be freed at some point? somethingsomething_wipe?
+
+	LOG_VERBOSE("Get X11 EWMH atoms")
 
 	xcb_intern_atom_cookie_t* cookies = xcb_ewmh_init_atoms(win->connection, &win->ewmh);
 
@@ -604,6 +644,8 @@ static win_t* _create_setup(void) {
 
 	// get AQUA DWD protocol atoms
 
+	LOG_VERBOSE("Get AQUA DWD protocol atoms")
+
 	win->supports_dwd = 0; // we don't support the DWD protocol by default
 
 	win->dwd_supports_atom  = __get_intern_atom(win, "_AQUA_DWD_SUPPORTS");
@@ -611,17 +653,23 @@ static win_t* _create_setup(void) {
 
 	// register a new mouse
 
+	LOG_VERBOSE("Register window mouse")
+
 	if (aquabsd_alps_mouse_register_mouse) {
 		aquabsd_alps_mouse_register_mouse("aquabsd.alps.win mouse", mouse_update_callback, win, 1);
 	}
 
 	// register a new keyboard
 
+	LOG_VERBOSE("Register window keyboard")
+
 	if (aquabsd_alps_kbd_register_kbd) {
 		aquabsd_alps_kbd_register_kbd("aquabsd.alps.win keyboard", kbd_update_callback, win, 1);
 	}
 
 	// register signal handlers
+
+	LOG_VERBOSE("Register signal handlers")
 
 	struct sigaction sa = {
 		.sa_handler = sigint_handler,
@@ -630,6 +678,8 @@ static win_t* _create_setup(void) {
 	sigaction(SIGINT, &sa, NULL);
 
 	// setup event thread
+
+	LOG_VERBOSE("Setup event thread")
 
 	win->threading_enabled = 1;
 
@@ -644,6 +694,8 @@ static win_t* _create_setup(void) {
 }
 
 dynamic win_t* create(unsigned x_res, unsigned y_res) {
+	LOG_INFO("Create window (initial resolution of %dx%d)", x_res, y_res)
+
 	win_t* win = _create_setup();
 
 	if (!win) {
@@ -651,6 +703,8 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	}
 
 	// create window
+
+	LOG_VERBOSE("Actually create X window")
 
 	win->x_res = x_res;
 	win->y_res = y_res;
@@ -672,6 +726,8 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 
 	// set sensible minimum and maximum sizes for the window
 
+	LOG_VERBOSE("Set ICCCM hints (minimum & maximum sizes)")
+
 	xcb_size_hints_t hints = { 0 };
 
 	xcb_icccm_size_hints_set_min_size(&hints, 320, 200);
@@ -681,10 +737,14 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 
 	// finally (at least for the windowing part), map the window (show it basically) and flush
 
+	LOG_VERBOSE("Map window and flush everything")
+
 	xcb_map_window(win->connection, win->win);
 	xcb_flush(win->connection);
 
 	win->visible = 1;
+
+	LOG_SUCCESS("Window created: %p", win)
 
 	return win;
 }
