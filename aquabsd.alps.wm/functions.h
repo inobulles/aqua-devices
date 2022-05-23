@@ -185,7 +185,7 @@ static void modify_win(wm_t* wm, win_t* win, unsigned resize) {
 		return;
 	}
 
-	LOG_VERBOSE("%p: %s window %p (%dx%d+%d+%d)", wm, resize ? "Resize" : "Reposition", win->x_res, win->y_res, win->x_pos, win->y_pos)
+	LOG_VERBOSE("%p: %s window %p (%dx%d+%d+%d)", wm, resize ? "Resize" : "Reposition", win, win->x_res, win->y_res, win->x_pos, win->y_pos)
 
 	if (resize) {
 		win->pixmap_modified = 1;
