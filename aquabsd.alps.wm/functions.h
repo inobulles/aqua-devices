@@ -26,6 +26,8 @@ static inline xcb_window_t create_dumb_win(wm_t* wm) {
 // actual functions
 
 dynamic int delete(wm_t* wm) {
+	LOG_VERBOSE("%p: Delete window manager", wm)
+
 	if (wm->root) {
 		aquabsd_alps_win_delete(wm->root);
 	}
@@ -51,6 +53,8 @@ static inline int call_cb(wm_t* wm, win_t* win, cb_t type) {
 }
 
 static void update_client_list(wm_t* wm) {
+	LOG_VERBOSE("%p: Update client list", wm)
+
 	xcb_window_t* client_list = calloc(wm->win_count, sizeof *client_list);
 	unsigned i = 0;
 
@@ -66,6 +70,7 @@ static void update_client_list(wm_t* wm) {
 
 static win_t* add_win(wm_t* wm, xcb_window_t id) {
 	win_t* win = calloc(1, sizeof *win);
+	LOG_VERBOSE("%p: Add window (ID = 0x%x, shell window is %p) to linked list", wm, id, win)
 
 	// copy over relevant information to the new shell window
 
@@ -109,6 +114,7 @@ static win_t* search_win(wm_t* wm, xcb_window_t id) {
 	// prevent that
 
 	if (id == wm->root->auxiliary) {
+		LOG_WARN("%p: Window ID (0x%x) is the auxiliary window")
 		return NULL;
 	}
 
@@ -118,7 +124,7 @@ static win_t* search_win(wm_t* wm, xcb_window_t id) {
 		}
 	}
 
-	LOG_WARN("Window of id 0x%x was not found", id)
+	LOG_WARN("%p: Window (ID = 0x%x) was not found", wm, id)
 	return NULL;
 }
 
@@ -140,6 +146,8 @@ static void show_win(wm_t* wm, win_t* win) {
 	if (!win) {
 		return;
 	}
+
+	LOG_VERBOSE("%p: Show window %p", wm, win)
 
 	win->pixmap_modified = 1;
 
@@ -166,6 +174,8 @@ static void hide_win(wm_t* wm, win_t* win) {
 		return;
 	}
 
+	LOG_VERBOSE("%p: Hide window %p", wm, win)
+
 	win->visible = 0;
 	call_cb(wm, win, CB_HIDE);
 }
@@ -174,6 +184,8 @@ static void modify_win(wm_t* wm, win_t* win, unsigned resize) {
 	if (!win) {
 		return;
 	}
+
+	LOG_VERBOSE("%p: %s window %p (%dx%d+%d+%d)", resize ? "Resize" : "Reposition", wm, win->x_pos, win->y_pos, win->x_res, win->y_res)
 
 	if (resize) {
 		win->pixmap_modified = 1;
@@ -186,6 +198,8 @@ static void rem_win(wm_t* wm, win_t* win) {
 	if (!win) {
 		return;
 	}
+
+	LOG_VERBOSE("%p: Remove window %p from linked list", wm, win)
 
 	// was the window at the head or tail of the parent?
 	// if not, stitch the previous/next window to the next/previous window in the list
@@ -220,6 +234,8 @@ static void focus_win(wm_t* wm, win_t* win) {
 		return;
 	}
 
+	LOG_VERBOSE("%p: Focus window %p", wm, win)
+
 	call_cb(wm, win, CB_FOCUS);
 }
 
@@ -240,7 +256,7 @@ static int click_intended_for_us(wm_t* wm, xcb_button_press_event_t* detail) {
 		return 0; // don't assume the click was intended for us if no callback
 	}
 
-	float x = (float) detail->root_x / wm->root->x_res;
+	float x =       (float) detail->root_x / wm->root->x_res;
 	float y = 1.0 - (float) detail->root_y / wm->root->y_res;
 
 	// TODO 4 arguments is too much for a KOS callback (can probably remove the wm parameter; it's a bit redundant)
@@ -268,10 +284,14 @@ static void _state_mod(wm_t* wm, win_t* win, aquabsd_alps_win_state_t state, uns
 		return;
 	}
 
+	LOG_VERBOSE("%p: Modify state of window %p (state 0x%x to be %s)", wm, win, state, value ? "set" : "unset")
+
 	win->state &= ~state;
 	win->state |= value * state;
 
 	// update EWMH state
+
+	LOG_VERBOSE("%p: Reflect new state through the EWMH atoms")
 
 	uint32_t len = 0;
 	xcb_atom_t atoms[16 /* provision */];
@@ -299,6 +319,7 @@ static inline int __process_state(wm_t* wm, win_t* win, xcb_client_message_event
 	}
 
 	else {
+		LOG_WARN("State change requested of an unknown type (%d)", type)
 		return -1; // not a type we know of
 	}
 
@@ -310,6 +331,10 @@ static inline int __process_caption(wm_t* wm, win_t* win) {
 		return -1;
 	}
 
+	// don't get caption for displaying in the log, as this is not the window manager device's responsibility
+
+	LOG_VERBOSE("%p: Caption of window %p changed", wm, win)
+
 	// frankly not much to do here lol
 
 	return call_cb(wm, win, CB_CAPTION);
@@ -319,6 +344,10 @@ static inline int __process_dwd(wm_t* wm, win_t* win) {
 	if (!win) {
 		return -1;
 	}
+
+	// still not the window manager device's responsibility to log
+
+	LOG_VERBOSE("%p: AQUA DWD state of %p changed", wm, win)
 
 	// again, not much to do here
 
@@ -544,9 +573,13 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 }
 
 dynamic wm_t* create(void) {
+	LOG_INFO("Create window manager")
+
 	wm_t* wm = calloc(1, sizeof *wm);
 
 	// create a window with the help of the 'aquabsd.alps.win' device
+
+	LOG_VERBOSE("Set root window up")
 
 	wm->root = aquabsd_alps_win_create_setup();
 
@@ -564,6 +597,8 @@ dynamic wm_t* create(void) {
 	// TODO make this comment correct
 	// tell X to send us all 'CreateNotify', 'ConfigureNotify', and 'DestroyNotify' events ('SubstructureNotifyMask' also sends back some other events but we're not using those)
 
+	LOG_VERBOSE("Set event mask")
+
 	const uint32_t attribs[] = {
 		// XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY
 		XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
@@ -578,6 +613,8 @@ dynamic wm_t* create(void) {
 
 	// grab the pointer
 
+	LOG_VERBOSE("Grab pointer")
+
 	// xcb_grab_button(wm->root->connection, 1, wm->root->win, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_BUTTON_MASK_ANY);
 	// xcb_ungrab_button(wm->root->connection, XCB_BUTTON_INDEX_ANY, wm->root->win, XCB_GRAB_ANY);
 
@@ -589,11 +626,15 @@ dynamic wm_t* create(void) {
 
 	// grab the keys we are interested in as a window manager (i.e. those with the super key modifier)
 
+	LOG_VERBOSE("Grab keys we're interested in (i.e. Super+*)")
+
 	xcb_ungrab_key(wm->root->connection, XCB_GRAB_ANY, wm->root->win, XCB_MOD_MASK_ANY);
 	xcb_grab_key(wm->root->connection, 1, wm->root->win, SUPER_MOD, XCB_GRAB_ANY, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
 	// now, we move on to '_NET_SUPPORTING_WM_CHECK'
 	// this is a bit weird, but it's all specified by the EWMH spec: https://developer.gnome.org/wm-spec/
+
+	LOG_VERBOSE("Create support window for _NET_SUPPORTING_WM_CHECK (required to comply with the EWMH specification)")
 
 	wm->support_win = create_dumb_win(wm);
 	xcb_window_t support_win_list[1] = { wm->support_win };
@@ -602,6 +643,8 @@ dynamic wm_t* create(void) {
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, wm->support_win, wm->root->ewmh._NET_SUPPORTING_WM_CHECK, XCB_ATOM_WINDOW, 32, 1, support_win_list);
 
 	// specify which atoms are supported in '_NET_SUPPORTED'
+
+	LOG_VERBOSE("Specify which atoms we support with _NET_SUPPORTED")
 
 	const xcb_atom_t supported_atoms[] = {
 		wm->root->ewmh._NET_SUPPORTED,
@@ -631,10 +674,14 @@ dynamic wm_t* create(void) {
 	// get all monitors and their geometries
 	// CRTC stands for "Cathode Ray Tube Controller", which is a dumb name, so AQUA calls them "providers"
 
+	LOG_VERBOSE("Get all monitors and their resolutions (providers in AQUA lingo, CRTC in X11 lingo)")
+
 	xcb_randr_get_screen_resources_cookie_t res_cookie = xcb_randr_get_screen_resources(wm->root->connection, wm->root->win);
 	xcb_randr_get_screen_resources_reply_t* res = xcb_randr_get_screen_resources_reply(wm->root->connection, res_cookie, NULL);
 
 	if (!res) {
+		LOG_WARN("Couldn't get a list of providers; create single virtual provider to cover the whole root window")
+
 		// too bad 😥
 		// if we can't get a list of all providers, at least create one "virtual" provider which covers the root window
 
@@ -660,6 +707,7 @@ dynamic wm_t* create(void) {
 		xcb_randr_get_crtc_info_reply_t* info = xcb_randr_get_crtc_info_reply(wm->root->connection, info_cookie, 0);
 
 		if (!info->width || !info->height) { // ??? reports 4 providers when there are only two so discard the bs ones
+			LOG_WARN("Provider %d is bogus", i)
 			goto skip;
 		}
 
@@ -671,6 +719,8 @@ dynamic wm_t* create(void) {
 
 		provider->x_res = info->width;
 		provider->y_res = info->height;
+
+		LOG_INFO("Provider %d: %dx%d+%d+%d", i, provider->x, provider->y, provider->x_res, provider->y_res)
 
 	skip:
 
@@ -689,6 +739,8 @@ skip_geom:
 
 	wm->root->wm_object = wm;
 	wm->root->wm_event_cb = process_event;
+
+	LOG_SUCCESS("Window manager created: %p", wm)
 
 	return wm;
 }
@@ -709,6 +761,8 @@ dynamic unsigned get_y_res(wm_t* wm) {
 }
 
 dynamic int set_name(wm_t* wm, const char* name) {
+	LOG_VERBOSE("%p: Set name to \"%s\"", wm, name)
+
 	win_t support_win = { // shim for 'aquabsd_alps_win_set_caption'
 		.connection = wm->root->connection,
 		.win = wm->support_win
@@ -734,12 +788,17 @@ dynamic int register_cb(wm_t* wm, cb_t type, uint64_t cb, uint64_t param) {
 // this function is only for compositing window managers
 
 dynamic int make_compositing(wm_t* wm) {
+	LOG_INFO("%p: Make window manager compositing", wm)
+
 	// make it so that our compositing window manager can be recognized as such by other processes
+
+	LOG_VERBOSE("%p: Make window manager recognizable to other processes as compositing")
 
 	xcb_window_t screen_owner = create_dumb_win(wm);
 	xcb_change_property(wm->root->connection, XCB_PROP_MODE_REPLACE, screen_owner, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen("xcompmgr") /* don't need to include null */, "xcompmgr");
 
 	if (wm->root->default_screen > 99) {
+		LOG_FATAL("%p: Root window's default screen (%d) is greater than 99", wm->root->default_screen)
 		return -1;
 	}
 
@@ -749,6 +808,8 @@ dynamic int make_compositing(wm_t* wm) {
 	// we want to enable manual redirection, because we want to track damage and flush updates ourselves
 	// if we were to pass 'XCB_COMPOSITE_REDIRECT_AUTOMATIC' instead, the server would handle all that internally
 
+	LOG_VERBOSE("%p: Enable manual redirection", wm)
+
 	xcb_composite_redirect_subwindows(wm->root->connection, wm->root->win, XCB_COMPOSITE_REDIRECT_MANUAL);
 
 	// get the overlay window
@@ -757,6 +818,8 @@ dynamic int make_compositing(wm_t* wm) {
 	// if we were to attach an OpenGL context to it with 'aquabsd.alps.ogl', we could render anything we want to it
 	// that includes the underlying windows
 	// (in that case we would do that by getting an OpenGL texture with their contents through 'CMD_BIND_WIN_TEX')
+
+	LOG_VERBOSE("%p: Get overlay window", wm)
 
 	xcb_composite_get_overlay_window_cookie_t overlay_win_cookie = xcb_composite_get_overlay_window(wm->root->connection, wm->root->win);
 	xcb_composite_get_overlay_window_reply_t* overlay_win_reply = xcb_composite_get_overlay_window_reply(wm->root->connection, overlay_win_cookie, NULL);
@@ -770,7 +833,11 @@ dynamic int make_compositing(wm_t* wm) {
 	// why/how does this work? I don't know and no one seems to know either, this was stolen from picom, and I can't remember how I figured out the Xlib equivalent bit of code in x-compositing-wm
 	// also, we must "negotiate the version" of the Xfixes extension (i.e. just initialize) before we use it, or we get UB
 
+	LOG_VERBOSE("Negotiate version of the Xfixes extension")
+
 	xcb_xfixes_query_version(wm->root->connection, XCB_XFIXES_MAJOR_VERSION, XCB_XFIXES_MINOR_VERSION);
+
+	LOG_VERBOSE("Make overlay window transparent to events (I don't know why I have to do this)")
 
 	xcb_shape_mask(wm->root->connection, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, overlay_win, 0, 0, 0);
 	xcb_shape_rectangles(wm->root->connection, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_INPUT, XCB_CLIP_ORDERING_UNSORTED, overlay_win, 0, 0, 0, NULL);
@@ -780,6 +847,8 @@ dynamic int make_compositing(wm_t* wm) {
 	// use the root window for events instead
 
 	wm->root->auxiliary = overlay_win;
+
+	LOG_SUCCESS("%p: Made window manager compositing successfully", wm)
 
 	return 0;
 }
