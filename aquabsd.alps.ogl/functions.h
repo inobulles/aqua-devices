@@ -198,6 +198,16 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 		FATAL_ERROR("Failed to register draw callback to window (%s)", egl_error_str())
 	}
 
+	LOG_INFO("EGL vendor:        %s", eglQueryString(context->egl_display, EGL_VENDOR))
+	LOG_INFO("EGL version:       %s", eglQueryString(context->egl_display, EGL_VERSION))
+
+	const GLubyte* (*glGetString) (GLenum name) = (void*) eglGetProcAddress("glGetString");
+
+	LOG_INFO("OpenGL vendor:     %s", glGetString(GL_VENDOR))
+	LOG_INFO("OpenGL renderer:   %s", glGetString(GL_RENDERER))
+	LOG_INFO("OpenGL version:    %s", glGetString(GL_VERSION))
+	LOG_INFO("OpenGL SL version: %s", glGetString(GL_SHADING_LANGUAGE_VERSION))
+
 	LOG_SUCCESS("EGL context created: %p", context)
 
 	return context;
