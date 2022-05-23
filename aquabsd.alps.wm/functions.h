@@ -185,7 +185,7 @@ static void modify_win(wm_t* wm, win_t* win, unsigned resize) {
 		return;
 	}
 
-	LOG_VERBOSE("%p: %s window %p (%dx%d+%d+%d)", resize ? "Resize" : "Reposition", wm, win->x_pos, win->y_pos, win->x_res, win->y_res)
+	LOG_VERBOSE("%p: %s window %p (%dx%d+%d+%d)", wm, resize ? "Resize" : "Reposition", win->x_res, win->y_res, win->x_pos, win->y_pos)
 
 	if (resize) {
 		win->pixmap_modified = 1;
@@ -720,7 +720,7 @@ dynamic wm_t* create(void) {
 		provider->x_res = info->width;
 		provider->y_res = info->height;
 
-		LOG_INFO("Provider %d: %dx%d+%d+%d", i, provider->x, provider->y, provider->x_res, provider->y_res)
+		LOG_INFO("Provider %d: %dx%d+%d+%d", i, provider->x_res, provider->y_res, provider->x, provider->y)
 
 	skip:
 
