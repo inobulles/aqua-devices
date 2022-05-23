@@ -4,25 +4,15 @@
 
 #include <xcb/randr.h>
 
+#include <umber.h>
+#define UMBER_COMPONENT "aquabsd.alps.wm"
+
 #define SUPER_MOD XCB_MOD_MASK_4 // looks like this is the super key
 
-#define LOG_SIGNATURE "[aquabsd.alps.wm]"
-
-#define LOG_REGULAR "\033[0m"
-#define LOG_RED     "\033[0;31m"
-#define LOG_GREEN   "\033[0;32m"
-#define LOG_YELLOW  "\033[0;33m"
-
 #define FATAL_ERROR(...) \
-	fprintf(stderr, LOG_SIGNATURE LOG_RED " FATAL ERROR "__VA_ARGS__); \
-	fprintf(stderr, LOG_REGULAR); \
-	\
+	LOG_FATAL(__VA_ARGS__) \
 	delete(wm); \
 	return NULL;
-
-#define WARN(...) \
-	fprintf(stderr, LOG_SIGNATURE LOG_YELLOW " WARNING "__VA_ARGS__); \
-	fprintf(stderr, LOG_REGULAR);
 
 // helper functions (for XCB)
 
@@ -128,7 +118,7 @@ static win_t* search_win(wm_t* wm, xcb_window_t id) {
 		}
 	}
 
-	WARN("Window of id 0x%x was not found\n", id)
+	LOG_WARN("Window of id 0x%x was not found", id)
 	return NULL;
 }
 
@@ -465,7 +455,7 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 					focus_win(wm, win);
 				}
 			}
-			
+
 			// allow mouse click to go through to window
 
 			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
@@ -505,7 +495,7 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 		else {
 			// allow mouse release to go through to window
-			
+
 			xcb_allow_events(wm->root->connection, XCB_ALLOW_REPLAY_POINTER, detail->time);
 
 			// cancel any processed mouse events
@@ -561,7 +551,7 @@ dynamic wm_t* create(void) {
 	wm->root = aquabsd_alps_win_create_setup();
 
 	if (!wm->root) {
-		FATAL_ERROR("Failed to setup root window\n")
+		FATAL_ERROR("Failed to setup root window")
 	}
 
 	wm->root->win = wm->root->screen->root;
@@ -731,7 +721,7 @@ dynamic int set_name(wm_t* wm, const char* name) {
 
 dynamic int register_cb(wm_t* wm, cb_t type, uint64_t cb, uint64_t param) {
 	if (type >= CB_LEN) {
-		WARN("Callback type %d doesn't exist\n", type)
+		LOG_WARN("Callback type %d doesn't exist", type)
 		return -1;
 	}
 

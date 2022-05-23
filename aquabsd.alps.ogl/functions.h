@@ -204,7 +204,7 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 }
 
 dynamic void* get_function(context_t* context, const char* name) {
-	LOG_VERBOSE("%p: Get function \"%s\"", context, name)
+	LOG_VERBOSE("%p: Get function '%s'", context, name)
 
 	return eglGetProcAddress(name);
 }
