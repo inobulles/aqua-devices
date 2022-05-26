@@ -17,7 +17,7 @@ dynamic font_t* load_font(const char* path) {
 	font_t* font = calloc(1, sizeof *font);
 	font->font_description = font_description;
 
-	LOG_SUCCESS("Loaded font \"%s\": %p", path, font)
+	LOG_SUCCESS("Loaded font: %p", font)
 
 	return font;
 }

@@ -1,6 +1,10 @@
 
+#include <errno.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+#include <umber.h>
+#define UMBER_COMPONENT "aquabsd.alps.png"
 
 dynamic int free_png(png_t* png) {
 	if (!png) {
@@ -32,6 +36,7 @@ static inline png_t* __load_png(header, header_len) // pre-ANSI C go brrrr
 	// make sure file is PNG
 
 	if (png_sig_cmp((png_const_bytep) header, 0, header_len)) {
+		LOG_ERROR("File is not a PNG image")
 		goto error; // file ain't PNG
 	}
 
@@ -40,16 +45,19 @@ static inline png_t* __load_png(header, header_len) // pre-ANSI C go brrrr
 	png->png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
 	if (!png->png) {
+		LOG_ERROR("png_create_read_struct: Allocation failed")
 		goto error;
 	}
 
 	png->info = png_create_info_struct(png->png);
 
 	if (!png->info) {
+		LOG_ERROR("png_create_info_struct: Allocation failed")
 		goto error;
 	}
 
 	if (setjmp(png_jmpbuf(png->png))) {
+		LOG_ERROR("setjmp: %s", strerror(errno))
 		goto error;
 	}
 
@@ -77,9 +85,12 @@ static inline void __read_info(png_t* png, size_t header_len) {
 }
 
 dynamic png_t* load_png(const char* path) {
+	LOG_INFO("Load PNG \"%s\"", path)
+
 	FILE* fp = fopen(path, "rb");
 
 	if (!fp) {
+		LOG_ERROR("fopen: %s", strerror(errno))
 		return NULL;
 	}
 
@@ -95,11 +106,12 @@ dynamic png_t* load_png(const char* path) {
 
 	png->stream_kind = STREAM_KIND_FP;
 
-
 	png->fp = fp;
 	png_init_io(png->png, png->fp);
 
 	__read_info(png, sizeof header);
+
+	LOG_SUCCESS("Loaded PNG: %p", png)
 
 	return png;
 }
@@ -110,6 +122,7 @@ static void _read_data_from_input_stream(png_structp png, png_bytep ptr, png_siz
 	stream_t* stream = png_get_io_ptr(png);
 
 	if (!stream) {
+		LOG_WARN("Stream doesn't seem to exist")
 		return;
 	}
 
@@ -118,7 +131,10 @@ static void _read_data_from_input_stream(png_structp png, png_bytep ptr, png_siz
 }
 
 dynamic png_t* load_png_ptr(void* ptr) {
+	LOG_INFO("Load PNG from pointer: %p", ptr)
+
 	if (!ptr) {
+		LOG_ERROR("Passed pointer is NULL")
 		return NULL;
 	}
 
@@ -138,11 +154,14 @@ dynamic png_t* load_png_ptr(void* ptr) {
 
 	__read_info(png, sizeof header);
 
+	LOG_SUCCESS("Loaded PNG (%dx%dx%d): %p", png->width, png->height, png->bit_depth, png)
+
 	return png;
 }
 
 static inline int __render_bitmap(png_t* png) {
 	if (setjmp(png_jmpbuf(png->png))) {
+		LOG_ERROR("setjmp: %s", strerror(errno))
 		return -1;
 	}
 
@@ -169,6 +188,8 @@ dynamic int draw_png(png_t* png, uint8_t** bitmap_ref, uint64_t* bpp_ref, uint64
 	//      the only complication would be with SVG's, where we must explicitly specify the resolution at which to render the image
 	//      in which case maybe SVG's should be the only "image format" to have its own separate device
 
+	LOG_VERBOSE("%p: Draw PNG", png)
+
 	// set references we already know about
 
 	if (width_ref) {
@@ -180,7 +201,7 @@ dynamic int draw_png(png_t* png, uint8_t** bitmap_ref, uint64_t* bpp_ref, uint64
 	}
 
 	// read image data only if we haven't yet got a cached rendered bitmap
-	// as a side note, what a wierd API
+	// as a side note, what a weird API
 
 	if (!png->bitmap && __render_bitmap(png) < 0) {
 		return -1;
