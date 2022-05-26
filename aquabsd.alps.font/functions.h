@@ -5,6 +5,8 @@
 // TODO make 'path' actually be the path somehow
 
 dynamic font_t* load_font(const char* path) {
+	LOG_INFO("Load font \"%s\"", path)
+
 	PangoFontDescription* font_description = pango_font_description_from_string(path);
 
 	if (!font_description) {
@@ -14,6 +16,8 @@ dynamic font_t* load_font(const char* path) {
 
 	font_t* font = calloc(1, sizeof *font);
 	font->font_description = font_description;
+
+	LOG_SUCCESS("Loaded font \"%s\": %p", path, font)
 
 	return font;
 }
@@ -42,6 +46,8 @@ dynamic int draw_font(font_t* font, const char* str, float red, float green, flo
 	}
 
 	// create dummy cairo surface and pango layout for getting text dimensions
+
+	LOG_VERBOSE("%p: Get text dimensions of string \"%s\"", font, str)
 
 	cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
 	cairo_t* cairo = cairo_create(surface);
@@ -86,6 +92,8 @@ dynamic int draw_font(font_t* font, const char* str, float red, float green, flo
 
 	// create new cairo surface and pango layout, this time for actually drawing
 
+	LOG_VERBOSE("%p: Draw string \"%s\"", font, str)
+
 	surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
 	cairo = cairo_create(surface);
 
@@ -111,6 +119,8 @@ dynamic int draw_font(font_t* font, const char* str, float red, float green, flo
 	cairo_surface_flush(surface);
 
 	// copy data to bitmap
+
+	LOG_VERBOSE("%p: Copy draw data of string \"%s\" to bitmap (%dx%d)", font, str, width, height)
 
 	size_t bytes = cairo_image_surface_get_stride(surface) * height;
 	uint8_t* bitmap = malloc(bytes);
