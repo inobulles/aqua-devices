@@ -34,15 +34,15 @@ dynamic int free_font(font_t* font) {
 
 dynamic int draw_font(font_t* font, const char* str, float red, float green, float blue, float alpha, uint64_t wrap_width, uint64_t wrap_height, uint8_t** bitmap_ref, uint64_t* width_ref, uint64_t* height_ref) {
 	if (!bitmap_ref) {
-		LOG_ERROR("Bitmap reference argument is NULL")
+		LOG_ERROR("%p: Bitmap reference argument is NULL", font)
 	}
 
 	if (!width_ref) {
-		LOG_ERROR("Width reference argument is NULL")
+		LOG_ERROR("%p: Width reference argument is NULL", font)
 	}
 
 	if (!height_ref) {
-		LOG_ERROR("Height reference argument is NULL")
+		LOG_ERROR("%p: Height reference argument is NULL", font)
 	}
 
 	// create dummy cairo surface and pango layout for getting text dimensions

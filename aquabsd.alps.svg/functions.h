@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <umber.h>
+#define UMBER_COMPONENT "aquabsd.alps.svg"
+
 dynamic int free_svg(svg_t* svg) {
 	if (svg->handle) {
 		g_object_unref(svg->handle);
@@ -28,6 +31,8 @@ static inline svg_t* __load_svg(RsvgHandle* handle, const char* to_hash) {
 	svg->hash = __hash_str(to_hash);
 	svg->handle = handle;
 
+	LOG_VERBOSE("SVG hash is %lx", svg->hash)
+
 #if defined(NEW_RSVG)
 	rsvg_handle_get_intrinsic_size_in_pixels(svg->handle, &svg->width, &svg->height);
 #else
@@ -38,16 +43,21 @@ static inline svg_t* __load_svg(RsvgHandle* handle, const char* to_hash) {
 	svg->height = dimensions.height;
 #endif
 
+	LOG_SUCCESS("Loaded SVG (%gx%g): %p", svg->width, svg->height, svg)
+
 	return svg;
 }
 
 // load_svg and load_svg_str are both just wrappers around _load_svg
 
 dynamic svg_t* load_svg(const char* path) {
+	LOG_INFO("Load SVG from \"%s\"", path)
+
 	GError* error = NULL;
 	RsvgHandle* handle = rsvg_handle_new_from_file(path, &error);
 
 	if (error) {
+		LOG_ERROR("Could not load SVG")
 		return NULL;
 	}
 
@@ -55,20 +65,37 @@ dynamic svg_t* load_svg(const char* path) {
 }
 
 dynamic svg_t* load_svg_str(const char* str) {
+	LOG_INFO("Load SVG from source (%p)", str)
+
 	gsize len = strlen(str);
 
 	GError* error = NULL;
 	RsvgHandle* handle = rsvg_handle_new_from_data((const guint8*) str, len, &error);
 
 	if (error) {
+		LOG_ERROR("Could not load SVG")
 		return NULL;
 	}
 
 	return __load_svg(handle, str);
 }
 
-dynamic int draw_svg(svg_t* svg, uint64_t size, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference) {
-	int width = size * svg->width / svg->height;
+dynamic int draw_svg(svg_t* svg, uint64_t size, uint8_t** bitmap_ref, uint64_t* width_ref, uint64_t* height_ref) {
+	if (!bitmap_ref) {
+		LOG_ERROR("%p: Bitmap reference argument is NULL", svg)
+	}
+
+	if (!width_ref) {
+		LOG_ERROR("%p: Width reference argument is NULL", svg)
+	}
+
+	if (!height_ref) {
+		LOG_ERROR("%p: Height reference argument is NULL", svg)
+	}
+
+	LOG_VERBOSE("%p: Draw SVG", svg)
+
+	int width  = size * svg->width / svg->height;
 	int height = size;
 
 	cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
@@ -90,6 +117,8 @@ dynamic int draw_svg(svg_t* svg, uint64_t size, uint8_t** bitmap_reference, uint
 
 	// copy data to bitmap
 
+	LOG_VERBOSE("%p: Copy draw data to bitmap (%dx%d)", svg, width, height)
+
 	unsigned bytes = cairo_image_surface_get_stride(surface) * height;
 	uint8_t* bitmap = malloc(bytes);
 
@@ -97,10 +126,10 @@ dynamic int draw_svg(svg_t* svg, uint64_t size, uint8_t** bitmap_reference, uint
 
 	// set our references
 
-	*width_reference  = width;
-	*height_reference = height;
-	
-	*bitmap_reference = bitmap;
+	*width_ref  = width;
+	*height_ref = height;
+
+	*bitmap_ref = bitmap;
 
 	// free everything
 
