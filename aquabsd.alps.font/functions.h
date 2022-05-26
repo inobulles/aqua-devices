@@ -1,8 +1,16 @@
 
+#include <umber.h>
+#define UMBER_COMPONENT "aquabsd.alps.font"
+
 // TODO make 'path' actually be the path somehow
 
 dynamic font_t* load_font(const char* path) {
 	PangoFontDescription* font_description = pango_font_description_from_string(path);
+
+	if (!font_description) {
+		LOG_ERROR("Could not load font \"%s\"", path);
+		return NULL;
+	}
 
 	font_t* font = calloc(1, sizeof *font);
 	font->font_description = font_description;
@@ -20,9 +28,21 @@ dynamic int free_font(font_t* font) {
 
 // TODO include a 'size' argument
 
-dynamic int draw_font(font_t* font, const char* string, float red, float green, float blue, float alpha, uint64_t wrap_width, uint64_t wrap_height, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference) {
+dynamic int draw_font(font_t* font, const char* str, float red, float green, float blue, float alpha, uint64_t wrap_width, uint64_t wrap_height, uint8_t** bitmap_ref, uint64_t* width_ref, uint64_t* height_ref) {
+	if (!bitmap_ref) {
+		LOG_ERROR("Bitmap reference argument is NULL")
+	}
+
+	if (!width_ref) {
+		LOG_ERROR("Width reference argument is NULL")
+	}
+
+	if (!height_ref) {
+		LOG_ERROR("Height reference argument is NULL")
+	}
+
 	// create dummy cairo surface and pango layout for getting text dimensions
-	
+
 	cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
 	cairo_t* cairo = cairo_create(surface);
 
@@ -32,21 +52,23 @@ dynamic int draw_font(font_t* font, const char* string, float red, float green, 
 	#define MAX_WIDTH  0x2000
 	#define MAX_HEIGHT 0x2000
 
-	if (wrap_width  > MAX_WIDTH  || !wrap_width ) wrap_width  = MAX_WIDTH;
-	if (wrap_height > MAX_HEIGHT || !wrap_height) wrap_height = MAX_HEIGHT;
+	if (wrap_width > MAX_WIDTH || !wrap_width) {
+		wrap_width = MAX_WIDTH;
+	}
 
-	if (wrap_width ) pango_layout_set_width (layout, wrap_width  * PANGO_SCALE);
-	else             pango_layout_set_width (layout, -1);
+	if (wrap_height > MAX_HEIGHT || !wrap_height) {
+		wrap_height = MAX_HEIGHT;
+	}
 
-	if (wrap_height) pango_layout_set_height(layout, wrap_height * PANGO_SCALE);
-	else             pango_layout_set_height(layout, -1);
-	
+	pango_layout_set_width (layout, wrap_width  * PANGO_SCALE);
+	pango_layout_set_height(layout, wrap_height * PANGO_SCALE);
+
 	pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
 
 	// actually get text dimensions
 
-	pango_layout_set_markup(layout, string, -1); // we use 'pango_layout_set_markup' instead of 'pango_layout_set_text' here for obvious reasons
-	
+	pango_layout_set_markup(layout, str, -1); // we use 'pango_layout_set_markup' instead of 'pango_layout_set_text' here for obvious reasons
+
 	int width, height;
 
 	pango_cairo_update_layout(cairo, layout);
@@ -73,17 +95,14 @@ dynamic int draw_font(font_t* font, const char* string, float red, float green, 
 	layout = pango_cairo_create_layout(cairo);
 	pango_layout_set_font_description(layout, font->font_description);
 
-	if (wrap_width ) pango_layout_set_width (layout, wrap_width  * PANGO_SCALE);
-	else             pango_layout_set_width (layout, -1);
+	pango_layout_set_width (layout, wrap_width  * PANGO_SCALE);
+	pango_layout_set_height(layout, wrap_height * PANGO_SCALE);
 
-	if (wrap_height) pango_layout_set_height(layout, wrap_height * PANGO_SCALE);
-	else             pango_layout_set_height(layout, -1);
-	
 	pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
 
 	// actually (x3 lol) draw text
 
-	pango_layout_set_markup(layout, string, -1); // we use 'pango_layout_set_markup' instead of 'pango_layout_set_text' here for obvious reasons
+	pango_layout_set_markup(layout, str, -1); // we use 'pango_layout_set_markup' instead of 'pango_layout_set_text' here for obvious reasons
 	cairo_set_source_rgba(cairo, red, green, blue, alpha); // font colour
 
 	pango_cairo_update_layout(cairo, layout);
@@ -93,17 +112,17 @@ dynamic int draw_font(font_t* font, const char* string, float red, float green, 
 
 	// copy data to bitmap
 
-	unsigned bytes = cairo_image_surface_get_stride(surface) * height;
-	uint8_t* bitmap = (uint8_t*) malloc(bytes);
+	size_t bytes = cairo_image_surface_get_stride(surface) * height;
+	uint8_t* bitmap = malloc(bytes);
 
 	memcpy(bitmap, cairo_image_surface_get_data(surface), bytes);
 
 	// set our references
 
-	*width_reference  = width;
-	*height_reference = height;
-	
-	*bitmap_reference = bitmap;
+	*width_ref  = width;
+	*height_ref = height;
+
+	*bitmap_ref = bitmap;
 
 	// free everything
 

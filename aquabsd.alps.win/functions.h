@@ -520,7 +520,7 @@ dynamic int grab_focus(win_t* win) {
 
 dynamic int modify(win_t* win, float x, float y, unsigned x_res, unsigned y_res) {
 	int32_t x_px =      x  * win->wm_x_res;
-	int32_t y_px = (1 - y) * win->wm_y_res;
+	int32_t y_px = (1 - y) * win->wm_y_res - y_res;
 
 	LOG_VERBOSE("%p: Modify window geometry (%dx%d+%d+%d)", win, x_px, y_px, x_res, y_res)
 
