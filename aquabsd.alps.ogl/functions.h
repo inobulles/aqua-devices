@@ -289,7 +289,7 @@ dynamic int bind_win_tex(context_t* context, aquabsd_alps_win_t* win) {
 	xcb_void_cookie_t cookie = xcb_composite_name_window_pixmap_checked(context->win->connection, xcb_win, win->egl_pixmap);
 
 	if (xcb_request_check(context->win->connection, cookie)) {
-		fprintf(stderr, "[aquabsd.alps.ogl] Failed to create window pixmap. Do you happen to be running MESA and not as a window manager?\n");
+		LOG_ERROR("Failed to create window pixmap. Do you happen to be running MESA and not as a window manager?")
 		return -1;
 	}
 
