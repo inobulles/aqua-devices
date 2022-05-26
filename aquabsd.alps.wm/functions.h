@@ -110,6 +110,12 @@ static win_t* add_win(wm_t* wm, xcb_window_t id) {
 }
 
 static win_t* search_win(wm_t* wm, xcb_window_t id) {
+	// obviously we very rarely care about interacting with the root window
+
+	if (id == wm->root->win) {
+		return NULL;
+	}
+
 	// in a compositing window manager, this means we're dealing with the overlay
 	// prevent that
 
