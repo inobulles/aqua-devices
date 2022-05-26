@@ -276,7 +276,8 @@ static int kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _win) {
 
 static int x11_kbd_map(xcb_keycode_t key) {
 	switch (key) {
-		case 9: return AQUABSD_ALPS_KBD_BUTTON_ESC;
+		case 9:   return AQUABSD_ALPS_KBD_BUTTON_ESC;
+		case 23:  return AQUABSD_ALPS_KBD_BUTTON_TAB;
 
 		case 111: return AQUABSD_ALPS_KBD_BUTTON_UP;
 		case 116: return AQUABSD_ALPS_KBD_BUTTON_DOWN;
@@ -522,7 +523,7 @@ dynamic int modify(win_t* win, float x, float y, unsigned x_res, unsigned y_res)
 	int32_t x_px =      x  * win->wm_x_res;
 	int32_t y_px = (1 - y) * win->wm_y_res - y_res;
 
-	LOG_VERBOSE("%p: Modify window geometry (%dx%d+%d+%d)", win, x_px, y_px, x_res, y_res)
+	LOG_VERBOSE("%p: Modify window geometry (%dx%d+%d+%d)", win, x_res, y_res, x_px, y_px)
 
 	const int32_t transformed[] = {
 		x_px,  y_px,
