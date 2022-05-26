@@ -516,6 +516,8 @@ dynamic int grab_focus(win_t* win) {
 	xcb_set_input_focus(win->connection, XCB_INPUT_FOCUS_PARENT, win->win, XCB_CURRENT_TIME);
 	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_STACK_MODE, (unsigned[]) { XCB_STACK_MODE_ABOVE });
 
+	xcb_flush(win->connection);
+
 	return 0;
 }
 

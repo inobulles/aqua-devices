@@ -433,8 +433,12 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 	}
 
 	else if (type == XCB_FOCUS_IN) { // focus window
+		// do NOTHING
+		// I don't know WHY THE HELL THIS HAPPENS, but KEY RELEASES SPECIFICALLY FOCUS WINDOWS FOR NO REASON
+		// AAAAAAAAAAAAAGGGGGGGGGGGHHHHHH!!!!!!!!!!!!!
+
 		xcb_focus_in_event_t* detail = (void*) event;
-		focus_win(wm, search_win(wm, detail->event));
+		// focus_win(wm, search_win(wm, detail->event));
 	}
 
 	// mouse events
@@ -606,7 +610,7 @@ dynamic wm_t* create(void) {
 	LOG_VERBOSE("Set event mask")
 
 	const uint32_t attribs[] = {
-		// XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY
+		// XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY |
 		XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
 		XCB_EVENT_MASK_EXPOSURE |
 		XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
