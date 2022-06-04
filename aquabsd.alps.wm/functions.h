@@ -7,7 +7,8 @@
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.wm"
 
-#define SUPER_MOD XCB_MOD_MASK_4 // looks like this is the super key
+#define SUPER_MOD XCB_MOD_MASK_4 // looks like this is the super modifier
+#define SUPER_KEY 0x85
 
 #define FATAL_ERROR(...) \
 	LOG_FATAL(__VA_ARGS__) \
@@ -639,7 +640,9 @@ dynamic wm_t* create(void) {
 	LOG_VERBOSE("Grab keys we're interested in (i.e. Super+*)")
 
 	xcb_ungrab_key(wm->root->connection, XCB_GRAB_ANY, wm->root->win, XCB_MOD_MASK_ANY);
-	xcb_grab_key(wm->root->connection, 1, wm->root->win, SUPER_MOD, XCB_GRAB_ANY, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+
+	xcb_grab_key(wm->root->connection, 1, wm->root->win, SUPER_MOD, XCB_GRAB_ANY,     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+	xcb_grab_key(wm->root->connection, 1, wm->root->win, XCB_MOD_MASK_ANY, SUPER_KEY, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
 	// now, we move on to '_NET_SUPPORTING_WM_CHECK'
 	// this is a bit weird, but it's all specified by the EWMH spec: https://developer.gnome.org/wm-spec/
