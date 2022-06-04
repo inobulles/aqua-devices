@@ -1,2 +1,2 @@
 #!/bin/sh
-cc -shared -fPIC -lfetch "$@"
+cc "$@" -shared -fPIC -lfetch

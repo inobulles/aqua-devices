@@ -278,7 +278,7 @@ static int x11_kbd_map(xcb_keycode_t key) {
 	switch (key) {
 		case 0x09: return AQUABSD_ALPS_KBD_BUTTON_ESC;
 		case 0x17: return AQUABSD_ALPS_KBD_BUTTON_TAB;
-		case 0x86: return AQUABSD_ALPS_KBD_BUTTON_SUPER;
+		case 0x85: return AQUABSD_ALPS_KBD_BUTTON_SUPER;
 
 		case 0x6f: return AQUABSD_ALPS_KBD_BUTTON_UP;
 		case 0x74: return AQUABSD_ALPS_KBD_BUTTON_DOWN;

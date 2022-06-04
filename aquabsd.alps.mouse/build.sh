@@ -1,2 +1,2 @@
 #!/bin/sh
-cc -shared -fPIC "$@"
+cc "$@" -shared -fPIC
