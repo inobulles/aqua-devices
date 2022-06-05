@@ -438,7 +438,7 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		// I don't know WHY THE HELL THIS HAPPENS, but KEY RELEASES SPECIFICALLY FOCUS WINDOWS FOR NO REASON
 		// AAAAAAAAAAAAAGGGGGGGGGGGHHHHHH!!!!!!!!!!!!!
 
-		xcb_focus_in_event_t* detail = (void*) event;
+		// xcb_focus_in_event_t* detail = (void*) event;
 		// focus_win(wm, search_win(wm, detail->event));
 	}
 
