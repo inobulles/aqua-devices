@@ -72,7 +72,7 @@ struct aquabsd_alps_win_t {
 
 	// multithreading stuff
 
-	unsigned threading_enabled;
+	unsigned event_threading_enabled;
 	pthread_t event_thread;
 
 	// app client callbacks

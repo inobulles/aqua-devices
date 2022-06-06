@@ -7,6 +7,8 @@
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.win"
 
+#define EVENT_THREADING_ENABLED
+
 #define FATAL_ERROR(...) \
 	LOG_FATAL(__VA_ARGS__) \
 	delete(win); \
@@ -314,7 +316,7 @@ static int _close_win(win_t* win) {
 	// window managers completely ignore XCB_CLIENT_MESSAGE events, idk why
 	// I've probably spent the last 5 hours working on this problem (as is usually the case with XCB) with no solution, so I give up, not even going to mark this as TODO
 
-	if (win->wm_event_cb && win->threading_enabled) {
+	if (win->wm_event_cb && win->event_threading_enabled) {
 		win->running = 0;
 	}
 
@@ -453,6 +455,10 @@ static void process_events(win_t* win, xcb_generic_event_t* (*xcb_event_func) (x
 
 // event loop
 
+#if !defined(EVENT_THREADING_ENABLED)
+	__attribute__((unused))
+#endif
+
 static void* event_thread(void* _win) {
 	win_t* win = _win;
 
@@ -488,7 +494,7 @@ dynamic int loop(win_t* win) {
 		// we use xcb_poll_for_event here since we're not threading;
 		// if we wait for the next event, there's a chance we'll be blocked here for a while
 
-		if (!win->threading_enabled) {
+		if (!win->event_threading_enabled) {
 			process_events(win, xcb_poll_for_event);
 		}
 
@@ -685,12 +691,14 @@ static win_t* _create_setup(void) {
 
 	LOG_VERBOSE("Setup event thread")
 
-	win->threading_enabled = 1;
+#if defined(EVENT_THREADING_ENABLED)
+	win->event_threading_enabled = 1;
 
 	if (pthread_create(&win->event_thread, NULL, event_thread, win) < 0) {
-		win->threading_enabled = 0;
+		win->event_threading_enabled = 0;
 		LOG_WARN("Failed to create event thread for window (%s) - threading will be disabled", strerror(errno))
 	}
+#endif
 
 	win->running = 1;
 
