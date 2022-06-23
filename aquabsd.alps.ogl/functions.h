@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.ogl"
-
-static void swap(context_t* context) {
-	eglSwapBuffers(context->egl_display, context->egl_surface);
-}
 
 static inline int call_cb(aquabsd_alps_win_t* win, uint64_t cb, uint64_t cb_param) {
 	if (!cb) {
@@ -17,14 +14,30 @@ static inline int call_cb(aquabsd_alps_win_t* win, uint64_t cb, uint64_t cb_para
 }
 
 static int win_cb_draw(aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param) {
+	struct timespec prev;
+	clock_gettime(CLOCK_MONOTONIC, &prev);
+
 	int rv = call_cb(win, cb, cb_param);
 
 	if (rv != 0) {
 		return rv;
 	}
 
+	struct timespec curr;
+	clock_gettime(CLOCK_MONOTONIC, &curr);
+
+	double frametime = (curr.tv_sec - prev.tv_sec) + 1.e-9 * (curr.tv_nsec - prev.tv_nsec);
+
 	context_t* context = param;
-	swap(context);
+	eglSwapBuffers(context->egl_display, context->egl_surface);
+
+	int ms = (1. / 60 - frametime) * 1000000;
+
+	if (ms < 0) {
+		ms = 0;
+	}
+
+	usleep(ms);
 
 	return 0;
 }
