@@ -19,7 +19,7 @@ static int win_cb_draw(aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64
 
 	int rv = call_cb(win, cb, cb_param);
 
-	if (rv != 0) {
+	if (rv > 0) {
 		return rv;
 	}
 
@@ -38,6 +38,21 @@ static int win_cb_draw(aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64
 	}
 
 	usleep(ms);
+
+	return 0;
+}
+
+static int win_cb_resize(aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param) {
+	int rv = call_cb(win, cb, cb_param);
+
+	if (rv > 0) {
+		return rv;
+	}
+
+	context_t* context = param;
+
+	context->x_res = win->x_res;
+	context->y_res = win->y_res;
 
 	return 0;
 }
@@ -205,10 +220,16 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 
 	// register callbacks with window
 
-	LOG_VERBOSE("Register a draw callback with the window")
+	LOG_VERBOSE("Register draw callback with the window")
 
 	if (aquabsd_alps_win_register_dev_cb(win, AQUABSD_ALPS_WIN_CB_DRAW, win_cb_draw, context) < 0) {
-		FATAL_ERROR("Failed to register draw callback to window (%s)", egl_error_str())
+		FATAL_ERROR("Failed to register draw callback to window")
+	}
+
+	LOG_VERBOSE("Register resize callback with the window")
+
+	if (aquabsd_alps_win_register_dev_cb(win, AQUABSD_ALPS_WIN_CB_RESIZE, win_cb_resize, context) < 0) {
+		FATAL_ERROR("Failed to register resize callback to window")
 	}
 
 	LOG_INFO("EGL vendor:        %s", eglQueryString(context->egl_display, EGL_VENDOR))

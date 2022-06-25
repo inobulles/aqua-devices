@@ -326,11 +326,31 @@ static int _close_win(win_t* win) {
 // process a specific event
 
 static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
+	// window management events
+
 	if (type == XCB_CLIENT_MESSAGE) {
 		xcb_client_message_event_t* detail = (void*) event;
 
-		if (detail->data.data32[0] == win->wm_delete_win_atom && detail->window == win->win /* make sure it is indeed us someone's trying to kill */) {
+		if (
+			detail->data.data32[0] == win->wm_delete_win_atom &&
+			detail->window == win->win // make sure it is indeed us someone's trying to kill
+		) {
 			return -1;
+		}
+	}
+
+	else if (type == XCB_CONFIGURE_NOTIFY) {
+		xcb_configure_notify_event_t* detail = (void*) event;
+
+		bool resize =
+			win->x_res != detail->width ||
+			win->y_res != detail->height;
+
+		if (detail->window == win->win && resize) {
+			win->x_res = detail->width;
+			win->y_res = detail->height;
+
+			call_cb(win, CB_RESIZE);
 		}
 	}
 
@@ -723,6 +743,7 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 
 	const uint32_t win_attribs[] = {
 		XCB_EVENT_MASK_EXPOSURE | // probably not all that important anymore
+		XCB_EVENT_MASK_STRUCTURE_NOTIFY |
 		XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
 		XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION |
 		XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE,

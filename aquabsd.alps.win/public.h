@@ -4,6 +4,7 @@
 #include <aquabsd.alps.mouse/public.h>
 #include <aquabsd.alps.kbd/public.h>
 
+#include <stdbool.h>
 #include <pthread.h>
 
 #include <xcb/xcb.h>
@@ -20,6 +21,7 @@
 
 typedef enum {
 	AQUABSD_ALPS_WIN_CB_DRAW,
+	AQUABSD_ALPS_WIN_CB_RESIZE,
 	AQUABSD_ALPS_WIN_CB_LEN
 } aquabsd_alps_win_cb_t;
 
@@ -33,7 +35,7 @@ typedef struct aquabsd_alps_win_t aquabsd_alps_win_t; // forward declaration
 struct aquabsd_alps_win_t {
 	unsigned running;
 	unsigned visible;
-	
+
 	int x_pos, y_pos;
 	unsigned x_res, y_res;
 
