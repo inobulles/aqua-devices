@@ -57,9 +57,14 @@ static void update_client_list(wm_t* wm) {
 	LOG_VERBOSE("%p: Update client list", wm)
 
 	xcb_window_t* client_list = calloc(wm->win_count, sizeof *client_list);
-	unsigned i = 0;
+	size_t i = 0;
 
 	for (win_t* win = wm->win_head; win; win = win->next) {
+		if (i > wm->win_count) {
+			LOG_ERROR("%p: Window linked list is larger than wm->win_count (= %d)", wm, wm->win_count)
+			break;
+		}
+
 		client_list[i++] = win->win;
 	}
 

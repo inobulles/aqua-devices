@@ -77,6 +77,7 @@ dynamic int delete(context_t* context) {
 #define FATAL_ERROR(...) \
 	LOG_FATAL(__VA_ARGS__) \
 	delete(context); \
+	\
 	return NULL;
 
 static const char* egl_error_str(void) {
@@ -258,7 +259,7 @@ dynamic void* get_function(context_t* context, const char* name) {
 // so instead of using 'eglCreatePixmapSurface', we shall use 'eglCreateImage'
 // to pass the 'buffer' argument to 'eglCreateImage', we must use the undocumented EGL_KHR_image_pixmap extension (https://www.khronos.org/registry/EGL/extensions/KHR/EGL_KHR_image_base.txt) with the 'EGL_NATIVE_PIXMAP_KHR' target (which also means we must load and use 'eglCreateImageKHR' as our 'eglCreateImage' function instead)
 // once we finally have our 'EGLImageKHR', we can't bind it to a 'GL_TEXTURE_2D' target, as that would be too simple, so we must use the OES_EGL_image_external extension (https://www.khronos.org/registry/OpenGL/extensions/OES/OES_EGL_image_external.txt)
-// this extension provies the 'GL_TEXTURE_EXTERNAL_OES' target and the new 'glEGLImageTargetTexture2DOES' function
+// this extension provides the 'GL_TEXTURE_EXTERNAL_OES' target and the new 'glEGLImageTargetTexture2DOES' function
 // also, in the MESA GL driver, it seems the OES_EGL_image_external extension is only supported when using the OpenGL ES API, so don't forget to use that and set the context version appropriately when binding the EGL API (https://github.com/mesa3d/mesa/blob/43dd023bd1eb23a5cdb1470c6a30595c3fbf319a/src/mesa/main/extensions_table.h)
 // on some installations, the MESA GL driver fails with 'xcb_dri3_buffer_from_pixmap'. As a temporary fix, try disabling DRI3 with 'export LIBGL_DRI3_DISABLE=1'
 
