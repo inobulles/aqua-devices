@@ -4,6 +4,8 @@ typedef enum {
 	CMD_OPEN  = 0x6F70, // 'op'
 	CMD_CLOSE = 0x636C, // 'cl'
 
+	CMD_MMAP  = 0x6D6D, // 'mm'
+
 	CMD_READ  = 0x7264, // 'rd'
 	CMD_WRITE = 0x7772, // 'wr'
 } cmd_t;
@@ -26,6 +28,13 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_CLOSE) {
 		descr_t* descr = (void*) args[0];
 		return fs_close(descr);
+	}
+
+	// mmap commands
+
+	else if (cmd == CMD_MMAP) {
+		descr_t* descr = (void*) args[0];
+		return (uint64_t) fs_mmap(descr);
 	}
 
 	// stream commands

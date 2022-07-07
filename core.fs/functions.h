@@ -8,6 +8,14 @@
 char* conf_path;
 char* unique_path;
 
+// helpful macros
+
+#define VALIDATE_DESCR(T) \
+	if (!descr) { \
+		LOG_WARN("Descriptor pointer is NULL") \
+		return (T) ERR_GENERIC; \
+	}
+
 // access commands
 
 dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
@@ -140,7 +148,7 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 		goto hierarchy_error;
 	}
 
-	// stat file and map to memory
+	// stat file incase we want to mmap later
 
 	struct stat st;
 
@@ -151,32 +159,23 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 		goto stat_error;
 	}
 
-	void* mem = NULL;
-
-	if (flags & FLAGS_STREAM) {
-		mem = mmap(NULL, st.st_size, mmap_flags, MAP_SHARED, fd, 0);
-
-		if (!mem) {
-			LOG_WARN("mmap(\"%s:%s\", %zu): %s", drive, path, st.st_size, strerror(errno))
-
-			close(fd);
-			goto mmap_error;
-		}
-	}
-
 	// create descriptor structure ('descr_t')
 
 	descr_t* descr = calloc(1, sizeof *descr);
 
+	descr->drive = strdup(drive);
+	descr->path = strdup(path);
+	descr->flags = flags;
+
 	descr->fd = fd;
-	descr->mem = mem;
 	descr->bytes = st.st_size;
+
+	descr->mmap_flags = mmap_flags;
 
 	// success
 
 	rv = descr;
 
-mmap_error:
 stat_error:
 hierarchy_error:
 
@@ -198,6 +197,11 @@ error:
 }
 
 dynamic err_t fs_close(descr_t* descr) {
+	VALIDATE_DESCR(err_t)
+
+	free(descr->drive);
+	free(descr->path);
+
 	if (descr->mem) {
 		munmap(descr->mem, descr->bytes);
 	}
@@ -208,13 +212,29 @@ dynamic err_t fs_close(descr_t* descr) {
 	return ERR_SUCCESS;
 }
 
+// mmap commands
+
+dynamic void* fs_mmap(descr_t* descr) {
+	VALIDATE_DESCR(void*)
+
+	if (descr->mem) {
+		return descr->mem;
+	}
+
+	descr->mem = mmap(NULL, descr->bytes, descr->mmap_flags, MAP_SHARED, descr->fd, 0);
+
+	if (!descr->mem) {
+		LOG_WARN("mmap(\"%s:%s\", %zu): %s", descr->drive, descr->path, descr->bytes, strerror(errno))
+		return NULL;
+	}
+
+	return descr->mem;
+}
+
 // stream commands
 
 dynamic err_t fs_read(descr_t* descr, void* buf, size_t len) {
-	if (!descr) {
-		LOG_WARN("Descriptor pointer is NULL")
-		return ERR_GENERIC;
-	}
+	VALIDATE_DESCR(err_t)
 
 	if (read(descr->fd, buf, len) < 0) {
 		LOG_WARN("read(%p, %zu): %s", descr, len, strerror(errno))
@@ -225,10 +245,7 @@ dynamic err_t fs_read(descr_t* descr, void* buf, size_t len) {
 }
 
 dynamic err_t fs_write(descr_t* descr, const void* buf, size_t len) {
-	if (!descr) {
-		LOG_WARN("Descriptor pointer is NULL")
-		return ERR_GENERIC;
-	}
+	VALIDATE_DESCR(err_t)
 
 	if (write(descr->fd, buf, len) < 0) {
 		LOG_WARN("write(%p, %zu): %s", descr, len, strerror(errno))
