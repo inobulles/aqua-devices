@@ -10,10 +10,10 @@ char* unique_path;
 
 // helpful macros
 
-#define VALIDATE_DESCR(T) \
+#define VALIDATE_DESCR(rv) \
 	if (!descr) { \
 		LOG_WARN("Descriptor pointer is NULL") \
-		return (T) ERR_GENERIC; \
+		return (rv); \
 	}
 
 // access commands
@@ -197,7 +197,7 @@ error:
 }
 
 dynamic err_t fs_close(descr_t* descr) {
-	VALIDATE_DESCR(err_t)
+	VALIDATE_DESCR(ERR_GENERIC)
 
 	free(descr->drive);
 	free(descr->path);
@@ -215,12 +215,12 @@ dynamic err_t fs_close(descr_t* descr) {
 // info commands
 
 dynamic ssize_t fs_size(descr_t* descr) {
-	VALIDATE_DESCR(ssize_t);
+	VALIDATE_DESCR((ssize_t) ERR_GENERIC);
 	return descr->size;
 }
 
 dynamic void* fs_mmap(descr_t* descr) {
-	VALIDATE_DESCR(void*)
+	VALIDATE_DESCR(NULL)
 
 	if (descr->mem) {
 		return descr->mem;
@@ -239,7 +239,7 @@ dynamic void* fs_mmap(descr_t* descr) {
 // stream commands
 
 dynamic err_t fs_read(descr_t* descr, void* buf, size_t len) {
-	VALIDATE_DESCR(err_t)
+	VALIDATE_DESCR(ERR_GENERIC)
 
 	if (read(descr->fd, buf, len) < 0) {
 		LOG_WARN("read(%p, %zu): %s", descr, len, strerror(errno))
@@ -250,7 +250,7 @@ dynamic err_t fs_read(descr_t* descr, void* buf, size_t len) {
 }
 
 dynamic err_t fs_write(descr_t* descr, const void* buf, size_t len) {
-	VALIDATE_DESCR(err_t)
+	VALIDATE_DESCR(ERR_GENERIC)
 
 	if (write(descr->fd, buf, len) < 0) {
 		LOG_WARN("write(%p, %zu): %s", descr, len, strerror(errno))
