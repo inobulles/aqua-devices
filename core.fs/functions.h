@@ -5,8 +5,8 @@
 
 // some KOS-set variables which are interesting to us
 
+char* conf_path;
 char* unique_path;
-__attribute__((unused)) char* cwd_path;
 
 // access commands
 
@@ -53,11 +53,14 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 
 	// chdir into the drive we want to access
 
-	bool sys = !strcmp(drive, "sys");
 	char* dir = NULL;
 
-	if (sys) {
+	if (!strcmp(drive, "sys")) {
 		dir = "/";
+	}
+
+	else if (!strcmp(drive, "cfg")) {
+		dir = conf_path;
 	}
 
 	else if (!strcmp(drive, "unq")) {
