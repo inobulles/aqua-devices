@@ -19,7 +19,7 @@ char* unique_path;
 // access commands
 
 dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
-	descr_t* rv = (void*) ERR_GENERIC;
+	descr_t* rv = NULL;
 
 	// flags for later syscalls
 
