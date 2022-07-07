@@ -1,4 +1,11 @@
+// TODO see how things behave when taking multiple threads into account
+//      there may be a need for some mutices around the temporary chdir for realpath
+
 #include <core.fs/private.h>
+
+// some KOS-set variables which are interesting to us
+
+char* data_path;
 
 // access commands
 
@@ -53,7 +60,7 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	}
 
 	else if (!strcmp(drive, "dat")) {
-		dir = "TODO";
+		dir = data_path;
 	}
 
 	else if (!strcmp(drive, "wrk")) {
@@ -88,19 +95,29 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 
 	if (fd < 0) {
 		LOG_VERBOSE("open(\"%s:%s\"): %s", drive, path, strerror(errno))
+
+		if (chdir(cwd) < 0) {
+			LOG_ERROR("chdir(\"%s\"): %s (potential race condition?)", cwd, strerror(errno))
+		}
+
 		goto open_error;
 	}
 
 	// check if path is well a subdirectory of the drive path
+	// although it's cumbersome, I really wanna use realpath here to reduce points of failure
+	// to be honest, I think it's a mistake not to have included a proper way of checking path hierarchy in POSIX
 
 	char* abs_path = realpath(path, NULL);
 
-	if (!abs_path) {
-		LOG_VERBOSE("realpath(\"%s:%s\") (from within \"%s\"): %s", drive, path, dir, strerror(errno))
-	}
-
 	if (dir != cwd && chdir(cwd) < 0) {
 		LOG_ERROR("chdir(\"%s\"): %s (potential race condition?)", cwd, strerror(errno))
+	}
+
+	if (!abs_path) {
+		LOG_VERBOSE("realpath(\"%s:%s\") (from within \"%s\"): %s", drive, path, dir, strerror(errno))
+
+		close(fd);
+		goto realpath_error;
 	}
 
 	if (!abs_path || strncmp(abs_path, dir, strlen(dir))) {
@@ -152,6 +169,7 @@ hierarchy_error:
 
 	free(abs_path);
 
+realpath_error:
 open_error:
 chdir_error:
 
