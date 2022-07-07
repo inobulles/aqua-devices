@@ -2,6 +2,7 @@
 #define __CORE_FS
 
 #include <stddef.h>
+#include <sys/types.h> // for some reason, 'ssize_t' is not in 'stddef.h'
 
 typedef enum {
 	CORE_FS_FLAGS_READ   = 0b00001, // O_RDONLY/O_RDWR, PROT_READ
@@ -29,5 +30,12 @@ typedef struct {
 	int mmap_flags;
 	void* mem;
 } core_fs_descr_t;
+
+static core_fs_descr_t* (*core_fs_open)  (const char* drive, const char* path, core_fs_flags_t flags);
+static core_fs_err_t    (*core_fs_close) (core_fs_descr_t* descr);
+static ssize_t          (*core_fs_size)  (core_fs_descr_t* descr);
+static void*            (*core_fs_mmap)  (core_fs_descr_t* descr);
+static core_fs_err_t    (*core_fs_read)  (core_fs_descr_t* descr, void* buf, size_t len);
+static core_fs_err_t    (*core_fs_write) (core_fs_descr_t* descr, const void* buf, size_t len);
 
 #endif
