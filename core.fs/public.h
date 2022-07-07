@@ -2,15 +2,14 @@
 #define __CORE_FS
 
 #include <stddef.h>
+#include <sys/types.h> // for some reason, 'ssize_t' is not in 'stddef.h'
 
 typedef enum {
-	CORE_FS_FLAGS_READ   = 0b000001, // O_RDONLY/O_RDWR, PROT_READ
-	CORE_FS_FLAGS_WRITE  = 0b000010, // O_WRONLY/O_RDWR, PROT_WRITE
-	CORE_FS_FLAGS_EXEC   = 0b000100, // PROT_EXEC
-	CORE_FS_FLAGS_APPEND = 0b001000, // O_APPEND
-
-	CORE_FS_FLAGS_CREATE = 0b010000, // O_CREAT: create file/directory if it doesn't yet exist (TODO: vs O_EXCL?)
-	CORE_FS_FLAGS_STREAM = 0b100000, // don't mmap
+	CORE_FS_FLAGS_READ   = 0b00001, // O_RDONLY/O_RDWR, PROT_READ
+	CORE_FS_FLAGS_WRITE  = 0b00010, // O_WRONLY/O_RDWR, PROT_WRITE
+	CORE_FS_FLAGS_EXEC   = 0b00100, // PROT_EXEC
+	CORE_FS_FLAGS_APPEND = 0b01000, // O_APPEND
+	CORE_FS_FLAGS_CREATE = 0b10000, // O_CREAT: create file/directory if it doesn't yet exist (TODO: vs O_EXCL?)
 } core_fs_flags_t;
 
 // TODO better error handling
@@ -21,9 +20,22 @@ typedef enum {
 } core_fs_err_t;
 
 typedef struct {
+	char* drive;
+	char* path;
+	core_fs_flags_t flags;
+
 	int fd;
+	size_t size;
+
+	int mmap_flags;
 	void* mem;
-	size_t bytes;
 } core_fs_descr_t;
+
+static core_fs_descr_t* (*core_fs_open)  (const char* drive, const char* path, core_fs_flags_t flags);
+static core_fs_err_t    (*core_fs_close) (core_fs_descr_t* descr);
+static ssize_t          (*core_fs_size)  (core_fs_descr_t* descr);
+static void*            (*core_fs_mmap)  (core_fs_descr_t* descr);
+static core_fs_err_t    (*core_fs_read)  (core_fs_descr_t* descr, void* buf, size_t len);
+static core_fs_err_t    (*core_fs_write) (core_fs_descr_t* descr, const void* buf, size_t len);
 
 #endif
