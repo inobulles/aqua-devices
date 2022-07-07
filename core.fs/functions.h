@@ -40,8 +40,13 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	// TODO check permissions
 
 	// open and map to memory
+	// we need to specify a mode for when 'o_flags & O_CREAT'
 
-	int fd = open(path, o_flags);
+	mode_t mode =
+		S_IRUSR | S_IWUSR | // owner can read/write
+		S_IRGRP | S_IWGRP;  // group can read/write
+
+	int fd = open(path, o_flags, mode);
 
 	if (fd < 0) {
 		return (descr_t*) ERR_GENERIC;
