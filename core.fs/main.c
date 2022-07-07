@@ -4,6 +4,7 @@ typedef enum {
 	CMD_OPEN  = 0x6F70, // 'op'
 	CMD_CLOSE = 0x636C, // 'cl'
 
+	CMD_SIZE  = 0x737A, // 'sz'
 	CMD_MMAP  = 0x6D6D, // 'mm'
 
 	CMD_READ  = 0x7264, // 'rd'
@@ -30,7 +31,12 @@ uint64_t send(uint16_t _cmd, void* data) {
 		return fs_close(descr);
 	}
 
-	// mmap commands
+	// info commands
+
+	else if (cmd == CMD_SIZE) {
+		descr_t* descr = (void*) args[0];
+		return (uint64_t) fs_size(descr);
+	}
 
 	else if (cmd == CMD_MMAP) {
 		descr_t* descr = (void*) args[0];

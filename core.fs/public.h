@@ -24,7 +24,7 @@ typedef struct {
 	core_fs_flags_t flags;
 
 	int fd;
-	size_t bytes;
+	size_t size;
 
 	int mmap_flags;
 	void* mem;

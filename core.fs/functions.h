@@ -168,7 +168,7 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	descr->flags = flags;
 
 	descr->fd = fd;
-	descr->bytes = st.st_size;
+	descr->size = st.st_size;
 
 	descr->mmap_flags = mmap_flags;
 
@@ -203,7 +203,7 @@ dynamic err_t fs_close(descr_t* descr) {
 	free(descr->path);
 
 	if (descr->mem) {
-		munmap(descr->mem, descr->bytes);
+		munmap(descr->mem, descr->size);
 	}
 
 	close(descr->fd);
@@ -212,7 +212,12 @@ dynamic err_t fs_close(descr_t* descr) {
 	return ERR_SUCCESS;
 }
 
-// mmap commands
+// info commands
+
+dynamic ssize_t fs_size(descr_t* descr) {
+	VALIDATE_DESCR(ssize_t);
+	return descr->size;
+}
 
 dynamic void* fs_mmap(descr_t* descr) {
 	VALIDATE_DESCR(void*)
@@ -221,10 +226,10 @@ dynamic void* fs_mmap(descr_t* descr) {
 		return descr->mem;
 	}
 
-	descr->mem = mmap(NULL, descr->bytes, descr->mmap_flags, MAP_SHARED, descr->fd, 0);
+	descr->mem = mmap(NULL, descr->size, descr->mmap_flags, MAP_SHARED, descr->fd, 0);
 
 	if (!descr->mem) {
-		LOG_WARN("mmap(\"%s:%s\", %zu): %s", descr->drive, descr->path, descr->bytes, strerror(errno))
+		LOG_WARN("mmap(\"%s:%s\", %zu): %s", descr->drive, descr->path, descr->size, strerror(errno))
 		return NULL;
 	}
 
