@@ -61,7 +61,7 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	}
 
 	else {
-		LOG_VERBOSE("Couldn't identify drive of '%s:%s'", drive, path)
+		LOG_WARN("Couldn't identify drive of '%s:%s'", drive, path)
 		goto error;
 	}
 
@@ -72,7 +72,7 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	}
 
 	else if (chdir(dir) < 0) {
-		LOG_VERBOSE("Couldn't change into drive directory of '%s:%s' ('%s')", drive, path, dir)
+		LOG_WARN("Couldn't change into drive directory of '%s:%s' ('%s')", drive, path, dir)
 		goto chdir_error;
 	}
 
@@ -115,7 +115,7 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	struct stat st;
 
 	if (fstat(fd, &st) < 0) {
-		LOG_VERBOSE("fstat(\"%s:%s\"): %s", drive, path, strerror(errno));
+		LOG_WARN("fstat(\"%s:%s\"): %s", drive, path, strerror(errno))
 
 		close(fd);
 		goto stat_error;
@@ -127,7 +127,7 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 		mem = mmap(NULL, st.st_size, mmap_flags, MAP_SHARED, fd, 0);
 
 		if (!mem) {
-			LOG_VERBOSE("mmap(\"%s:%s\", %zu): %s", drive, path, st.st_size, strerror(errno));
+			LOG_WARN("mmap(\"%s:%s\", %zu): %s", drive, path, st.st_size, strerror(errno))
 
 			close(fd);
 			goto mmap_error;
@@ -177,10 +177,12 @@ dynamic err_t fs_close(descr_t* descr) {
 
 dynamic err_t fs_read(descr_t* descr, void* buf, size_t len) {
 	if (!descr) {
+		LOG_WARN("Descriptor pointer is NULL")
 		return ERR_GENERIC;
 	}
 
 	if (read(descr->fd, buf, len) < 0) {
+		LOG_WARN("read(%p, %zu): %s", descr, len, strerror(errno))
 		return ERR_GENERIC;
 	}
 
@@ -189,10 +191,12 @@ dynamic err_t fs_read(descr_t* descr, void* buf, size_t len) {
 
 dynamic err_t fs_write(descr_t* descr, const void* buf, size_t len) {
 	if (!descr) {
+		LOG_WARN("Descriptor pointer is NULL")
 		return ERR_GENERIC;
 	}
 
 	if (write(descr->fd, buf, len) < 0) {
+		LOG_WARN("write(%p, %zu): %s", descr, len, strerror(errno))
 		return ERR_GENERIC;
 	}
 
