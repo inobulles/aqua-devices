@@ -121,10 +121,19 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 		LOG_VERBOSE("realpath(\"%s:%s\") (from within \"%s\"): %s", drive, path, dir, strerror(errno))
 
 		close(fd);
-		goto realpath_error;
+		goto realpath_path_error;
 	}
 
-	if (!abs_path || strncmp(abs_path, dir, strlen(dir))) {
+	char* abs_dir = realpath(dir, NULL);
+
+	if (!abs_dir) {
+		LOG_VERBOSE("realpath(\"%s\"): %s", dir, strerror(errno))
+
+		close(fd);
+		goto realpath_dir_error;
+	}
+
+	if (!abs_path || strncmp(abs_path, abs_dir, strlen(abs_dir))) {
 		LOG_VERBOSE("\"%s:%s\" is not contained within \"%s\" (there may be malicious intent at play here!)", drive, path, dir)
 
 		close(fd);
@@ -171,9 +180,13 @@ mmap_error:
 stat_error:
 hierarchy_error:
 
+	free(abs_dir);
+
+realpath_dir_error:
+
 	free(abs_path);
 
-realpath_error:
+realpath_path_error:
 open_error:
 chdir_error:
 
