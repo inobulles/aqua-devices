@@ -2,13 +2,26 @@
 
 #include <core.fs/public.h>
 
+#include <errno.h>
+#include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <fcntl.h>
 #include <unistd.h>
 
 #include <sys/mman.h>
 #include <sys/stat.h>
+
+#include <umber.h>
+#define UMBER_COMPONENT "core.fs"
+
+// https://reviews.freebsd.org/D29323
+// seems like in older versions of FreeBSD, the 'O_PATH' define was omitted in 'fcntl.h'
+
+#if !defined(O_PATH)
+	#define O_PATH 0x00400000
+#endif
 
 // types
 

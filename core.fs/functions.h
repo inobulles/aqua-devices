@@ -3,6 +3,10 @@
 // access commands
 
 dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
+	descr_t* rv = (void*) ERR_GENERIC;
+
+	// flags for later syscalls
+
 	int o_flags = 0;
 	int mmap_flags = 0;
 
@@ -37,9 +41,41 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 		o_flags |= O_CREAT;
 	}
 
-	// TODO check permissions
+	// TODO check permissions here
 
-	// open and map to memory
+	// chdir into the drive we want to access
+
+	bool sys = !strcmp(drive, "sys");
+	char* dir = NULL;
+
+	if (sys) {
+		dir = "/";
+	}
+
+	else if (!strcmp(drive, "data")) {
+		dir = "TODO";
+	}
+
+	else if (!strcmp(drive, "work")) {
+		// don't go anywhere; we're already where we need to be
+	}
+
+	else {
+		goto error;
+	}
+
+	char* cwd = getcwd(NULL, 0);
+
+	if (!dir) {
+		dir = cwd;
+	}
+
+	else if (chdir(dir) < 0) {
+		goto chdir_error;
+	}
+
+	// open the file now
+	// if it doesn't yet exist, the 'realpath' call will fail (which we don't want if 'flags & FLAGS_CREATE')
 	// we need to specify a mode for when 'o_flags & O_CREAT'
 
 	mode_t mode =
@@ -49,13 +85,29 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	int fd = open(path, o_flags, mode);
 
 	if (fd < 0) {
-		return (descr_t*) ERR_GENERIC;
+		goto open_error;
 	}
+
+	// check if path is well a subdirectory of the drive path
+
+	char* abs_path = realpath(path, NULL);
+
+	if (dir != cwd && chdir(cwd) < 0) {
+		LOG_ERROR("chdir(\"%s\"): %s (potential race condition?)", cwd, strerror(errno))
+	}
+
+	if (!abs_path || strncmp(abs_path, dir, strlen(dir))) {
+		close(fd);
+		goto hierarchy_error;
+	}
+
+	// stat file and map to memory
 
 	struct stat st;
 
 	if (fstat(fd, &st) < 0) {
-		return (descr_t*) ERR_GENERIC;
+		close(fd);
+		goto stat_error;
 	}
 
 	void* mem = NULL;
@@ -64,7 +116,8 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 		mem = mmap(NULL, st.st_size, mmap_flags, MAP_SHARED, fd, 0);
 
 		if (!mem) {
-			return (descr_t*) ERR_GENERIC;
+			close(fd);
+			goto mmap_error;
 		}
 	}
 
@@ -76,7 +129,24 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	descr->mem = mem;
 	descr->bytes = st.st_size;
 
-	return descr;
+	// success
+
+	rv = descr;
+
+mmap_error:
+stat_error:
+hierarchy_error:
+
+	free(abs_path);
+
+open_error:
+chdir_error:
+
+	free(cwd);
+
+error:
+
+	return rv;
 }
 
 dynamic err_t fs_close(descr_t* descr) {
