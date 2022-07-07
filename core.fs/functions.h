@@ -52,15 +52,16 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 		dir = "/";
 	}
 
-	else if (!strcmp(drive, "data")) {
+	else if (!strcmp(drive, "dat")) {
 		dir = "TODO";
 	}
 
-	else if (!strcmp(drive, "work")) {
+	else if (!strcmp(drive, "wrk")) {
 		// don't go anywhere; we're already where we need to be
 	}
 
 	else {
+		LOG_VERBOSE("Couldn't identify drive of '%s:%s'", drive, path)
 		goto error;
 	}
 
@@ -71,6 +72,7 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	}
 
 	else if (chdir(dir) < 0) {
+		LOG_VERBOSE("Couldn't change into drive directory of '%s:%s' ('%s')", drive, path, dir)
 		goto chdir_error;
 	}
 
@@ -85,6 +87,7 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	int fd = open(path, o_flags, mode);
 
 	if (fd < 0) {
+		LOG_VERBOSE("open(\"%s:%s\"): %s", drive, path, strerror(errno))
 		goto open_error;
 	}
 
@@ -92,11 +95,17 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 
 	char* abs_path = realpath(path, NULL);
 
+	if (!abs_path) {
+		LOG_VERBOSE("realpath(\"%s:%s\") (from within \"%s\"): %s", drive, path, dir, strerror(errno))
+	}
+
 	if (dir != cwd && chdir(cwd) < 0) {
 		LOG_ERROR("chdir(\"%s\"): %s (potential race condition?)", cwd, strerror(errno))
 	}
 
 	if (!abs_path || strncmp(abs_path, dir, strlen(dir))) {
+		LOG_VERBOSE("\"%s:%s\" is not contained within \"%s\" (there may be malicious intent at play here!)", drive, path, dir)
+
 		close(fd);
 		goto hierarchy_error;
 	}
@@ -106,6 +115,8 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	struct stat st;
 
 	if (fstat(fd, &st) < 0) {
+		LOG_VERBOSE("fstat(\"%s:%s\"): %s", drive, path, strerror(errno));
+
 		close(fd);
 		goto stat_error;
 	}
@@ -116,6 +127,8 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 		mem = mmap(NULL, st.st_size, mmap_flags, MAP_SHARED, fd, 0);
 
 		if (!mem) {
+			LOG_VERBOSE("mmap(\"%s:%s\", %zu): %s", drive, path, st.st_size, strerror(errno));
+
 			close(fd);
 			goto mmap_error;
 		}
