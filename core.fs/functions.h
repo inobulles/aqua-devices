@@ -5,7 +5,8 @@
 
 // some KOS-set variables which are interesting to us
 
-char* data_path;
+char* unique_path;
+__attribute__((unused)) char* cwd_path;
 
 // access commands
 
@@ -59,8 +60,8 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 		dir = "/";
 	}
 
-	else if (!strcmp(drive, "dat")) {
-		dir = data_path;
+	else if (!strcmp(drive, "unq")) {
+		dir = unique_path;
 	}
 
 	else if (!strcmp(drive, "wrk")) {
