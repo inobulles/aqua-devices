@@ -40,7 +40,9 @@ uint64_t send(uint16_t _cmd, void* data) {
 
 	else if (cmd == CMD_MMAP) {
 		descr_t* descr = (void*) args[0];
-		return (uint64_t) fs_mmap(descr);
+		flags_t flags = args[1];
+
+		return (uint64_t) fs_mmap(descr, flags);
 	}
 
 	// stream commands
