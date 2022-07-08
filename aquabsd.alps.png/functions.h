@@ -19,10 +19,6 @@ dynamic int free_png(png_t* png) {
 		png_destroy_read_struct(&png->png, NULL, NULL);
 	}
 
-	if (png->fp) {
-		fclose(png->fp);
-	}
-
 	free(png);
 	return 0;
 }
@@ -84,38 +80,6 @@ static inline void __read_info(png_t* png, size_t header_len) {
 	png_read_update_info(png->png, png->info);
 }
 
-dynamic png_t* load_png(const char* path) {
-	LOG_INFO("Load PNG \"%s\"", path)
-
-	FILE* fp = fopen(path, "rb");
-
-	if (!fp) {
-		LOG_ERROR("fopen: %s", strerror(errno))
-		return NULL;
-	}
-
-	char header[8];
-	fread(header, 1, sizeof header, fp);
-
-	png_t* png = __load_png(header, sizeof header);
-
-	if (!png) {
-		fclose(fp);
-		return NULL;
-	}
-
-	png->stream_kind = STREAM_KIND_FP;
-
-	png->fp = fp;
-	png_init_io(png->png, png->fp);
-
-	__read_info(png, sizeof header);
-
-	LOG_SUCCESS("Loaded PNG: %p", png)
-
-	return png;
-}
-
 static void _read_data_from_input_stream(png_structp png, png_bytep ptr, png_size_t bytes) {
 	// http://pulsarengine.com/2009/01/reading-png-images-from-memory/
 
@@ -130,8 +94,8 @@ static void _read_data_from_input_stream(png_structp png, png_bytep ptr, png_siz
 	stream->ptr += bytes;
 }
 
-dynamic png_t* load_png_ptr(void* ptr) {
-	LOG_INFO("Load PNG from pointer: %p", ptr)
+dynamic png_t* load_png(void* ptr) {
+	LOG_INFO("Load PNG (%p)", ptr)
 
 	if (!ptr) {
 		LOG_ERROR("Passed pointer is NULL")
@@ -146,8 +110,6 @@ dynamic png_t* load_png_ptr(void* ptr) {
 	if (!png) {
 		return NULL;
 	}
-
-	png->stream_kind = STREAM_KIND_PTR;
 
 	png->stream.ptr = ptr + sizeof header;
 	png_set_read_fn(png->png, &png->stream, _read_data_from_input_stream);

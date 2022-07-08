@@ -2,10 +2,9 @@
 #include <aquabsd.alps.png/functions.h>
 
 typedef enum {
-	CMD_LOAD     = 0x6C64, // 'ld'
-	CMD_LOAD_PTR = 0x6C70, // 'lp'
-	CMD_DRAW     = 0x6477, // 'dw'
-	CMD_FREE     = 0x6665, // 'fe'
+	CMD_LOAD = 0x6C64, // 'ld'
+	CMD_DRAW = 0x6477, // 'dw'
+	CMD_FREE = 0x6665, // 'fe'
 } cmd_t;
 
 uint64_t send(uint16_t _cmd, void* data) {
@@ -13,13 +12,8 @@ uint64_t send(uint16_t _cmd, void* data) {
 	uint64_t* args = data;
 
 	if (cmd == CMD_LOAD) {
-		const char* path = (void*) args[0];
-		return (uint64_t) load_png(path);
-	}
-
-	else if (cmd == CMD_LOAD_PTR) {
-		void* ptr = (void*) args[0];
-		return (uint64_t) load_png_ptr(ptr);
+		void* mem = (void*) args[0];
+		return (uint64_t) load_png(mem);
 	}
 
 	else if (cmd == CMD_DRAW) {
@@ -27,7 +21,7 @@ uint64_t send(uint16_t _cmd, void* data) {
 
 		uint8_t** bitmap_reference = (void*) args[1];
 		uint64_t* bpp_reference    = (void*) args[2];
-		
+
 		uint64_t* width_reference  = (void*) args[3];
 		uint64_t* height_reference = (void*) args[4];
 
