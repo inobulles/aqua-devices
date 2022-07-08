@@ -237,7 +237,7 @@ dynamic void* fs_mmap(descr_t* descr, flags_t flags) {
 
 	descr->mem = mmap(NULL, descr->size, sys_flags, MAP_SHARED, descr->fd, 0);
 
-	if (!descr->mem) {
+	if (descr->mem == MAP_FAILED) {
 		LOG_WARN("mmap(\"%s:%s\", %zu): %s", descr->drive, descr->path, descr->size, strerror(errno))
 		return NULL;
 	}
