@@ -21,9 +21,10 @@ char* unique_path;
 dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	descr_t* rv = NULL;
 
-	// flags for open(2) later
+	// flags for open(2) & mmap(2) syscalls later
 
-	int sys_flags = 0;
+	int o_flags = 0;
+	int mmap_flags = 0;
 
 	// do we wanna read or write?
 
@@ -31,27 +32,30 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 		flags & FLAGS_READ &&
 		flags & FLAGS_WRITE
 	) {
-		sys_flags |= O_RDWR;
+		o_flags |= O_RDWR;
+		mmap_flags |= PROT_READ | PROT_WRITE;
 	}
 
 	else if (flags & FLAGS_READ) {
-		sys_flags |= O_RDONLY;
+		o_flags |= O_RDONLY;
+		mmap_flags |= PROT_READ;
 	}
 
 	else if (flags & FLAGS_WRITE) {
-		sys_flags |= O_WRONLY;
+		o_flags |= O_WRONLY;
+		mmap_flags |= PROT_WRITE;
 	}
 
 	// if writing, do we want to overwrite or append?
 
 	if (flags & FLAGS_APPEND) {
-		sys_flags |= O_APPEND;
+		o_flags |= O_APPEND;
 	}
 
 	// if writing, do we want to create the file if it already exists?
 
 	if (flags & FLAGS_CREATE) {
-		sys_flags |= O_CREAT;
+		o_flags |= O_CREAT;
 	}
 
 	// TODO check permissions here
@@ -94,13 +98,13 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 
 	// open the file now
 	// if it doesn't yet exist, the 'realpath' call will fail (which we don't want if 'flags & FLAGS_CREATE')
-	// we need to specify a mode for when 'sys_flags & O_CREAT'
+	// we need to specify a mode for when 'o_flags & O_CREAT'
 
 	mode_t mode =
 		S_IRUSR | S_IWUSR | // owner can read/write
 		S_IRGRP | S_IWGRP;  // group can read/write
 
-	int fd = open(path, sys_flags, mode);
+	int fd = open(path, o_flags, mode);
 
 	if (fd < 0) {
 		LOG_VERBOSE("open(\"%s:%s\"): %s", drive, path, strerror(errno))
@@ -167,6 +171,8 @@ dynamic descr_t* fs_open(const char* drive, const char* path, flags_t flags) {
 	descr->fd = fd;
 	descr->size = st.st_size;
 
+	descr->mmap_flags = mmap_flags;
+
 	// success
 
 	rv = descr;
@@ -214,28 +220,14 @@ dynamic ssize_t fs_size(descr_t* descr) {
 	return descr->size;
 }
 
-dynamic void* fs_mmap(descr_t* descr, flags_t flags) {
+dynamic void* fs_mmap(descr_t* descr) {
 	VALIDATE_DESCR(NULL)
 
 	if (descr->mem) {
 		return descr->mem;
 	}
 
-	// flags for mmap(2) later
-
-	int sys_flags = 0;
-
-	// do we wanna read or write?
-
-	if (flags & FLAGS_READ) {
-		sys_flags |= PROT_READ;
-	}
-
-	if (flags & FLAGS_WRITE) {
-		sys_flags |= PROT_WRITE;
-	}
-
-	descr->mem = mmap(NULL, descr->size, sys_flags, MAP_SHARED, descr->fd, 0);
+	descr->mem = mmap(NULL, descr->size, descr->mmap_flags, MAP_SHARED, descr->fd, 0);
 
 	if (descr->mem == MAP_FAILED) {
 		LOG_WARN("mmap(\"%s:%s\", %zu): %s", descr->drive, descr->path, descr->size, strerror(errno))
