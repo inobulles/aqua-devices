@@ -19,8 +19,7 @@ typedef struct {
 	double width, height;
 } aquabsd_alps_svg_t;
 
-static aquabsd_alps_svg_t* (*aquabsd_alps_svg_load_svg) (const char* path);
-static aquabsd_alps_svg_t* (*aquabsd_alps_svg_load_svg_str) (const char* str);
+static aquabsd_alps_svg_t* (*aquabsd_alps_svg_load_svg) (const char* mem);
 static int (*aquabsd_alps_svg_free_svg) (aquabsd_alps_svg_t* svg);
 static int (*aquabsd_alps_svg_draw_svg) (aquabsd_alps_svg_t* svg, uint64_t size, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference);
 

@@ -1,10 +1,4 @@
 
-#include <stdlib.h>
-#include <stdint.h>
-
-#include <umber.h>
-#define UMBER_COMPONENT "aquabsd.alps.svg"
-
 dynamic int free_svg(svg_t* svg) {
 	if (svg->handle) {
 		g_object_unref(svg->handle);
@@ -25,10 +19,24 @@ static inline uint64_t __hash_str(const char* str) { // djb2 algorithm
 	return hash;
 }
 
-static inline svg_t* __load_svg(RsvgHandle* handle, const char* to_hash) {
+dynamic svg_t* load_svg(const char* mem) {
+	LOG_INFO("Load SVG (%p)", mem)
+
+	gsize len = strlen(mem);
+
+	GError* error = NULL;
+	RsvgHandle* handle = rsvg_handle_new_from_data((const guint8*) mem, len, &error);
+
+	if (error) {
+		LOG_ERROR("Could not load SVG")
+		return NULL;
+	}
+
+	// create SVG object
+
 	svg_t* svg = calloc(1, sizeof *svg);
 
-	svg->hash = __hash_str(to_hash);
+	svg->hash = __hash_str(mem);
 	svg->handle = handle;
 
 	LOG_VERBOSE("SVG hash is %lx", svg->hash)
@@ -46,38 +54,6 @@ static inline svg_t* __load_svg(RsvgHandle* handle, const char* to_hash) {
 	LOG_SUCCESS("Loaded SVG (%gx%g): %p", svg->width, svg->height, svg)
 
 	return svg;
-}
-
-// load_svg and load_svg_str are both just wrappers around _load_svg
-
-dynamic svg_t* load_svg(const char* path) {
-	LOG_INFO("Load SVG from \"%s\"", path)
-
-	GError* error = NULL;
-	RsvgHandle* handle = rsvg_handle_new_from_file(path, &error);
-
-	if (error) {
-		LOG_ERROR("Could not load SVG")
-		return NULL;
-	}
-
-	return __load_svg(handle, path);
-}
-
-dynamic svg_t* load_svg_str(const char* str) {
-	LOG_INFO("Load SVG from source (%p)", str)
-
-	gsize len = strlen(str);
-
-	GError* error = NULL;
-	RsvgHandle* handle = rsvg_handle_new_from_data((const guint8*) str, len, &error);
-
-	if (error) {
-		LOG_ERROR("Could not load SVG")
-		return NULL;
-	}
-
-	return __load_svg(handle, str);
 }
 
 dynamic int draw_svg(svg_t* svg, uint64_t size, uint8_t** bitmap_ref, uint64_t* width_ref, uint64_t* height_ref) {

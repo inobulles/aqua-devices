@@ -2,6 +2,12 @@
 
 #include <aquabsd.alps.svg/public.h>
 
+#include <stdlib.h>
+#include <stdint.h>
+
+#include <umber.h>
+#define UMBER_COMPONENT "aquabsd.alps.svg"
+
 #if defined(AQUABSD_ALPS_SVG_NEW_RSVG)
 	#define NEW_RSVG
 #endif

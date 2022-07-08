@@ -3,7 +3,6 @@
 
 typedef enum {
 	CMD_LOAD_SVG = 0x6C73, // 'ls'
-	CMD_LOAD_STR = 0x6C64, // 'ld'
 	CMD_DRAW_SVG = 0x6473, // 'ds'
 	CMD_FREE_SVG = 0x6673, // 'fs'
 } cmd_t;
@@ -13,13 +12,8 @@ uint64_t send(uint16_t _cmd, void* data) {
 	uint64_t* args = data;
 
 	if (cmd == CMD_LOAD_SVG) {
-		const char* path = (void*) args[0];
-		return (uint64_t) load_svg(path);
-	}
-
-	else if (cmd == CMD_LOAD_STR) {
-		const char* str = (void*) args[0];
-		return (uint64_t) load_svg_str(str);
+		const char* mem = (void*) args[0];
+		return (uint64_t) load_svg(mem);
 	}
 
 	else if (cmd == CMD_DRAW_SVG) {
@@ -27,7 +21,7 @@ uint64_t send(uint16_t _cmd, void* data) {
 		uint64_t size = args[1];
 
 		uint8_t** bitmap_reference = (void*) args[2];
-		
+
 		uint64_t* width_reference  = (void*) args[3];
 		uint64_t* height_reference = (void*) args[4];
 
