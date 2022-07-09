@@ -24,7 +24,7 @@ typedef enum {
 uint64_t send(uint16_t _cmd, void* data) {
 	cmd_t cmd = _cmd;
 	uint64_t* args = data;
-	
+
 	// app listing commands
 
 	if (cmd == CMD_APP_COUNT) {
@@ -44,7 +44,7 @@ uint64_t send(uint16_t _cmd, void* data) {
 
 	else if (cmd == CMD_FREE) {
 		pkg_t* pkg = (void*) args[0];
-		
+
 		free_pkg(pkg);
 		return 0;
 	}
