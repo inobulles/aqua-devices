@@ -11,7 +11,8 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-#define ERROR(...) fprintf(stderr, "[core.pkg] ERROR " __VA_ARGS__);
+#include <umber.h>
+#define UMBER_COMPONENT "core.pkg"
 
 #define APPS_PATH "apps"
 
@@ -39,18 +40,18 @@ static int read_apps(char*** list_ref) {
 	// make sure an APPS_PATH directory
 
 	if (mkdir(APPS_PATH, 0700) < 0 && errno != EEXIST) {
-		ERROR("Failed to create apps directory (" APPS_PATH ") in root directory\n")
+		LOG_ERROR("Failed to create apps directory (" APPS_PATH ") in root directory")
 		return -1;
 	}
 
 	DIR* dp = opendir(APPS_PATH);
 
 	if (!dp) {
-		ERROR("Failed to open apps directory (" APPS_PATH ") in root directory\n")
+		LOG_ERROR("Failed to open apps directory (" APPS_PATH ") in root directory")
 		return -1;
 	}
 
-	unsigned count = 0;
+	size_t count = 0;
 	struct dirent* app;
 
 	while ((app = readdir(dp))) {
@@ -59,16 +60,16 @@ static int read_apps(char*** list_ref) {
 		}
 
 		count += 1;
-		
+
 		if (!list_ref) {
 			continue; // don't go any further if this is just a dryrun
 		}
 
-		char* path = malloc(strlen(APPS_PATH) + strlen(app->d_name) + 2 /* strlen("/") + 1 */);
-		sprintf(path, "%s/%s", APPS_PATH, app->d_name);
+		char* path;
+		asprintf(&path, APPS_PATH "/%s", app->d_name);
 
 		*list_ref = realloc(*list_ref, count * sizeof **list_ref);
-		(*list_ref)[count - 1] = path; // apparently indexing has a higher precedence than deferencing 🤷
+		(*list_ref)[count - 1] = path; // apparently indexing has a higher precedence than dereferencing 🤷
 	}
 
 	closedir(dp);
@@ -81,7 +82,7 @@ int app_count(void) {
 
 char** app_list(void) {
 	char** list = NULL;
-	
+
 	if (read_apps(&list) < 0) {
 		return NULL;
 	}
