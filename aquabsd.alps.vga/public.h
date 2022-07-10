@@ -18,14 +18,14 @@ typedef struct {
 	uint64_t bpp, fps;
 } aquabsd_alps_vga_mode_t;
 
-static int (*aquabsd_alps_vga_mode_count) (void);
-static aquabsd_alps_vga_mode_t* (*aquabsd_alps_vga_modes) (void);
+extern int (*aquabsd_alps_vga_mode_count) (void);
+extern aquabsd_alps_vga_mode_t* (*aquabsd_alps_vga_modes) (void);
 
-static void (*aquabsd_alps_vga_set_mode) (aquabsd_alps_vga_mode_t* mode);
-static void* (*aquabsd_alps_vga_framebuffer) (void);
+extern void (*aquabsd_alps_vga_set_mode) (aquabsd_alps_vga_mode_t* mode);
+extern void* (*aquabsd_alps_vga_framebuffer) (void);
 
-static int (*aquabsd_alps_vga_flip) (void);
+extern int (*aquabsd_alps_vga_flip) (void);
 
-static int (*aquabsd_alps_vga_reset) (void);
+extern int (*aquabsd_alps_vga_reset) (void);
 
 #endif
