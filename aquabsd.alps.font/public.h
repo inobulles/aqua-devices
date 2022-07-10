@@ -4,7 +4,6 @@
 #include <stdint.h>
 
 // yes, it is insanely inelegant to have to use Cairo to render simple bitmaps
-// blame Pango, it's a fault of their own intelligence, not mine
 
 #include <pango/pangocairo.h>
 
@@ -12,8 +11,8 @@ typedef struct {
 	PangoFontDescription* font_description;
 } aquabsd_alps_font_t;
 
-static aquabsd_alps_font_t* (*aquabsd_alps_font_load_font) (const char* path);
-static int (*aquabsd_alps_font_free_font) (aquabsd_alps_font_t* font);
-static int (*aquabsd_alps_font_draw_font) (aquabsd_alps_font_t* font, const char* string, float red, float green, float blue, float alpha, uint64_t wrap_width, uint64_t wrap_height, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference);
+extern aquabsd_alps_font_t* (*aquabsd_alps_font_load_font) (const char* path);
+extern int (*aquabsd_alps_font_free_font) (aquabsd_alps_font_t* font);
+extern int (*aquabsd_alps_font_draw_font) (aquabsd_alps_font_t* font, const char* string, float red, float green, float blue, float alpha, uint64_t wrap_width, uint64_t wrap_height, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference);
 
 #endif
