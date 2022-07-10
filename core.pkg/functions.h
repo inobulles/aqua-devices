@@ -3,13 +3,14 @@
 
 #include <core.pkg/pkg_t.h>
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
-#include <sys/stat.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 #include <umber.h>
 #define UMBER_COMPONENT "core.pkg"
