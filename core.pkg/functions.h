@@ -1,3 +1,5 @@
+#define __STDC_WANT_LIB_EXT2__ 1 // ISO/IEC TR 24731-2:2010 standard library extensions
+
 // TODO include literally comes verbatim from the KOS source
 //      this should be a single file and there should be a way for devices to include headers from the KOS
 
