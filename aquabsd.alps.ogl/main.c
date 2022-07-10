@@ -3,12 +3,13 @@
 #include <aquabsd.alps.ogl/private.h>
 #include <aquabsd.alps.ogl/functions.h>
 
-#define CMD_CREATE       0x6363 // 'cc'
-#define CMD_DELETE       0x6364 // 'dc'
+typedef enum {
+	CMD_CREATE       = 0x6363, // 'cc'
+	CMD_DELETE       = 0x6364, // 'dc'
 
-#define CMD_GET_FUNCTION 0x6766 // 'gf'
-
-#define CMD_BIND_WIN_TEX 0x6277 // 'bw'
+	CMD_GET_FUNCTION = 0x6766, // 'gf'
+	CMD_BIND_WIN_TEX = 0x6277, // 'bw'
+} cmd_t;
 
 int load(
     uint64_t (*_kos_query_device) (uint64_t, uint64_t name),
@@ -29,36 +30,37 @@ int load(
     return 0;
 }
 
-uint64_t send(uint16_t command, void* data) {
-	uint64_t* arguments = (uint64_t*) data;
+uint64_t send(uint16_t _cmd, void* data) {
+	cmd_t cmd = _cmd;
+	uint64_t* args = (uint64_t*) data;
 
-	if (command == CMD_CREATE) {
-		context_type_t type = arguments[0];
+	if (cmd == CMD_CREATE) {
+		context_type_t type = args[0];
 		context_t* context = NULL;
 		
 		if (type == CONTEXT_TYPE_WIN && win_device != -1) {
-			aquabsd_alps_win_t* win = (void*) arguments[1];
+			aquabsd_alps_win_t* win = (void*) args[1];
 			context = create_win_context(win);
 		}
 
 		return (uint64_t) context;
 	}
 
-	else if (command == CMD_DELETE) {
-		context_t* context = (void*) arguments[0];
+	else if (cmd == CMD_DELETE) {
+		context_t* context = (void*) args[0];
 		return delete(context);
 	}
 
-	else if (command == CMD_GET_FUNCTION) {
-		context_t* context = (void*) arguments[0];
-		const char* name = (void*) arguments[1];
+	else if (cmd == CMD_GET_FUNCTION) {
+		context_t* context = (void*) args[0];
+		const char* name = (void*) args[1];
 
 		return (uint64_t) get_function(context, name);
 	}
 
-	else if (command == CMD_BIND_WIN_TEX) {
-		context_t* context = (void*) arguments[0];
-		aquabsd_alps_win_t* win = (void*) arguments[1];
+	else if (cmd == CMD_BIND_WIN_TEX) {
+		context_t* context = (void*) args[0];
+		aquabsd_alps_win_t* win = (void*) args[1];
 
 		return bind_win_tex(context, win);
 	}
