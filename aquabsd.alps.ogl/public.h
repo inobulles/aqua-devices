@@ -30,10 +30,10 @@ typedef struct {
 	EGLSurface* egl_surface;
 } aquabsd_alps_ogl_context_t;
 
-static aquabsd_alps_ogl_context_t* (*aquabsd_alps_ogl_create_win_context) (aquabsd_alps_win_t* win);
-static int (*aquabsd_alps_ogl_delete_context) (aquabsd_alps_ogl_context_t* context);
+extern aquabsd_alps_ogl_context_t* (*aquabsd_alps_ogl_create_win_context) (aquabsd_alps_win_t* win);
+extern int (*aquabsd_alps_ogl_delete_context) (aquabsd_alps_ogl_context_t* context);
 
-static void* (*aquabsd_alps_ogl_get_function) (aquabsd_alps_ogl_context_t* context, const char* name);
-static int (*aquabsd_alps_ogl_bind_win_tex) (aquabsd_alps_ogl_context_t* context, aquabsd_alps_win_t* win);
+extern void* (*aquabsd_alps_ogl_get_function) (aquabsd_alps_ogl_context_t* context, const char* name);
+extern int (*aquabsd_alps_ogl_bind_win_tex) (aquabsd_alps_ogl_context_t* context, aquabsd_alps_win_t* win);
 
 #endif
