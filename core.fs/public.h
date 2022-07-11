@@ -31,11 +31,11 @@ typedef struct {
 	void* mem;
 } core_fs_descr_t;
 
-extern core_fs_descr_t* (*core_fs_open)  (const char* drive, const char* path, core_fs_flags_t flags);
-extern core_fs_err_t    (*core_fs_close) (core_fs_descr_t* descr);
-extern ssize_t          (*core_fs_size)  (core_fs_descr_t* descr);
-extern void*            (*core_fs_mmap)  (core_fs_descr_t* descr);
-extern core_fs_err_t    (*core_fs_read)  (core_fs_descr_t* descr, void* buf, size_t len);
-extern core_fs_err_t    (*core_fs_write) (core_fs_descr_t* descr, const void* buf, size_t len);
+core_fs_descr_t* (*core_fs_open)  (const char* drive, const char* path, core_fs_flags_t flags);
+core_fs_err_t    (*core_fs_close) (core_fs_descr_t* descr);
+ssize_t          (*core_fs_size)  (core_fs_descr_t* descr);
+void*            (*core_fs_mmap)  (core_fs_descr_t* descr);
+core_fs_err_t    (*core_fs_read)  (core_fs_descr_t* descr, void* buf, size_t len);
+core_fs_err_t    (*core_fs_write) (core_fs_descr_t* descr, const void* buf, size_t len);
 
 #endif
