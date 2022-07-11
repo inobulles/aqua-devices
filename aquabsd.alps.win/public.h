@@ -126,41 +126,41 @@ struct aquabsd_alps_win_t {
 
 // functions exposed to devices & apps
 
-extern aquabsd_alps_win_t* (*aquabsd_alps_win_create) (unsigned x_res, unsigned y_res);
-extern int (*aquabsd_alps_win_delete) (aquabsd_alps_win_t* win);
+aquabsd_alps_win_t* (*aquabsd_alps_win_create) (unsigned x_res, unsigned y_res);
+int (*aquabsd_alps_win_delete) (aquabsd_alps_win_t* win);
 
-extern int (*aquabsd_alps_win_set_caption) (aquabsd_alps_win_t* win, const char* caption);
-extern char* (*aquabsd_alps_win_get_caption) (aquabsd_alps_win_t* win);
+int (*aquabsd_alps_win_set_caption) (aquabsd_alps_win_t* win, const char* caption);
+char* (*aquabsd_alps_win_get_caption) (aquabsd_alps_win_t* win);
 
-extern aquabsd_alps_win_state_t (*aquabsd_alps_win_get_state) (aquabsd_alps_win_t* win);
+aquabsd_alps_win_state_t (*aquabsd_alps_win_get_state) (aquabsd_alps_win_t* win);
 
-extern int (*aquabsd_alps_win_register_cb) (aquabsd_alps_win_t* win, aquabsd_alps_win_cb_t type, uint64_t cb, uint64_t param);
-extern int (*aquabsd_alps_win_loop) (aquabsd_alps_win_t* win);
+int (*aquabsd_alps_win_register_cb) (aquabsd_alps_win_t* win, aquabsd_alps_win_cb_t type, uint64_t cb, uint64_t param);
+int (*aquabsd_alps_win_loop) (aquabsd_alps_win_t* win);
 
-extern int (*aquabsd_alps_win_close_win) (aquabsd_alps_win_t* win);
-extern int (*aquabsd_alps_win_grab_focus) (aquabsd_alps_win_t* win);
+int (*aquabsd_alps_win_close_win) (aquabsd_alps_win_t* win);
+int (*aquabsd_alps_win_grab_focus) (aquabsd_alps_win_t* win);
 
-extern int (*aquabsd_alps_win_modify) (aquabsd_alps_win_t* win, float x, float y, unsigned x_res, unsigned y_res);
+int (*aquabsd_alps_win_modify) (aquabsd_alps_win_t* win, float x, float y, unsigned x_res, unsigned y_res);
 
-extern float (*aquabsd_alps_win_get_x_pos) (aquabsd_alps_win_t* win);
-extern float (*aquabsd_alps_win_get_y_pos) (aquabsd_alps_win_t* win);
+float (*aquabsd_alps_win_get_x_pos) (aquabsd_alps_win_t* win);
+float (*aquabsd_alps_win_get_y_pos) (aquabsd_alps_win_t* win);
 
-extern unsigned (*aquabsd_alps_win_get_x_res) (aquabsd_alps_win_t* win);
-extern unsigned (*aquabsd_alps_win_get_y_res) (aquabsd_alps_win_t* win);
+unsigned (*aquabsd_alps_win_get_x_res) (aquabsd_alps_win_t* win);
+unsigned (*aquabsd_alps_win_get_y_res) (aquabsd_alps_win_t* win);
 
-extern unsigned (*aquabsd_alps_win_get_wm_x_res) (aquabsd_alps_win_t* win);
-extern unsigned (*aquabsd_alps_win_get_wm_y_res) (aquabsd_alps_win_t* win);
+unsigned (*aquabsd_alps_win_get_wm_x_res) (aquabsd_alps_win_t* win);
+unsigned (*aquabsd_alps_win_get_wm_y_res) (aquabsd_alps_win_t* win);
 
 // AQUA DWD protocol stuff
 
-extern unsigned (*aquabsd_alps_win_supports_dwd) (aquabsd_alps_win_t* win);
+unsigned (*aquabsd_alps_win_supports_dwd) (aquabsd_alps_win_t* win);
 
-extern int (*aquabsd_alps_win_set_dwd_close_pos) (aquabsd_alps_win_t* win, float x, float y);
+int (*aquabsd_alps_win_set_dwd_close_pos) (aquabsd_alps_win_t* win, float x, float y);
 
 // functions exposed exclusively to devices
 
-extern aquabsd_alps_win_t* (*aquabsd_alps_win_create_setup) (void);
-extern int (*aquabsd_alps_win_register_dev_cb) (aquabsd_alps_win_t* win, aquabsd_alps_win_cb_t type, int (*cb) (aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param), void* param);
-extern xcb_window_t (*aquabsd_alps_win_get_draw_win) (aquabsd_alps_win_t* win);
+aquabsd_alps_win_t* (*aquabsd_alps_win_create_setup) (void);
+int (*aquabsd_alps_win_register_dev_cb) (aquabsd_alps_win_t* win, aquabsd_alps_win_cb_t type, int (*cb) (aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param), void* param);
+xcb_window_t (*aquabsd_alps_win_get_draw_win) (aquabsd_alps_win_t* win);
 
 #endif

@@ -11,8 +11,8 @@ typedef struct {
 	PangoFontDescription* font_description;
 } aquabsd_alps_font_t;
 
-extern aquabsd_alps_font_t* (*aquabsd_alps_font_load_font) (const char* path);
-extern int (*aquabsd_alps_font_free_font) (aquabsd_alps_font_t* font);
-extern int (*aquabsd_alps_font_draw_font) (aquabsd_alps_font_t* font, const char* string, float red, float green, float blue, float alpha, uint64_t wrap_width, uint64_t wrap_height, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference);
+aquabsd_alps_font_t* (*aquabsd_alps_font_load_font) (const char* path);
+int (*aquabsd_alps_font_free_font) (aquabsd_alps_font_t* font);
+int (*aquabsd_alps_font_draw_font) (aquabsd_alps_font_t* font, const char* string, float red, float green, float blue, float alpha, uint64_t wrap_width, uint64_t wrap_height, uint8_t** bitmap_reference, uint64_t* width_reference, uint64_t* height_reference);
 
 #endif

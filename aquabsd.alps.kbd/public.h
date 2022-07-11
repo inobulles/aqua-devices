@@ -43,14 +43,14 @@ struct aquabsd_alps_kbd_t {
 	#define AQUABSD_ALPS_KBD_AQUABSD_CONSOLE_KBD
 #endif
 
-extern unsigned (*aquabsd_alps_kbd_get_default_kbd_id) (void);
-extern int (*aquabsd_alps_kbd_update_kbd) (unsigned kbd_id);
+unsigned (*aquabsd_alps_kbd_get_default_kbd_id) (void);
+int (*aquabsd_alps_kbd_update_kbd) (unsigned kbd_id);
 
-extern unsigned (*aquabsd_alps_kbd_poll_button) (unsigned kbd_id, aquabsd_alps_kbd_button_t button);
+unsigned (*aquabsd_alps_kbd_poll_button) (unsigned kbd_id, aquabsd_alps_kbd_button_t button);
 
-extern unsigned (*aquabsd_alps_kbd_get_buf_len) (unsigned kbd_id);
-extern int (*aquabsd_alps_kbd_read_buf) (unsigned kbd_id, void* buf);
+unsigned (*aquabsd_alps_kbd_get_buf_len) (unsigned kbd_id);
+int (*aquabsd_alps_kbd_read_buf) (unsigned kbd_id, void* buf);
 
-extern aquabsd_alps_kbd_t* (*aquabsd_alps_kbd_register_kbd) (const char* name, aquabsd_alps_kbd_update_callback_t update_callback, void* update_cb_param, unsigned set_default);
+aquabsd_alps_kbd_t* (*aquabsd_alps_kbd_register_kbd) (const char* name, aquabsd_alps_kbd_update_callback_t update_callback, void* update_cb_param, unsigned set_default);
 
 #endif

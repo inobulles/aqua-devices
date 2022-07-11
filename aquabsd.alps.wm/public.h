@@ -56,27 +56,27 @@ typedef struct {
 
 // functions exposed to devices and apps
 
-extern aquabsd_alps_wm_t* (*aquabsd_alps_wm_create) (void);
-extern void (*aquabsd_alps_wm_delete) (aquabsd_alps_wm_t* wm);
+aquabsd_alps_wm_t* (*aquabsd_alps_wm_create) (void);
+void (*aquabsd_alps_wm_delete) (aquabsd_alps_wm_t* wm);
 
-extern aquabsd_alps_win_t* (*aquabsd_alps_wm_get_root_win) (aquabsd_alps_wm_t* wm);
+aquabsd_alps_win_t* (*aquabsd_alps_wm_get_root_win) (aquabsd_alps_wm_t* wm);
 
-extern unsigned (*aquabsd_alps_wm_get_x_res) (aquabsd_alps_wm_t* wm);
-extern unsigned (*aquabsd_alps_wm_get_y_res) (aquabsd_alps_wm_t* wm);
+unsigned (*aquabsd_alps_wm_get_x_res) (aquabsd_alps_wm_t* wm);
+unsigned (*aquabsd_alps_wm_get_y_res) (aquabsd_alps_wm_t* wm);
 
-extern int (*aquabsd_alps_wm_set_name) (aquabsd_alps_wm_t* wm, const char* name);
+int (*aquabsd_alps_wm_set_name) (aquabsd_alps_wm_t* wm, const char* name);
 
-extern int (*aquabsd_alps_wm_register_cb) (aquabsd_alps_wm_t* wm, aquabsd_alps_wm_cb_t type, uint64_t cb, uint64_t param);
-extern int (*aquabsd_alps_wm_make_compositing) (aquabsd_alps_wm_t* wm);
+int (*aquabsd_alps_wm_register_cb) (aquabsd_alps_wm_t* wm, aquabsd_alps_wm_cb_t type, uint64_t cb, uint64_t param);
+int (*aquabsd_alps_wm_make_compositing) (aquabsd_alps_wm_t* wm);
 
 // provider stuff
 
-extern int (*aquabsd_alps_wm_provider_count) (aquabsd_alps_wm_t* wm);
+int (*aquabsd_alps_wm_provider_count) (aquabsd_alps_wm_t* wm);
 
-extern int (*aquabsd_alps_wm_provider_x) (aquabsd_alps_wm_t* wm, unsigned id);
-extern int (*aquabsd_alps_wm_provider_y) (aquabsd_alps_wm_t* wm, unsigned id);
+int (*aquabsd_alps_wm_provider_x) (aquabsd_alps_wm_t* wm, unsigned id);
+int (*aquabsd_alps_wm_provider_y) (aquabsd_alps_wm_t* wm, unsigned id);
 
-extern int (*aquabsd_alps_wm_provider_x_res) (aquabsd_alps_wm_t* wm, unsigned id);
-extern int (*aquabsd_alps_wm_provider_y_res) (aquabsd_alps_wm_t* wm, unsigned id);
+int (*aquabsd_alps_wm_provider_x_res) (aquabsd_alps_wm_t* wm, unsigned id);
+int (*aquabsd_alps_wm_provider_y_res) (aquabsd_alps_wm_t* wm, unsigned id);
 
 #endif

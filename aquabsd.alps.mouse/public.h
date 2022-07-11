@@ -44,12 +44,12 @@ struct aquabsd_alps_mouse_t {
 	#define AQUABSD_ALPS_MOUSE_AQUABSD_CONSOLE_MOUSE
 #endif
 
-extern unsigned (*aquabsd_alps_mouse_get_default_mouse_id) (void);
-extern int (*aquabsd_alps_mouse_update_mouse) (unsigned mouse_id);
+unsigned (*aquabsd_alps_mouse_get_default_mouse_id) (void);
+int (*aquabsd_alps_mouse_update_mouse) (unsigned mouse_id);
 
-extern unsigned (*aquabsd_alps_mouse_poll_button) (unsigned mouse_id, aquabsd_alps_mouse_button_t button);
-extern float (*aquabsd_alps_mouse_poll_axis) (unsigned mouse_id, aquabsd_alps_mouse_axis_t axis);
+unsigned (*aquabsd_alps_mouse_poll_button) (unsigned mouse_id, aquabsd_alps_mouse_button_t button);
+float (*aquabsd_alps_mouse_poll_axis) (unsigned mouse_id, aquabsd_alps_mouse_axis_t axis);
 
-extern aquabsd_alps_mouse_t* (*aquabsd_alps_mouse_register_mouse) (const char* name, aquabsd_alps_mouse_update_callback_t update_callback, void* update_cb_param, unsigned set_default);
+aquabsd_alps_mouse_t* (*aquabsd_alps_mouse_register_mouse) (const char* name, aquabsd_alps_mouse_update_callback_t update_callback, void* update_cb_param, unsigned set_default);
 
 #endif

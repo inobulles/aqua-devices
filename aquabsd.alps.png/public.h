@@ -26,8 +26,8 @@ typedef struct {
 	size_t row_bytes;
 } aquabsd_alps_png_t;
 
-extern aquabsd_alps_png_t* (*aquabsd_alps_png_load) (void* mem);
-extern int (*aquabsd_alps_png_free) (aquabsd_alps_png_t* png);
-extern int (*aquabsd_alps_png_draw) (aquabsd_alps_png_t* png, uint8_t** bitmap_reference, uint64_t* bpp_reference, uint64_t* width_reference, uint64_t* height_reference);
+aquabsd_alps_png_t* (*aquabsd_alps_png_load) (void* mem);
+int (*aquabsd_alps_png_free) (aquabsd_alps_png_t* png);
+int (*aquabsd_alps_png_draw) (aquabsd_alps_png_t* png, uint8_t** bitmap_reference, uint64_t* bpp_reference, uint64_t* width_reference, uint64_t* height_reference);
 
 #endif
