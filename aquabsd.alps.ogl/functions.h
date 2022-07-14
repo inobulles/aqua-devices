@@ -14,8 +14,11 @@ static inline int call_cb(aquabsd_alps_win_t* win, uint64_t cb, uint64_t cb_para
 }
 
 static int win_cb_draw(aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param) {
-	struct timespec prev;
-	clock_gettime(CLOCK_MONOTONIC, &prev);
+	context_t* context = param;
+
+	if (context->ftime) {
+		aquabsd_alps_ftime_draw(context->ftime);
+	}
 
 	int rv = call_cb(win, cb, cb_param);
 
@@ -23,21 +26,15 @@ static int win_cb_draw(aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64
 		return rv;
 	}
 
-	struct timespec curr;
-	clock_gettime(CLOCK_MONOTONIC, &curr);
-
-	double frametime = (curr.tv_sec - prev.tv_sec) + 1.e-9 * (curr.tv_nsec - prev.tv_nsec);
-
-	context_t* context = param;
-	eglSwapBuffers(context->egl_display, context->egl_surface);
-
-	int ms = (1. / 60 - frametime) * 1000000;
-
-	if (ms < 0) {
-		ms = 0;
+	if (context->ftime) {
+		aquabsd_alps_ftime_swap(context->ftime);
 	}
 
-	usleep(ms);
+	eglSwapBuffers(context->egl_display, context->egl_surface);
+
+	if (context->ftime) {
+		aquabsd_alps_ftime_done(context->ftime);
+	}
 
 	return 0;
 }
@@ -59,6 +56,10 @@ static int win_cb_resize(aquabsd_alps_win_t* win, void* param, uint64_t cb, uint
 
 dynamic int delete(context_t* context) {
 	LOG_VERBOSE("%p: Delete context (including EGL context and EGL surface)")
+
+	if (context->ftime) {
+		aquabsd_alps_ftime_delete(context->ftime);
+	}
 
 	if (context->egl_context) {
 		eglDestroyContext(context->egl_display, context->egl_context);
@@ -114,6 +115,10 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	LOG_INFO("Create EGL context for window %p", win)
 
 	context_t* context = calloc(1, sizeof *context);
+
+	if (ftime_device != -1) {
+		context->ftime = aquabsd_alps_ftime_create(1. / 60); // TODO
+	}
 
 	context->win = win;
 	context->draw_win = aquabsd_alps_win_get_draw_win(win);

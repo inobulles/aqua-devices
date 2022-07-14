@@ -21,36 +21,6 @@ ftime_t* create(double target) {
 }
 
 void draw(ftime_t* ftime) {
-	// compute 1% lows (in terms of FPS, so 99th percentile in frametimes)
-	// that is, what frametime has 99% of other frametimes below it?
-	// if we don't yet have any data for this, don't wait at all before drawing
-
-	ftime->expected_draw_time = 0;
-	size_t len = RECORDED_FTIMES / 100;
-
-	for (size_t i = 0; i < MIN(ftime->times_count, len); i++) {
-		ftime->expected_draw_time += ftime->times[i];
-	}
-
-	// add epsilon so division is defined when 'ftime->times_count == 0'
-
-	ftime->expected_draw_time /= ftime->times_count + 0.000001;
-
-	// wait for 'ftime->target' subtracted by the time we expect the draw to take
-	// if that time ends up being less than zero, don't wait at all in an attempt to recover performance
-
-	double wait_time = ftime->target - ftime->expected_draw_time;
-
-	if (wait_time < 0) {
-		wait_time = 0;
-		LOG_WARN("Expecting draw time (%g) to take longer than target (%g); this means things are running slower than they should!")
-	}
-
-	int us = wait_time * 1000000;
-	usleep(us);
-
-	// we can now start drawing
-
 	ftime->draw_start = __get_time();
 }
 
@@ -94,7 +64,33 @@ added_time:
 }
 
 void done(ftime_t* ftime) {
-	// double swap_end = __get_time();
+	// compute 1% lows (in terms of FPS, so 99th percentile in frametimes)
+	// that is, what frametime has 99% of other frametimes below it?
+	// if we don't yet have any data for this, don't wait at all before drawing
+
+	ftime->expected_draw_time = 0;
+	size_t len = RECORDED_FTIMES / 100;
+
+	for (size_t i = 0; i < MIN(ftime->times_count, len); i++) {
+		ftime->expected_draw_time += ftime->times[i];
+	}
+
+	// add epsilon so division is defined when 'ftime->times_count == 0'
+
+	ftime->expected_draw_time /= ftime->times_count + 0.000001;
+
+	// wait for 'ftime->target' subtracted by the time we expect the draw to take
+	// if that time ends up being less than zero, don't wait at all in an attempt to recover performance
+
+	double wait_time = ftime->target - ftime->expected_draw_time;
+
+	if (wait_time < 0) {
+		wait_time = 0;
+		LOG_WARN("Expecting draw time (%g) to take longer than target (%g); this means things are running slower than they should!")
+	}
+
+	int us = wait_time * 1000000;
+	usleep(us);
 }
 
 void delete(ftime_t* ftime) {
