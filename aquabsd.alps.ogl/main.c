@@ -32,12 +32,12 @@ int load(
 
 uint64_t send(uint16_t _cmd, void* data) {
 	cmd_t cmd = _cmd;
-	uint64_t* args = (uint64_t*) data;
+	uint64_t* args = data;
 
 	if (cmd == CMD_CREATE) {
 		context_type_t type = args[0];
 		context_t* context = NULL;
-		
+
 		if (type == CONTEXT_TYPE_WIN && win_device != -1) {
 			aquabsd_alps_win_t* win = (void*) args[1];
 			context = create_win_context(win);
