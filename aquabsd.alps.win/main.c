@@ -37,15 +37,7 @@ typedef enum {
 	CMD_GET_DWD_CLOSE_POS_Y = 0x3D79, // '=y'
 } cmd_t;
 
-int load(
-	uint64_t (*_kos_query_device) (uint64_t, uint64_t name),
-	void* (*_kos_load_device_function) (uint64_t device, const char* name),
-	uint64_t (*_kos_callback) (uint64_t callback, int argument_count, ...)) {
-
-	kos_query_device = _kos_query_device;
-	kos_load_device_function = _kos_load_device_function;
-	kos_callback = _kos_callback;
-
+int load(void) {
 	mouse_device = kos_query_device(0, (uint64_t) "aquabsd.alps.mouse");
 
 	if (mouse_device != -1) {
@@ -133,7 +125,7 @@ uint64_t send(uint16_t _cmd, void* data) {
 
 	else if (cmd == CMD_GET_X_POS) {
 		win_t* win = (void*) args[0];
-		
+
 		float x_pos = get_x_pos(win);
 		return *(uint64_t*) &x_pos;
 	}
