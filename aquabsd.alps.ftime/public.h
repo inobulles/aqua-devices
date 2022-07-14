@@ -13,6 +13,9 @@ typedef struct {
 	double expected_draw_time; // how long do we expect the next draw to take?
 	double draw_start; // when did the last draw start?
 	double swap_start; // when did the last swap start? (same thing as when the draw ended)
+
+	double draw_time; // how long did the draw take?
+	double wait_time; // how long did we decide to wait last time?
 } aquabsd_alps_ftime_t;
 
 // how many frames do we take into account?

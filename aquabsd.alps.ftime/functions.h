@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include <stdio.h> // TODO REMME
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
@@ -33,12 +32,12 @@ void swap(ftime_t* ftime) {
 	// this may look like O(n^2), but it's actually O(n)
 
 	double draw_end = __get_time();
-	double draw_time = draw_end - ftime->draw_start;
+	ftime->draw_time = draw_end - ftime->draw_start;
 
 	for (ssize_t i = 0; i < ftime->times_count; i++) {
 		double time = ftime->times[i];
 
-		if (draw_time < time) {
+		if (ftime->draw_time < time) {
 			continue;
 		}
 
@@ -49,7 +48,7 @@ void swap(ftime_t* ftime) {
 			ftime->times[j + 1] = ftime->times[j];
 		}
 
-		ftime->times[i] = draw_time;
+		ftime->times[i] = ftime->draw_time;
 		goto added_time;
 	}
 
@@ -57,7 +56,7 @@ void swap(ftime_t* ftime) {
 	// if list is already full, forget about it, it's anyway too small to be significant to us
 
 	if (ftime->times_count < RECORDED_FTIMES) {
-		ftime->times[ftime->times_count++] = draw_time;
+		ftime->times[ftime->times_count++] = ftime->draw_time;
 	}
 
 added_time:
@@ -66,14 +65,29 @@ added_time:
 }
 
 void done(ftime_t* ftime) {
+	// how long did the swap take?
+	// if swap time + draw time + wait time is not within 40% of 'ftime->target', maybe it isn't correct
+
+	#define DIVERGENCE_TOLERANCE (1 + 0.40)
+
+	double swap_time = __get_time() - ftime->swap_start;
+	double total_time = swap_time + ftime->draw_time + ftime->wait_time;
+
+	if (
+		total_time > ftime->target * DIVERGENCE_TOLERANCE ||
+		total_time < ftime->target / DIVERGENCE_TOLERANCE
+	) {
+		LOG_WARN("Total frame time (draw + swap + wait time = %g) is not within %g%% of the target (%g); this means the target passed is likely incorrect", total_time, (DIVERGENCE_TOLERANCE - 1) * 100, ftime->target)
+	}
+
 	// compute 1% lows (in terms of FPS, so 99th percentile in frametimes)
 	// that is, what frametime has 99% of other frametimes below it?
 	// if we don't yet have any data for this, don't wait at all before drawing
 
 	ftime->expected_draw_time = 0;
-	size_t len = MIN(MAX(1, ftime->times_count), RECORDED_FTIMES / 100);
+	size_t len = RECORDED_FTIMES / 100;
 
-	for (size_t i = 0; i < len; i++) {
+	for (size_t i = 0; i < MIN(ftime->times_count, len); i++) {
 		ftime->expected_draw_time += ftime->times[i];
 	}
 
@@ -82,14 +96,14 @@ void done(ftime_t* ftime) {
 	// wait for 'ftime->target' subtracted by the time we expect the draw to take
 	// if that time ends up being less than zero, don't wait at all in an attempt to recover performance
 
-	double wait_time = ftime->target - ftime->expected_draw_time;
+	ftime->wait_time = ftime->target - ftime->expected_draw_time;
 
-	if (wait_time < 0) {
-		wait_time = 0;
-		LOG_WARN("Expecting draw time (%g) to take longer than target (%g); this means things are running slower than they should!")
+	if (ftime->wait_time < 0) {
+		ftime->wait_time = 0;
+		LOG_WARN("Expecting draw time (%g) to take longer than target (%g); this means things are running slower than they should!", ftime->expected_draw_time, ftime->target);
 	}
 
-	useconds_t us = wait_time * 1000000;
+	useconds_t us = ftime->wait_time * 1000000;
 	usleep(us);
 }
 
