@@ -8,6 +8,7 @@ void* (*kos_load_device_function) (uint64_t device, const char* name);
 uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
 
 static uint64_t win_device = -1;
+static uint64_t ftime_device = -1;
 
 #define context_type_t aquabsd_alps_ogl_context_type_t
 

@@ -12,6 +12,20 @@ typedef enum {
 } cmd_t;
 
 int load(void) {
+	// aquabsd.alps.ftime
+
+	ftime_device = kos_query_device(0, (uint64_t) "aquabsd.alps.ftime");
+
+	if (ftime_device != -1) {
+		aquabsd_alps_ftime_create = kos_load_device_function(ftime_device, "create");
+		aquabsd_alps_ftime_draw   = kos_load_device_function(ftime_device, "draw"  );
+		aquabsd_alps_ftime_swap   = kos_load_device_function(ftime_device, "swap"  );
+		aquabsd_alps_ftime_done   = kos_load_device_function(ftime_device, "done"  );
+		aquabsd_alps_ftime_delete = kos_load_device_function(ftime_device, "delete");
+	}
+
+	// aquabsd.alps.win
+
     win_device = kos_query_device(0, (uint64_t) "aquabsd.alps.win");
 
 	if (win_device != -1) {
@@ -24,7 +38,7 @@ int load(void) {
 
 uint64_t send(uint16_t _cmd, void* data) {
 	cmd_t cmd = _cmd;
-	uint64_t* args = (uint64_t*) data;
+	uint64_t* args = data;
 
 	if (cmd == CMD_CREATE) {
 		context_type_t type = args[0];

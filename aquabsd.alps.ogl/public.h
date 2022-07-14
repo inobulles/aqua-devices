@@ -1,6 +1,7 @@
 #if !defined(__AQUABSD_ALPS_OGL)
 #define __AQUABSD_ALPS_OGL
 
+#include <aquabsd.alps.ftime/public.h>
 #include <aquabsd.alps.win/public.h>
 
 #include <EGL/egl.h>
@@ -20,6 +21,11 @@ typedef struct {
 
 	aquabsd_alps_win_t* win;
 	xcb_window_t draw_win;
+
+	// frame timing stuff
+
+	double target_ftime;
+	aquabsd_alps_ftime_t* ftime;
 
 	// EGL stuff
 
