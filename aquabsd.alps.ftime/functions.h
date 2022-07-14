@@ -33,7 +33,7 @@ void swap(ftime_t* ftime) {
 	double draw_end = __get_time();
 	double draw_time = draw_end - ftime->draw_start;
 
-	for (size_t i = 0; i < ftime->times_count; i++) {
+	for (ssize_t i = 0; i < ftime->times_count; i++) {
 		double time = ftime->times[i];
 
 		if (draw_time > time) {
@@ -43,7 +43,7 @@ void swap(ftime_t* ftime) {
 		// move everything >= i to the right
 		// if at the end of the list, forget about it, it's anyway too small to be significant to us
 
-		for (size_t j = ftime->times_count - 1; j >= i; j--) {
+		for (ssize_t j = ftime->times_count - 1; j >= i; j--) {
 			ftime->times[j + 1] = ftime->times[j];
 		}
 
