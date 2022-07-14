@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <stdio.h> // TODO REMME
 
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
 
 static inline double __get_time(void) {
 	struct timespec timer;
@@ -36,7 +38,7 @@ void swap(ftime_t* ftime) {
 	for (ssize_t i = 0; i < ftime->times_count; i++) {
 		double time = ftime->times[i];
 
-		if (draw_time > time) {
+		if (draw_time < time) {
 			continue;
 		}
 
@@ -69,15 +71,13 @@ void done(ftime_t* ftime) {
 	// if we don't yet have any data for this, don't wait at all before drawing
 
 	ftime->expected_draw_time = 0;
-	size_t len = RECORDED_FTIMES / 100;
+	size_t len = MIN(MAX(1, ftime->times_count), RECORDED_FTIMES / 100);
 
-	for (size_t i = 0; i < MIN(ftime->times_count, len); i++) {
+	for (size_t i = 0; i < len; i++) {
 		ftime->expected_draw_time += ftime->times[i];
 	}
 
-	// add epsilon so division is defined when 'ftime->times_count == 0'
-
-	ftime->expected_draw_time /= ftime->times_count + 0.000001;
+	ftime->expected_draw_time /= len;
 
 	// wait for 'ftime->target' subtracted by the time we expect the draw to take
 	// if that time ends up being less than zero, don't wait at all in an attempt to recover performance
@@ -89,7 +89,7 @@ void done(ftime_t* ftime) {
 		LOG_WARN("Expecting draw time (%g) to take longer than target (%g); this means things are running slower than they should!")
 	}
 
-	int us = wait_time * 1000000;
+	useconds_t us = wait_time * 1000000;
 	usleep(us);
 }
 
