@@ -11,15 +11,7 @@ typedef enum {
 	CMD_BIND_WIN_TEX = 0x6277, // 'bw'
 } cmd_t;
 
-int load(
-    uint64_t (*_kos_query_device) (uint64_t, uint64_t name),
-    void* (*_kos_load_device_function) (uint64_t device, const char* name),
-    uint64_t (*_kos_callback) (uint64_t callback, int argument_count, ...)) {
-
-    kos_query_device = _kos_query_device;
-    kos_load_device_function = _kos_load_device_function;
-	kos_callback = _kos_callback;
-
+int load(void) {
     win_device = kos_query_device(0, (uint64_t) "aquabsd.alps.win");
 
 	if (win_device != -1) {
@@ -37,7 +29,7 @@ uint64_t send(uint16_t _cmd, void* data) {
 	if (cmd == CMD_CREATE) {
 		context_type_t type = args[0];
 		context_t* context = NULL;
-		
+
 		if (type == CONTEXT_TYPE_WIN && win_device != -1) {
 			aquabsd_alps_win_t* win = (void*) args[1];
 			context = create_win_context(win);
