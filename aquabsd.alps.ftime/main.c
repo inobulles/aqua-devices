@@ -6,8 +6,8 @@ typedef enum {
 } cmd_t;
 
 uint64_t send(uint16_t _cmd, void* data) {
-	cmd_t cmd = _cmd;
-	uint64_t* args = data;
+	__attribute__((unused)) cmd_t cmd = _cmd;
+	__attribute__((unused)) uint64_t* args = data;
 
 	LOG_ERROR("This device is currently for exclusive use of other devices")
 

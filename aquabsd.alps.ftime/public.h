@@ -27,7 +27,7 @@ typedef struct {
 // how many frames do we take into account?
 
 #if !defined(AQUABSD_ALPS_FTIME_RECORDED_FTIMES)
-	#define AQUABSD_ALPS_FTIME_RECORDED_FTIMES 1000
+	#define AQUABSD_ALPS_FTIME_RECORDED_FTIMES 500
 #endif
 
 aquabsd_alps_ftime_t* (*aquabsd_alps_ftime_create) (double target);
