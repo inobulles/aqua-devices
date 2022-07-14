@@ -132,7 +132,6 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 	// setup EGL
 
 	// TODO take a look at how I'm meant to enable/disable vsync
-	// TODO ALSO still maintain a GLX backend as it seems to be significantly faster on some platforms
 
 	LOG_VERBOSE("Bind EGL API (EGL_OPENGL_ES_API)")
 
