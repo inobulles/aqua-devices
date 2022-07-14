@@ -5,10 +5,15 @@
 #include <stddef.h>
 
 typedef struct {
+	double frametime; // frametime itself
+	double when; // when was the frametime recorded? this is necessary to flush out outdated frametimes
+} aquabsd_alps_ftime_record_t;
+
+typedef struct {
 	double target; // what frametimes are we targetting? (1/60 for 60 Hz, 1/144 for 144 Hz, &c)
 
-	size_t times_count; // how many frametimes have we recorded so far?
-	double* times; // sorted (largest to smallest) list of recorded frametimes
+	size_t record_count; // how many frametimes have we recorded so far?
+	aquabsd_alps_ftime_record_t* records; // sorted (largest to smallest) list of recorded frametimes
 
 	double expected_draw_time; // how long do we expect the next draw to take?
 	double draw_start; // when did the last draw start?

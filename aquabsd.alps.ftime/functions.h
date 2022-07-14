@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -16,7 +17,7 @@ ftime_t* create(double target) {
 	ftime_t* ftime = calloc(1, sizeof *ftime);
 
 	ftime->target = target;
-	ftime->times = malloc(RECORDED_FTIMES * sizeof *ftime->times);
+	ftime->records = malloc(RECORDED_FTIMES * sizeof *ftime->records);
 
 	return ftime;
 }
@@ -28,40 +29,65 @@ void draw(ftime_t* ftime) {
 // swapping happens at the end of the draw
 
 void swap(ftime_t* ftime) {
+	double now = __get_time();
+	ftime->draw_time = now - ftime->draw_start;
+
+	if (ftime->expected_draw_time < ftime->draw_time) {
+		LOG_WARN("Draw time expectation wasn't conservative enough")
+	}
+
 	// insert time taken to draw to the list of recorded frametimes
 	// this may look like O(n^2), but it's actually O(n)
 
-	double draw_end = __get_time();
-	ftime->draw_time = draw_end - ftime->draw_start;
+	for (ssize_t i = 0; i < ftime->record_count; i++) {
+		record_t* record = &ftime->records[i];
 
-	for (ssize_t i = 0; i < ftime->times_count; i++) {
-		double time = ftime->times[i];
-
-		if (ftime->draw_time < time) {
+		if (ftime->draw_time < record->frametime) {
 			continue;
 		}
 
 		// move everything >= i to the right
 		// if at the end of the list, forget about it, it's anyway too small to be significant to us
 
-		for (ssize_t j = ftime->times_count - 1; j >= i; j--) {
-			ftime->times[j + 1] = ftime->times[j];
+		for (ssize_t j = ftime->record_count - 1; j >= i; j--) {
+			memcpy(&ftime->records[j + 1], &ftime->records[j], sizeof *record);
 		}
 
-		ftime->times[i] = ftime->draw_time;
+		ftime->records[i].frametime = ftime->draw_time;
+		ftime->records[i].when = now;
+
 		goto added_time;
 	}
 
 	// draw time is smaller than anything in the list, so add it to the end
 	// if list is already full, forget about it, it's anyway too small to be significant to us
 
-	if (ftime->times_count < RECORDED_FTIMES) {
-		ftime->times[ftime->times_count++] = ftime->draw_time;
+	if (ftime->record_count < RECORDED_FTIMES) {
+		ftime->records[ftime->record_count].frametime = ftime->draw_time;
+		ftime->records[ftime->record_count].when = now;
+
+		ftime->record_count++;
 	}
 
 added_time:
 
-	ftime->swap_start = draw_end;
+	// replace records which are too old (older than 1 second) by the next record in the list (smaller)
+
+	for (ssize_t i = 0; i < ftime->record_count - 1; i++) {
+		record_t* record = &ftime->records[i];
+		double record_age = now - record->when;
+
+		if (record_age < 0.3) {
+			continue;
+		}
+
+		record_t* next = &ftime->records[i + 1];
+
+		record->frametime = next->frametime;
+		record->when = now;
+	}
+
+	ftime->swap_start = now;
 }
 
 void done(ftime_t* ftime) {
@@ -87,8 +113,8 @@ void done(ftime_t* ftime) {
 	ftime->expected_draw_time = 0;
 	size_t len = RECORDED_FTIMES / 100;
 
-	for (size_t i = 0; i < MIN(ftime->times_count, len); i++) {
-		ftime->expected_draw_time += ftime->times[i];
+	for (size_t i = 0; i < MIN(ftime->record_count, len); i++) {
+		ftime->expected_draw_time += ftime->records[i].frametime;
 	}
 
 	ftime->expected_draw_time /= len;
@@ -103,11 +129,13 @@ void done(ftime_t* ftime) {
 		LOG_WARN("Expecting draw time (%g) to take longer than target (%g); this means things are running slower than they should!", ftime->expected_draw_time, ftime->target);
 	}
 
-	useconds_t us = ftime->wait_time * 1000000;
+	#define CONSERVANCY 1.2
+
+	useconds_t us = ftime->wait_time / CONSERVANCY * 1000000;
 	usleep(us);
 }
 
 void delete(ftime_t* ftime) {
-	free(ftime->times);
+	free(ftime->records);
 	free(ftime);
 }
