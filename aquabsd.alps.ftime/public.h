@@ -21,6 +21,7 @@ typedef struct {
 
 	double draw_time; // how long did the draw take?
 	double wait_time; // how long did we decide to wait last time?
+	double total_time; // how long was the total frame time (draw + swap + wait times)?
 } aquabsd_alps_ftime_t;
 
 // how many frames do we take into account?
@@ -30,7 +31,7 @@ typedef struct {
 #endif
 
 aquabsd_alps_ftime_t* (*aquabsd_alps_ftime_create) (double target);
-void (*aquabsd_alps_ftime_draw) (aquabsd_alps_ftime_t* ftime);
+double (*aquabsd_alps_ftime_draw) (aquabsd_alps_ftime_t* ftime);
 void (*aquabsd_alps_ftime_swap) (aquabsd_alps_ftime_t* ftime);
 void (*aquabsd_alps_ftime_done) (aquabsd_alps_ftime_t* ftime);
 void (*aquabsd_alps_ftime_delete) (aquabsd_alps_ftime_t* ftime);

@@ -5,22 +5,23 @@
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.ogl"
 
-static inline int call_cb(aquabsd_alps_win_t* win, uint64_t cb, uint64_t cb_param) {
+static inline int call_cb(aquabsd_alps_win_t* win, uint64_t cb, uint64_t cb_param, double dt) {
 	if (!cb) {
 		return -1;
 	}
 
-	return kos_callback(cb, 2, (uint64_t) win, cb_param);
+	return kos_callback(cb, 3, (uint64_t) win, cb_param, *(uint64_t*) &dt);
 }
 
 static int win_cb_draw(aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param) {
 	context_t* context = param;
+	double dt = context->target_ftime;
 
 	if (context->ftime) {
-		aquabsd_alps_ftime_draw(context->ftime);
+		dt = aquabsd_alps_ftime_draw(context->ftime);
 	}
 
-	int rv = call_cb(win, cb, cb_param);
+	int rv = call_cb(win, cb, cb_param, dt);
 
 	if (rv > 0) {
 		return rv;
@@ -40,7 +41,7 @@ static int win_cb_draw(aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64
 }
 
 static int win_cb_resize(aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param) {
-	int rv = call_cb(win, cb, cb_param);
+	int rv = call_cb(win, cb, cb_param, 0);
 
 	if (rv > 0) {
 		return rv;
@@ -116,8 +117,10 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 
 	context_t* context = calloc(1, sizeof *context);
 
+	context->target_ftime = 1. / 60; // TODO
+
 	if (ftime_device != -1) {
-		context->ftime = aquabsd_alps_ftime_create(1. / 60); // TODO
+		context->ftime = aquabsd_alps_ftime_create(context->target_ftime);
 	}
 
 	context->win = win;

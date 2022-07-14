@@ -22,8 +22,9 @@ ftime_t* create(double target) {
 	return ftime;
 }
 
-void draw(ftime_t* ftime) {
+double draw(ftime_t* ftime) {
 	ftime->draw_start = __get_time();
+	return ftime->total_time;
 }
 
 // swapping happens at the end of the draw
@@ -97,13 +98,13 @@ void done(ftime_t* ftime) {
 	#define DIVERGENCE_TOLERANCE (1 + 0.40)
 
 	double swap_time = __get_time() - ftime->swap_start;
-	double total_time = swap_time + ftime->draw_time + ftime->wait_time;
+	ftime->total_time = swap_time + ftime->draw_time + ftime->wait_time;
 
 	if (
-		total_time > ftime->target * DIVERGENCE_TOLERANCE ||
-		total_time < ftime->target / DIVERGENCE_TOLERANCE
+		ftime->total_time > ftime->target * DIVERGENCE_TOLERANCE ||
+		ftime->total_time < ftime->target / DIVERGENCE_TOLERANCE
 	) {
-		LOG_WARN("Total frame time (draw + swap + wait time = %g) is not within %g%% of the target (%g); this means the target passed is likely incorrect", total_time, (DIVERGENCE_TOLERANCE - 1) * 100, ftime->target)
+		LOG_WARN("Total frame time (draw + swap + wait times = %g) is not within %g%% of the target (%g); this means the target passed is likely incorrect", ftime->total_time, (DIVERGENCE_TOLERANCE - 1) * 100, ftime->target)
 	}
 
 	// compute 1% lows (in terms of FPS, so 99th percentile in frametimes)
@@ -130,8 +131,9 @@ void done(ftime_t* ftime) {
 	}
 
 	#define CONSERVANCY 1.2
+	ftime->wait_time /= CONSERVANCY;
 
-	useconds_t us = ftime->wait_time / CONSERVANCY * 1000000;
+	useconds_t us = ftime->wait_time * 1000000;
 	usleep(us);
 }
 

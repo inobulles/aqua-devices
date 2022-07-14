@@ -24,6 +24,7 @@ typedef struct {
 
 	// frame timing stuff
 
+	double target_ftime;
 	aquabsd_alps_ftime_t* ftime;
 
 	// EGL stuff
