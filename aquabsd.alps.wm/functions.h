@@ -412,7 +412,8 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 
 		const uint32_t attribs[] = {
 			XCB_EVENT_MASK_FOCUS_CHANGE |
-			XCB_EVENT_MASK_PROPERTY_CHANGE
+			XCB_EVENT_MASK_PROPERTY_CHANGE |
+			XCB_EVENT_MASK_POINTER_MOTION
 		};
 
 		xcb_change_window_attributes(wm->root->connection, detail->window, XCB_CW_EVENT_MASK, attribs);
