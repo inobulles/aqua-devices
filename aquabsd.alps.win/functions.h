@@ -308,7 +308,7 @@ static int _close_win(win_t* win) {
 	event.data.data32[0] = win->wm_delete_win_atom;
 	event.data.data32[1] = XCB_CURRENT_TIME;
 
-	xcb_send_event(win->connection, 0 /* TODO what is this 'propagate' parameter for? */, win->win, XCB_EVENT_MASK_NO_EVENT, (const char*) &event);
+	xcb_send_event(win->connection, 1 /* propagate, i.e. send this to all children of window */, win->win, XCB_EVENT_MASK_NO_EVENT, (const char*) &event);
 	xcb_flush(win->connection);
 
 	// if window manager:
@@ -516,6 +516,22 @@ dynamic int loop(win_t* win) {
 
 		if (!win->event_threading_enabled) {
 			process_events(win, xcb_poll_for_event);
+		}
+
+		// if in a window manager, just query the pointer position directly
+		// I've spend fucking hours trying to get this work "correctly", but every SO answer or demo works fine on its own, but isn't applicable whatsoever here
+		// how anyone ever made anything functional with X11 is a mystery to me
+		// how anyone thought it was a good idea to stick with an outdated and shitty protocol when the need for compositors on desktops arose instead of building Wayland earlier is a mystery to me
+		// I long for the day when I can piss on X11's grave
+
+		if (win->wm_event_cb) {
+			xcb_query_pointer_cookie_t cookie = xcb_query_pointer(win->connection, win->win);
+			xcb_query_pointer_reply_t* reply = xcb_query_pointer_reply(win->connection, cookie, NULL);
+
+			win->mouse_x = reply->win_x;
+			win->mouse_y = reply->win_y;
+
+			free(reply);
 		}
 
 		// actually draw
