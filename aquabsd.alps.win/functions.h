@@ -518,20 +518,10 @@ dynamic int loop(win_t* win) {
 			process_events(win, xcb_poll_for_event);
 		}
 
-		// if in a window manager, just query the pointer position directly
-		// I've spend fucking hours trying to get this work "correctly", but every SO answer or demo works fine on its own, but isn't applicable whatsoever here
-		// how anyone ever made anything functional with X11 is a mystery to me
-		// how anyone thought it was a good idea to stick with an outdated and shitty protocol when the need for compositors on desktops arose instead of building Wayland earlier is a mystery to me
-		// I long for the day when I can piss on X11's grave
+		// if in a window manager, do all the last minute things it wants to do before letting the client draw
 
-		if (win->wm_event_cb) {
-			xcb_query_pointer_cookie_t cookie = xcb_query_pointer(win->connection, win->win);
-			xcb_query_pointer_reply_t* reply = xcb_query_pointer_reply(win->connection, cookie, NULL);
-
-			win->mouse_x = reply->win_x;
-			win->mouse_y = reply->win_y;
-
-			free(reply);
+		if (win->wm_predraw_cb) {
+			win->wm_predraw_cb(win->wm_object);
 		}
 
 		// actually draw

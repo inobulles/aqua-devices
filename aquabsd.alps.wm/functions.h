@@ -588,6 +588,94 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 	return 0;
 }
 
+static void predraw(void* _wm) {
+	wm_t* wm = _wm;
+
+	// just query the pointer position directly
+	// I've spend fucking hours trying to get this work "correctly", but every SO answer or demo works fine on its own, but isn't applicable whatsoever here
+	// how anyone ever made anything functional with X11 is a mystery to me
+	// how anyone thought it was a good idea to stick with an outdated and shitty protocol when the need for compositors on desktops arose instead of building Wayland earlier is a mystery to me
+	// I long for the day when I can piss on X11's grave
+
+	xcb_query_pointer_cookie_t query_pointer_cookie = xcb_query_pointer(wm->root->connection, wm->root->win);
+	xcb_query_pointer_reply_t* query_pointer_reply = xcb_query_pointer_reply(wm->root->connection, query_pointer_cookie, NULL);
+
+	wm->root->mouse_x = query_pointer_reply->win_x;
+	wm->root->mouse_y = query_pointer_reply->win_y;
+
+	// get the cursor image (using Xfixes extension)
+
+	xcb_xfixes_get_cursor_image_and_name_cookie_t get_cursor_image_and_name_cookie = xcb_xfixes_get_cursor_image_and_name(wm->root->connection);
+	xcb_xfixes_get_cursor_image_and_name_reply_t* get_cursor_image_and_name_reply = xcb_xfixes_get_cursor_image_and_name_reply(wm->root->connection, get_cursor_image_and_name_cookie, NULL);
+
+	int len = xcb_xfixes_get_cursor_image_and_name_name_length(get_cursor_image_and_name_reply);
+	char* name = xcb_xfixes_get_cursor_image_and_name_name(get_cursor_image_and_name_reply);
+
+	LOG_FATAL("%dx%d %dx%d %dx%d name %d %.*s", get_cursor_image_and_name_reply->x, get_cursor_image_and_name_reply->y, get_cursor_image_and_name_reply->width, get_cursor_image_and_name_reply->height, get_cursor_image_and_name_reply->xhot, get_cursor_image_and_name_reply->yhot, len, len, name);
+
+	uint16_t width  = get_cursor_image_and_name_reply->width;
+	uint16_t height = get_cursor_image_and_name_reply->height;
+
+	uint16_t xhot = get_cursor_image_and_name_reply->xhot;
+	uint16_t yhot = get_cursor_image_and_name_reply->yhot;
+
+	char* dash = memrchr(name, '-', len);
+
+	size_t len_before_dash = dash - name;
+	size_t len_after_dash = len - len_before_dash;
+
+	if (!len) {
+		if (!xhot && !yhot) {
+			// "hidden" cursor (not necessarily, could be a custom cursor, but too lazy to handle that case for now)
+		}
+
+		else {
+			// regular cursor
+		}
+	}
+
+	else if (
+		!strncmp(name, "xterm", len) ||
+		!strncmp(name, "text", len)
+	) {
+		// caret
+	}
+
+	else if (!strncmp(name, "pointer", len)) {
+		// pointer
+	}
+
+	else if (dash && !strncmp(dash, "-resize", len_after_dash)) {
+		// resize
+
+		for (size_t i = 0; i < len_before_dash; i++) {
+			char c = name[i];
+
+			switch (c) {
+				case 'n':
+				// north
+
+				case 's':
+				// south
+
+				case 'e':
+				// east
+
+				case 'w':
+				// west
+
+				default:
+				// as the french would put it: ppt
+			}
+		}
+	}
+
+	// free up those replies
+
+	free(query_pointer_reply);
+	free(get_cursor_image_and_name_reply);
+}
+
 dynamic wm_t* create(void) {
 	LOG_INFO("Create window manager")
 
@@ -756,7 +844,9 @@ skip_geom:
 	// set the fields reserved to us in the root window object
 
 	wm->root->wm_object = wm;
+
 	wm->root->wm_event_cb = process_event;
+	wm->root->wm_predraw_cb = predraw;
 
 	LOG_SUCCESS("Window manager created: %p", wm)
 
