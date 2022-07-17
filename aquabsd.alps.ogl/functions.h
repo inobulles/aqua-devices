@@ -226,6 +226,12 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 		LOG_WARN("EGL surface is single buffered (%s)", egl_error_str())
 	}
 
+	LOG_VERBOSE("Set swap interval (VSYNC)")
+
+	if (!eglSwapInterval(context->egl_display, 1)) {
+		LOG_WARN("Failed to set swap interval: %s", egl_error_str())
+	}
+
 	// register callbacks with window
 
 	LOG_VERBOSE("Register draw callback with the window")
