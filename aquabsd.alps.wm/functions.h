@@ -613,8 +613,8 @@ static void predraw(void* _wm) {
 
 	LOG_FATAL("%dx%d %dx%d %dx%d name %d %.*s", get_cursor_image_and_name_reply->x, get_cursor_image_and_name_reply->y, get_cursor_image_and_name_reply->width, get_cursor_image_and_name_reply->height, get_cursor_image_and_name_reply->xhot, get_cursor_image_and_name_reply->yhot, len, len, name);
 
-	uint16_t width  = get_cursor_image_and_name_reply->width;
-	uint16_t height = get_cursor_image_and_name_reply->height;
+	__attribute__((unused)) uint16_t width  = get_cursor_image_and_name_reply->width;
+	__attribute__((unused)) uint16_t height = get_cursor_image_and_name_reply->height;
 
 	uint16_t xhot = get_cursor_image_and_name_reply->xhot;
 	uint16_t yhot = get_cursor_image_and_name_reply->yhot;
@@ -653,19 +653,19 @@ static void predraw(void* _wm) {
 
 			switch (c) {
 				case 'n':
-				// north
+				; // north
 
 				case 's':
-				// south
+				; // south
 
 				case 'e':
-				// east
+				; // east
 
 				case 'w':
-				// west
+				; // west
 
 				default:
-				// as the french would put it: ppt
+				; // as the french would put it: ppt
 			}
 		}
 	}
