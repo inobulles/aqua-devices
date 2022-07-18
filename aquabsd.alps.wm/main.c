@@ -10,6 +10,8 @@ typedef enum {
 	CMD_GET_X_RES        = 0x7872, // 'xr'
 	CMD_GET_Y_RES        = 0x7972, // 'yr'
 
+	CMD_GET_CURSOR       = 0x6475, // 'cu'
+
 	CMD_SET_NAME         = 0x736E, // 'sn'
 	CMD_REGISTER_CB      = 0x7263, // 'rc'
 

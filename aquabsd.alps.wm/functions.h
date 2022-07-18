@@ -608,8 +608,6 @@ static void predraw(void* _wm) {
 	int len = xcb_xfixes_get_cursor_image_and_name_name_length(reply);
 	char* name = xcb_xfixes_get_cursor_image_and_name_name(reply);
 
-	LOG_FATAL("%dx%d %dx%d %dx%d name %d %.*s", reply->x, reply->y, reply->width, reply->height, reply->xhot, reply->yhot, len, len, name);
-
 	__attribute__((unused)) uint16_t width  = reply->width;
 	__attribute__((unused)) uint16_t height = reply->height;
 
@@ -621,13 +619,18 @@ static void predraw(void* _wm) {
 	size_t len_before_dash = dash - name;
 	size_t len_after_dash = len - len_before_dash;
 
+	// TODO move/drag cursors
+
+	wm->cursor = "question"; // default
+
 	if (!len) {
 		if (!xhot && !yhot) {
-			// "hidden" cursor (not necessarily, could be a custom cursor, but too lazy to handle that case for now)
+			// TODO not necessarily hidden, could be a custom cursor, but too lazy to handle that case for now
+			wm->cursor = "hidden";
 		}
 
 		else {
-			// regular cursor
+			wm->cursor = "regular";
 		}
 	}
 
@@ -635,51 +638,63 @@ static void predraw(void* _wm) {
 		!strncmp(name, "xterm", len) ||
 		!strncmp(name, "text", len)
 	) {
-		// caret
+		wm->cursor = "caret";
 	}
 
 	else if (!strncmp(name, "pointer", len)) {
-		// pointer
+		wm->cursor = "pointer";
 	}
 
 	else if (dash && !strncmp(dash, "-resize", len_after_dash)) {
-		// resize
+		// two directions (important this comes first because of 'strncmp')
 
-		for (size_t i = 0; i < len_before_dash; i++) {
-			char c = name[i];
+		if (!strncmp(name, "ne", 2)) {
+			wm->cursor = "resize-tr";
+		}
 
-			switch (c) {
-				case 'n':
-				; // north
+		else if (!strncmp(name, "se", 2)) { // SOUF EAST LUNDUN INNIT
+			wm->cursor = "resize-br";
+		}
 
-				case 's':
-				; // south
+		else if (!strncmp(name, "sw", 2)) {
+			wm->cursor = "resize-bl";
+		}
 
-				case 'e':
-				; // east
+		else if (!strncmp(name, "nw", 2)) {
+			wm->cursor = "resize-tl";
+		}
 
-				case 'w':
-				; // west
+		// one direction 🎶
 
-				default:
-				goto unknown; // as the french would put it: ppt
-			}
+		else if (*name == 'n') {
+			wm->cursor = "resize-t";
+		}
+
+		else if (*name == 'e') {
+			wm->cursor = "resize-r";
+		}
+
+		else if (*name == 's') {
+			wm->cursor = "resize-b";
+		}
+
+		else if (*name == 'w') {
+			wm->cursor = "resize-l";
+		}
+
+		// as the french would put it: ppt
+
+		else {
+			LOG_WARN("%p: Unknown resize cursor direction \"%.*s\"", wm, len, name)
 		}
 	}
 
 	else {
-		goto unknown;
+		LOG_WARN("%p: Unknown cursor type \"%.*s\" (w = %d, h = %d, xhot = %d, yhot = %d)", wm, len, name, width, height, xhot, yhot)
 	}
-
-done:
 
 	free(reply);
 	return;
-
-unknown:
-
-	LOG_WARN("%p: Unknown cursor type \"%s\"", wm, name)
-	goto done;
 }
 
 dynamic wm_t* create(void) {
@@ -872,6 +887,10 @@ dynamic unsigned get_x_res(wm_t* wm) {
 
 dynamic unsigned get_y_res(wm_t* wm) {
 	return wm->root->y_res;
+}
+
+dynamic char* get_cursor(wm_t* wm) {
+	return wm->cursor;
 }
 
 dynamic int set_name(wm_t* wm, const char* name) {

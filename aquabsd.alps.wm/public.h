@@ -26,7 +26,7 @@ typedef struct {
 
 typedef struct {
 	aquabsd_alps_win_t* root;
-	
+
 	// X11 atoms (used for communicating information between clients)
 
 	xcb_window_t support_win;
@@ -47,6 +47,10 @@ typedef struct {
 	unsigned provider_count;
 	aquabsd_alps_wm_provider_t* providers;
 
+	// cursor stuff
+
+	char* cursor;
+
 	// app client callbacks
 	// a bit of data-orientated design here ;)
 
@@ -63,6 +67,8 @@ aquabsd_alps_win_t* (*aquabsd_alps_wm_get_root_win) (aquabsd_alps_wm_t* wm);
 
 unsigned (*aquabsd_alps_wm_get_x_res) (aquabsd_alps_wm_t* wm);
 unsigned (*aquabsd_alps_wm_get_y_res) (aquabsd_alps_wm_t* wm);
+
+char* (*aquabsd_alps_wm_get_cursor) (aquabsd_alps_wm_t* wm);
 
 int (*aquabsd_alps_wm_set_name) (aquabsd_alps_wm_t* wm, const char* name);
 
