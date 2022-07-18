@@ -619,9 +619,7 @@ static void predraw(void* _wm) {
 	size_t len_before_dash = dash - name;
 	size_t len_after_dash = len - len_before_dash;
 
-	// TODO move/drag cursors
-
-	wm->cursor = "question"; // default
+	wm->cursor = "regular"; // default
 
 	if (!len) {
 		if (!xhot && !yhot) {
@@ -641,7 +639,18 @@ static void predraw(void* _wm) {
 		wm->cursor = "caret";
 	}
 
-	else if (!strncmp(name, "pointer", len)) {
+	else if (!strncmp(name, "hand1", len)) {
+		wm->cursor = "hand";
+	}
+
+	else if (!strncmp(name, "dnd-none", len)) {
+		wm->cursor = "drag";
+	}
+
+	else if (
+		!strncmp(name, "pointer", len) ||
+		!strncmp(name, "hand2", len)
+	) {
 		wm->cursor = "pointer";
 	}
 

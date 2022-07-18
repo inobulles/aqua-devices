@@ -72,6 +72,11 @@ uint64_t send(uint16_t _cmd, void* data) {
 		return (uint64_t) get_y_res(wm);
 	}
 
+	else if (cmd == CMD_GET_CURSOR) {
+		wm_t* wm = (void*) args[0];
+		return (uint64_t) get_cursor(wm);
+	}
+
 	else if (cmd == CMD_SET_NAME) {
 		wm_t* wm = (void*) args[0];
 		const char* name = (void*) args[1];
