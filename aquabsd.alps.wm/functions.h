@@ -608,11 +608,14 @@ static void predraw(void* _wm) {
 	int len = xcb_xfixes_get_cursor_image_and_name_name_length(reply);
 	char* name = xcb_xfixes_get_cursor_image_and_name_name(reply);
 
-	__attribute__((unused)) uint16_t width  = reply->width;
-	__attribute__((unused)) uint16_t height = reply->height;
+	uint16_t width  = reply->width;
+	uint16_t height = reply->height;
 
 	uint16_t xhot = reply->xhot;
 	uint16_t yhot = reply->yhot;
+
+	wm->cursor_xhot = (float) xhot / width  * 2 - 1;
+	wm->cursor_yhot = (float) yhot / height * 2 - 1;
 
 	char* dash = memrchr(name, '-', len);
 
@@ -900,6 +903,14 @@ dynamic unsigned get_y_res(wm_t* wm) {
 
 dynamic char* get_cursor(wm_t* wm) {
 	return wm->cursor;
+}
+
+dynamic float get_cursor_xhot(wm_t* wm) {
+	return wm->cursor_xhot;
+}
+
+dynamic float get_cursor_yhot(wm_t* wm) {
+	return wm->cursor_yhot;
 }
 
 dynamic int set_name(wm_t* wm, const char* name) {

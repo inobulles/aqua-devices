@@ -48,8 +48,12 @@ typedef struct {
 	aquabsd_alps_wm_provider_t* providers;
 
 	// cursor stuff
+	// the "hotspot" (x/yhot) is where on the cursor graphic the click originates from
 
 	char* cursor;
+
+	float cursor_xhot;
+	float cursor_yhot;
 
 	// app client callbacks
 	// a bit of data-orientated design here ;)
@@ -69,6 +73,9 @@ unsigned (*aquabsd_alps_wm_get_x_res) (aquabsd_alps_wm_t* wm);
 unsigned (*aquabsd_alps_wm_get_y_res) (aquabsd_alps_wm_t* wm);
 
 char* (*aquabsd_alps_wm_get_cursor) (aquabsd_alps_wm_t* wm);
+
+float (*aquabsd_alps_wm_get_cursor_xhot) (aquabsd_alps_wm_t* wm);
+float (*aquabsd_alps_wm_get_cursor_yhot) (aquabsd_alps_wm_t* wm);
 
 int (*aquabsd_alps_wm_set_name) (aquabsd_alps_wm_t* wm, const char* name);
 

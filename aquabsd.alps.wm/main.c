@@ -12,6 +12,9 @@ typedef enum {
 
 	CMD_GET_CURSOR       = 0x6475, // 'cu'
 
+	CMD_GET_CURSOR_XHOT  = 0x7868, // 'xh'
+	CMD_GET_CURSOR_YHOT  = 0x7968, // 'yh'
+
 	CMD_SET_NAME         = 0x736E, // 'sn'
 	CMD_REGISTER_CB      = 0x7263, // 'rc'
 
@@ -75,6 +78,20 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_GET_CURSOR) {
 		wm_t* wm = (void*) args[0];
 		return (uint64_t) get_cursor(wm);
+	}
+
+	else if (cmd == CMD_GET_CURSOR_XHOT) {
+		wm_t* wm = (void*) args[0];
+
+		float xhot = get_cursor_xhot(wm);
+		return *(uint64_t*) &xhot;
+	}
+
+	else if (cmd == CMD_GET_CURSOR_YHOT) {
+		wm_t* wm = (void*) args[0];
+
+		float yhot = get_cursor_yhot(wm);
+		return *(uint64_t*) &yhot;
 	}
 
 	else if (cmd == CMD_SET_NAME) {
