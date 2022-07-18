@@ -596,28 +596,25 @@ static void predraw(void* _wm) {
 	// how anyone ever made anything functional with X11 is a mystery to me
 	// how anyone thought it was a good idea to stick with an outdated and shitty protocol when the need for compositors on desktops arose instead of building Wayland earlier is a mystery to me
 	// I long for the day when I can piss on X11's grave
-
-	xcb_query_pointer_cookie_t query_pointer_cookie = xcb_query_pointer(wm->root->connection, wm->root->win);
-	xcb_query_pointer_reply_t* query_pointer_reply = xcb_query_pointer_reply(wm->root->connection, query_pointer_cookie, NULL);
-
-	wm->root->mouse_x = query_pointer_reply->win_x;
-	wm->root->mouse_y = query_pointer_reply->win_y;
-
+	// traditionally, this'd be done with 'xcb_query_pointer', but since we anyway need to get the cursor image, we can kill two birds with one stone
 	// get the cursor image (using Xfixes extension)
 
-	xcb_xfixes_get_cursor_image_and_name_cookie_t get_cursor_image_and_name_cookie = xcb_xfixes_get_cursor_image_and_name(wm->root->connection);
-	xcb_xfixes_get_cursor_image_and_name_reply_t* get_cursor_image_and_name_reply = xcb_xfixes_get_cursor_image_and_name_reply(wm->root->connection, get_cursor_image_and_name_cookie, NULL);
+	xcb_xfixes_get_cursor_image_and_name_cookie_t cookie = xcb_xfixes_get_cursor_image_and_name(wm->root->connection);
+	xcb_xfixes_get_cursor_image_and_name_reply_t* reply = xcb_xfixes_get_cursor_image_and_name_reply(wm->root->connection, cookie, NULL);
 
-	int len = xcb_xfixes_get_cursor_image_and_name_name_length(get_cursor_image_and_name_reply);
-	char* name = xcb_xfixes_get_cursor_image_and_name_name(get_cursor_image_and_name_reply);
+	wm->root->mouse_x = reply->x;
+	wm->root->mouse_y = reply->y;
 
-	LOG_FATAL("%dx%d %dx%d %dx%d name %d %.*s", get_cursor_image_and_name_reply->x, get_cursor_image_and_name_reply->y, get_cursor_image_and_name_reply->width, get_cursor_image_and_name_reply->height, get_cursor_image_and_name_reply->xhot, get_cursor_image_and_name_reply->yhot, len, len, name);
+	int len = xcb_xfixes_get_cursor_image_and_name_name_length(reply);
+	char* name = xcb_xfixes_get_cursor_image_and_name_name(reply);
 
-	__attribute__((unused)) uint16_t width  = get_cursor_image_and_name_reply->width;
-	__attribute__((unused)) uint16_t height = get_cursor_image_and_name_reply->height;
+	LOG_FATAL("%dx%d %dx%d %dx%d name %d %.*s", reply->x, reply->y, reply->width, reply->height, reply->xhot, reply->yhot, len, len, name);
 
-	uint16_t xhot = get_cursor_image_and_name_reply->xhot;
-	uint16_t yhot = get_cursor_image_and_name_reply->yhot;
+	__attribute__((unused)) uint16_t width  = reply->width;
+	__attribute__((unused)) uint16_t height = reply->height;
+
+	uint16_t xhot = reply->xhot;
+	uint16_t yhot = reply->yhot;
 
 	char* dash = memrchr(name, '-', len);
 
@@ -665,15 +662,24 @@ static void predraw(void* _wm) {
 				; // west
 
 				default:
-				; // as the french would put it: ppt
+				goto unknown; // as the french would put it: ppt
 			}
 		}
 	}
 
-	// free up those replies
+	else {
+		goto unknown;
+	}
 
-	free(query_pointer_reply);
-	free(get_cursor_image_and_name_reply);
+done:
+
+	free(reply);
+	return;
+
+unknown:
+
+	LOG_WARN("%p: Unknown cursor type \"%s\"", wm, name)
+	goto done;
 }
 
 dynamic wm_t* create(void) {
