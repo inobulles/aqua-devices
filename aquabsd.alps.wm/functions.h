@@ -622,6 +622,11 @@ static void predraw(void* _wm) {
 	size_t len_before_dash = dash - name;
 	size_t len_after_dash = len - len_before_dash;
 
+	// these cursor names come either from the X11 or FreeDesktop cursor specs:
+	// X11: https://www.x.org/releases/current/doc/libX11/libX11/libX11.html#x_font_cursors
+	// X11: https://tronche.com/gui/x/xlib/appendix/b/
+	// FreeDesktop: https://www.freedesktop.org/wiki/Specifications/cursor-spec/
+
 	wm->cursor = "regular"; // default
 
 	if (!len) {
@@ -642,11 +647,17 @@ static void predraw(void* _wm) {
 		wm->cursor = "caret";
 	}
 
-	else if (!strncmp(name, "hand1", len)) {
+	else if (
+		!strncmp(name, "hand1", len) ||
+		!strncmp(name, "grab", len)
+	) {
 		wm->cursor = "hand";
 	}
 
-	else if (!strncmp(name, "dnd-none", len)) {
+	else if (
+		!strncmp(name, "dnd-none", len) ||
+		!strncmp(name, "grabbing", len)
+	) {
 		wm->cursor = "drag";
 	}
 
@@ -657,10 +668,24 @@ static void predraw(void* _wm) {
 		wm->cursor = "pointer";
 	}
 
+	else if (!strncmp(name, "help", len)) {
+		wm->cursor = "question";
+	}
+
 	else if (dash && !strncmp(dash, "-resize", len_after_dash)) {
+		// other directions
+
+		if (!strncmp(name, "col", 3)) {
+			wm->cursor = "resize-l";
+		}
+
+		else if (!strncmp(name, "row", 3)) {
+			wm->cursor = "resize-t";
+		}
+
 		// two directions (important this comes first because of 'strncmp')
 
-		if (!strncmp(name, "ne", 2)) {
+		else if (!strncmp(name, "ne", 2)) {
 			wm->cursor = "resize-tr";
 		}
 
