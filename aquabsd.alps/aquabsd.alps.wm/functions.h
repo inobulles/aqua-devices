@@ -640,6 +640,10 @@ static void predraw(void* _wm) {
 		}
 	}
 
+	else if (!strncmp(name, "left_ptr", len)) {
+		wm->cursor = "regular";
+	}
+
 	else if (
 		!strncmp(name, "xterm", len) ||
 		!strncmp(name, "text", len)
