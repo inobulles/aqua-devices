@@ -1,3 +1,4 @@
 aquabsd.alps.ui
 .aquabsd.alps.ui
-*.swp
+*.sw[op]
+devset
