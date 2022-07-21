@@ -94,6 +94,7 @@ struct aquabsd_alps_win_t {
 	float mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_COUNT];
 
 	int mouse_x, mouse_y;
+	float mouse_scroll;
 
 	// keyboard input stuff
 

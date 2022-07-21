@@ -32,7 +32,7 @@ dynamic mouse_t* register_mouse(const char* name, update_callback_t update_callb
 
 	mice = realloc(mice, mouse_count * sizeof *mice);
 	mouse_t* mouse = &mice[mouse_id];
-	
+
 	memset(mouse, 0, sizeof *mouse);
 
 	mouse->update_callback = update_callback;
@@ -44,6 +44,6 @@ dynamic mouse_t* register_mouse(const char* name, update_callback_t update_callb
 	if (set_default) {
 		default_mouse_id = mouse_id;
 	}
-	
+
 	return mouse;
 }

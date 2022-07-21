@@ -24,7 +24,7 @@ static void sigint_handler(int sig) {
 		LOG_WARN("Got unexpected signal %s (should only be %s)", strsignal(sig), strsignal(SIGINT))
 	}
 
-	LOG_VERBOSE("Received a SIGINT signal")
+	LOG_INFO("Received a SIGINT signal")
 
 	sigint_received = 1;
 
@@ -255,7 +255,9 @@ static int mouse_update_callback(aquabsd_alps_mouse_t* mouse, void* _win) {
 	memcpy(mouse->buttons, win->mouse_buttons, sizeof mouse->buttons);
 	memcpy(mouse->axes, win->mouse_axes, sizeof mouse->axes);
 
-	memset(win->mouse_axes, 0, sizeof win->mouse_axes);
+	if (win->mouse_scroll) {
+		mouse->axes[AQUABSD_ALPS_MOUSE_AXIS_Z] = win->mouse_scroll;
+	}
 
 	return 0;
 }
@@ -529,6 +531,9 @@ dynamic int loop(win_t* win) {
 		if (call_cb(win, CB_DRAW) == 1) {
 			_close_win(win);
 		}
+
+		win->mouse_scroll = win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z];
+		win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] = 0;
 	}
 
 	return 0;
