@@ -51,7 +51,7 @@ uint64_t send(cmd_t _cmd, void* data) {
 		axis_t axis = args[1];
 
 		float result = poll_axis(mouse_id, axis);
-		return *(uint64_t*) &result;
+		return ((union { float _; uint64_t u; }) result).u;
 	}
 
 	return -1;

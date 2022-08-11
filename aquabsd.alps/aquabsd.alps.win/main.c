@@ -127,14 +127,14 @@ uint64_t send(uint16_t _cmd, void* data) {
 		win_t* win = (void*) args[0];
 
 		float x_pos = get_x_pos(win);
-		return *(uint64_t*) &x_pos;
+		return ((union { float _; uint64_t u; }) x_pos).u;
 	}
 
 	else if (cmd == CMD_GET_Y_POS) {
 		win_t* win = (void*) args[0];
 
 		float y_pos = get_y_pos(win);
-		return *(uint64_t*) &y_pos;
+		return ((union { float _; uint64_t u; }) y_pos).u;
 	}
 
 	else if (cmd == CMD_GET_X_RES) {
@@ -177,14 +177,14 @@ uint64_t send(uint16_t _cmd, void* data) {
 		win_t* win = (void*) args[0];
 
 		float x = get_dwd_close_pos_x(win);
-		return *(uint64_t*) &x;
+		return ((union { float f; uint64_t u; }) x).u;
 	}
 
 	else if (cmd == CMD_GET_DWD_CLOSE_POS_Y) {
 		win_t* win = (void*) args[0];
 
 		float y = get_dwd_close_pos_y(win);
-		return *(uint64_t*) &y;
+		return ((union { float f; uint64_t u; }) y).u;
 	}
 
 	return -1;

@@ -10,7 +10,9 @@ static inline int call_cb(aquabsd_alps_win_t* win, uint64_t cb, uint64_t cb_para
 		return -1;
 	}
 
-	return kos_callback(cb, 3, (uint64_t) win, cb_param, *(uint64_t*) &dt);
+	uint64_t udt = ((union { double _; uint64_t u; }) dt).u;
+
+	return kos_callback(cb, 3, (uint64_t) win, cb_param, udt);
 }
 
 static int win_cb_draw(aquabsd_alps_win_t* win, void* param, uint64_t cb, uint64_t cb_param) {

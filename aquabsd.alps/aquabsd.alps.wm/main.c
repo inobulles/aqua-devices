@@ -84,14 +84,14 @@ uint64_t send(uint16_t _cmd, void* data) {
 		wm_t* wm = (void*) args[0];
 
 		float xhot = get_cursor_xhot(wm);
-		return *(uint64_t*) &xhot;
+		return ((union { float _; uint64_t u; }) xhot).u;
 	}
 
 	else if (cmd == CMD_GET_CURSOR_YHOT) {
 		wm_t* wm = (void*) args[0];
 
 		float yhot = get_cursor_yhot(wm);
-		return *(uint64_t*) &yhot;
+		return ((union { float _; uint64_t u; }) yhot).u;
 	}
 
 	else if (cmd == CMD_SET_NAME) {

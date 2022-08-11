@@ -274,7 +274,10 @@ static int click_intended_for_us(wm_t* wm, xcb_button_press_event_t* detail) {
 	// TODO 4 arguments is too much for a KOS callback (can probably remove the wm parameter; it's a bit redundant)
 	// return kos_callback(cb, 4, (uint64_t) wm, *(uint64_t*) &x, *(uint64_t*) &y, param);
 
-	return kos_callback(cb, 3, *(uint64_t*) &x, *(uint64_t*) &y, param);
+	uint64_t ux = ((union { float _; uint64_t u; }) x).u;
+	uint64_t uy = ((union { float _; uint64_t u; }) y).u;
+
+	return kos_callback(cb, 3, ux, uy, param);
 }
 
 static void _state_mod(wm_t* wm, win_t* win, aquabsd_alps_win_state_t state, unsigned action) {
