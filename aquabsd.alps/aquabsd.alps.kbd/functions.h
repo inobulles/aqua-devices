@@ -48,7 +48,7 @@ dynamic kbd_t* register_kbd(const char* name, update_callback_t update_callback,
 	kbd->update_cb_param = update_cb_param;
 
 	kbd->id = kbd_id;
-	strncpy(kbd->name, name, sizeof kbd->name);
+	strncpy(kbd->name, name, sizeof kbd->name - 1);
 
 	if (set_default) {
 		default_kbd_id = kbd_id;

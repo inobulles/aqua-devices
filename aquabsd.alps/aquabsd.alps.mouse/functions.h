@@ -39,7 +39,7 @@ dynamic mouse_t* register_mouse(const char* name, update_callback_t update_callb
 	mouse->update_cb_param = update_cb_param;
 
 	mouse->id = mouse_id;
-	strncpy(mouse->name, name, sizeof mouse->name);
+	strncpy(mouse->name, name, sizeof mouse->name - 1);
 
 	if (set_default) {
 		default_mouse_id = mouse_id;
