@@ -1,4 +1,5 @@
 #define dynamic
+#define _GNU_SOURCE
 
 #include <aquabsd.alps.wm/public.h>
 
