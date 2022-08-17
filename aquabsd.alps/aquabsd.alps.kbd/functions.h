@@ -34,6 +34,15 @@ dynamic unsigned read_buf(unsigned kbd_id, void* buf) {
 	return 0;
 }
 
+dynamic unsigned get_keys_len(unsigned kbd_id) {
+	return kbds[kbd_id].keys_len;
+}
+
+dynamic unsigned read_keys(unsigned kbd_id, const char** keys) {
+	memcpy(keys, kbds[kbd_id].keys, get_keys_len(kbd_id) * sizeof(*keys));
+	return 0;
+}
+
 // functions exclusively accessible to other devices
 
 dynamic kbd_t* register_kbd(const char* name, update_callback_t update_callback, void* update_cb_param, unsigned set_default) {
@@ -58,5 +67,5 @@ dynamic kbd_t* register_kbd(const char* name, update_callback_t update_callback,
 }
 
 dynamic const char* x11_map(int key) {
-	return map_x11_to_aqua(key);
+	return __map_x11_to_aqua(key);
 }

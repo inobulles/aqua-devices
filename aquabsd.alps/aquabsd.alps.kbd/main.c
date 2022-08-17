@@ -7,9 +7,14 @@
 typedef enum {
 	CMD_GET_DEFAULT_KBD_ID = 0x646B, // 'dk'
 	CMD_UPDATE_KBD         = 0x756B, // 'uk'
+
 	CMD_POLL_BUTTON        = 0x7062, // 'pb'
+
 	CMD_GET_BUF_LEN        = 0x626C, // 'bl'
 	CMD_READ_BUF           = 0x7262, // 'rb'
+
+	CMD_GET_KEYS_LEN       = 0x6B6C, // 'kl'
+	CMD_READ_KEYS          = 0x726B, // 'rk'
 } cmd_t;
 
 int load(void) {
@@ -57,6 +62,18 @@ uint64_t send(uint16_t _cmd, void* data) {
 		void* buf = (void*) args[1];
 
 		return read_buf(kbd_id, buf);
+	}
+
+	else if (cmd == CMD_GET_KEYS_LEN) {
+		unsigned kbd_id = args[0];
+		return get_keys_len(kbd_id);
+	}
+
+	else if (cmd == CMD_READ_KEYS) {
+		unsigned kbd_id = args[0];
+		const char** keys = (void*) args[1];
+
+		return read_keys(kbd_id, keys);
 	}
 
 	return -1;
