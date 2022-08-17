@@ -1,6 +1,7 @@
 #define dynamic
 
 #include <aquabsd.alps.kbd/public.h>
+#include <aquabsd.alps.kbd/map/map.h>
 
 #include <stdio.h>
 #include <stdint.h>

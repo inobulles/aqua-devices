@@ -41,7 +41,7 @@ dynamic kbd_t* register_kbd(const char* name, update_callback_t update_callback,
 
 	kbds = realloc(kbds, kbd_count * sizeof *kbds);
 	kbd_t* kbd = &kbds[kbd_id];
-	
+
 	memset(kbd, 0, sizeof *kbd);
 
 	kbd->update_callback = update_callback;
@@ -53,6 +53,10 @@ dynamic kbd_t* register_kbd(const char* name, update_callback_t update_callback,
 	if (set_default) {
 		default_kbd_id = kbd_id;
 	}
-	
+
 	return kbd;
+}
+
+dynamic const char* x11_map(int key) {
+	return map_x11_to_aqua(key);
 }

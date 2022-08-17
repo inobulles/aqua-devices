@@ -416,7 +416,7 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 
 		// get unicode character and append it to the buffer
 		// XCB annoyingly doesn't have a function to do this, so we'll need to use Xlib to help us
-		// I'll stop my comment right here before I start ranting about XCB
+		// I'll stop my comment right here before I start ranting about XCB (again)
 
 		XKeyEvent xlib_event;
 
