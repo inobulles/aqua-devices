@@ -3,3 +3,4 @@ aquabsd.alps.ui
 *.sw[op]
 devset
 keysyms.xml
+keysymdef.h
