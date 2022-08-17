@@ -1,23 +1,8 @@
 #if !defined(__AQUABSD_ALPS_KBD)
 #define __AQUABSD_ALPS_KBD
 
-// definitions accessible to AQUA programs (through 'aqua-lib') and other devices
-
-// the 'aquabsd_alps_kbd_button_t' enum must be identical to the 'kbd_button_t' enum in 'aqua-lib' ('c/aquabsd/alps/kbd.h')
-// 'aquabsd_alps_kbd_t' struct must be identical to the 'kbd_t' struct in 'aqua-lib' ('c/aquabsd/alps/kbd.h')
-
-typedef enum {
-	AQUABSD_ALPS_KBD_BUTTON_ESC,
-	AQUABSD_ALPS_KBD_BUTTON_TAB,
-	AQUABSD_ALPS_KBD_BUTTON_SUPER,
-
-	AQUABSD_ALPS_KBD_BUTTON_UP,
-	AQUABSD_ALPS_KBD_BUTTON_DOWN,
-	AQUABSD_ALPS_KBD_BUTTON_LEFT,
-	AQUABSD_ALPS_KBD_BUTTON_RIGHT,
-
-	AQUABSD_ALPS_KBD_BUTTON_COUNT,
-} aquabsd_alps_kbd_button_t;
+#include <stdbool.h>
+#include <stddef.h>
 
 // definitions exclusively accessible to other devices
 
@@ -33,10 +18,14 @@ struct aquabsd_alps_kbd_t {
 	unsigned id;
 	char name[256];
 
-	unsigned buttons[AQUABSD_ALPS_KBD_BUTTON_COUNT];
+	#define AQUABSD_ALPS_KBD_BUTTON_COUNT 256
+	bool buttons[AQUABSD_ALPS_KBD_BUTTON_COUNT];
 
-	unsigned buf_len;
+	size_t buf_len;
 	void* buf;
+
+	size_t keys_len;
+	const char** keys;
 };
 
 #if defined(__FreeBSD__)
@@ -46,10 +35,13 @@ struct aquabsd_alps_kbd_t {
 unsigned (*aquabsd_alps_kbd_get_default_kbd_id) (void);
 int (*aquabsd_alps_kbd_update_kbd) (unsigned kbd_id);
 
-unsigned (*aquabsd_alps_kbd_poll_button) (unsigned kbd_id, aquabsd_alps_kbd_button_t button);
+unsigned (*aquabsd_alps_kbd_poll_button) (unsigned kbd_id, unsigned button);
 
 unsigned (*aquabsd_alps_kbd_get_buf_len) (unsigned kbd_id);
 int (*aquabsd_alps_kbd_read_buf) (unsigned kbd_id, void* buf);
+
+unsigned (*aquabsd_alps_kbd_get_keys_len) (unsigned kbd_id);
+int (*aquabsd_alps_kbd_read_keys) (unsigned kbd_id, const char** keys);
 
 aquabsd_alps_kbd_t* (*aquabsd_alps_kbd_register_kbd) (const char* name, aquabsd_alps_kbd_update_callback_t update_callback, void* update_cb_param, unsigned set_default);
 const char* (*aquabsd_alps_kbd_x11_map) (int key);

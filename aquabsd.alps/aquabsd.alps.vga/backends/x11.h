@@ -204,16 +204,10 @@ static void* x11_get_framebuffer(void) {
 }
 
 static int x11_kbd_map(xcb_keycode_t key) {
-	switch (key) {
-		case 9: return AQUABSD_ALPS_KBD_BUTTON_ESC;
+	// X11, for some reason (which, of course, is not explained anywhere), adds 8 to the standard PC scancode
+	// cf. https://unix.stackexchange.com/a/167959
 
-		case 111: return AQUABSD_ALPS_KBD_BUTTON_UP;
-		case 116: return AQUABSD_ALPS_KBD_BUTTON_DOWN;
-		case 113: return AQUABSD_ALPS_KBD_BUTTON_LEFT;
-		case 114: return AQUABSD_ALPS_KBD_BUTTON_RIGHT;
-	}
-
-	return -1;
+	return key - 8;
 }
 
 static unsigned x11_invalidated = 1;

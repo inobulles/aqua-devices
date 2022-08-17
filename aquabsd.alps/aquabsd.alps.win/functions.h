@@ -270,27 +270,25 @@ static int kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _win) {
 	kbd->buf_len = win->kbd_buf_len;
 	kbd->buf = win->kbd_buf;
 
+	kbd->keys_len = win->kbd_keys_len;
+	kbd->keys = win->kbd_keys;
+
 	// we're passing this on to the keyboard device, so reset
 
 	win->kbd_buf_len = 0;
 	win->kbd_buf = NULL;
 
+	win->kbd_keys_len = 0;
+	win->kbd_keys = NULL;
+
 	return 0;
 }
 
 static int x11_kbd_map(xcb_keycode_t key) {
-	switch (key) {
-		case 0x09: return AQUABSD_ALPS_KBD_BUTTON_ESC;
-		case 0x17: return AQUABSD_ALPS_KBD_BUTTON_TAB;
-		case 0x85: return AQUABSD_ALPS_KBD_BUTTON_SUPER;
+	// X11, for some reason (which, of course, is not explained anywhere), adds 8 to the standard PC scancode
+	// cf. https://unix.stackexchange.com/a/167959
 
-		case 0x6f: return AQUABSD_ALPS_KBD_BUTTON_UP;
-		case 0x74: return AQUABSD_ALPS_KBD_BUTTON_DOWN;
-		case 0x71: return AQUABSD_ALPS_KBD_BUTTON_LEFT;
-		case 0x72: return AQUABSD_ALPS_KBD_BUTTON_RIGHT;
-	}
-
-	return -1;
+	return key - 8;
 }
 
 static int _close_win(win_t* win) {
@@ -408,6 +406,9 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 		xcb_key_press_event_t* detail = (void*) event;
 		xcb_keycode_t key = detail->detail;
 
+		// the keycode is the physical scancode of the button pressed on the keyboard
+		// the keysym is the interpretation of the scancode (so depending on keyboard layout and other bindings)
+
 		int index = x11_kbd_map(key);
 
 		if (index >= 0) {
@@ -424,13 +425,22 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 		xlib_event.keycode = detail->detail;
 		xlib_event.state = detail->state;
 
-		int len = XLookupString(&xlib_event, NULL, 0, NULL, NULL);
+		KeySym keysym;
+
+		int len = XLookupString(&xlib_event, NULL, 0, &keysym, NULL);
+
+		// add to keys buffer
+
+		win->kbd_keys = realloc(win->kbd_keys, ++win->kbd_keys_len * sizeof *win->kbd_keys);
+		win->kbd_keys[win->kbd_keys_len - 1] = aquabsd_alps_kbd_x11_map(keysym);
+
+		// add to string buffer
 
 		if (len <= 0) {
 			return 0;
 		}
 
-		unsigned prev_buf_len = win->kbd_buf_len;
+		size_t prev_buf_len = win->kbd_buf_len;
 		win->kbd_buf_len += len;
 
 		win->kbd_buf = realloc(win->kbd_buf, win->kbd_buf_len);

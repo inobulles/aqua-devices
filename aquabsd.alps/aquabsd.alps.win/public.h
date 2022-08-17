@@ -98,10 +98,13 @@ struct aquabsd_alps_win_t {
 
 	// keyboard input stuff
 
-	unsigned kbd_buttons[AQUABSD_ALPS_KBD_BUTTON_COUNT];
+	bool kbd_buttons[AQUABSD_ALPS_KBD_BUTTON_COUNT];
 
-	unsigned kbd_buf_len;
+	size_t kbd_buf_len;
 	void* kbd_buf;
+
+	size_t kbd_keys_len;
+	const char** kbd_keys;
 
 	// in case we need a doubly-linked list of windows
 

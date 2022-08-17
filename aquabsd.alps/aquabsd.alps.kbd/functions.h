@@ -14,6 +14,10 @@ dynamic int update_kbd(unsigned kbd_id) {
 		free(kbd->buf);
 	}
 
+	if (kbd->keys) {
+		free(kbd->keys);
+	}
+
 	if (!kbd->update_callback) {
 		return 0;
 	}
@@ -21,7 +25,12 @@ dynamic int update_kbd(unsigned kbd_id) {
 	return kbd->update_callback(kbd, kbd->update_cb_param);
 }
 
-dynamic unsigned poll_button(unsigned kbd_id, button_t button) {
+dynamic unsigned poll_button(unsigned kbd_id, unsigned button) {
+	if (button > BUTTON_COUNT) {
+		LOG_ERROR("Button number %d is greater than the maximum button count (%d)", BUTTON_COUNT)
+		return 0;
+	}
+
 	return kbds[kbd_id].buttons[button];
 }
 
@@ -31,6 +40,15 @@ dynamic unsigned get_buf_len(unsigned kbd_id) {
 
 dynamic unsigned read_buf(unsigned kbd_id, void* buf) {
 	memcpy(buf, kbds[kbd_id].buf, get_buf_len(kbd_id));
+	return 0;
+}
+
+dynamic unsigned get_keys_len(unsigned kbd_id) {
+	return kbds[kbd_id].keys_len;
+}
+
+dynamic unsigned read_keys(unsigned kbd_id, const char** keys) {
+	memcpy(keys, kbds[kbd_id].keys, get_keys_len(kbd_id) * sizeof(*keys));
 	return 0;
 }
 
@@ -58,5 +76,5 @@ dynamic kbd_t* register_kbd(const char* name, update_callback_t update_callback,
 }
 
 dynamic const char* x11_map(int key) {
-	return map_x11_to_aqua(key);
+	return __map_x11_to_aqua(key);
 }

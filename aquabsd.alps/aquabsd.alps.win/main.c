@@ -48,6 +48,7 @@ int load(void) {
 
 	if (kbd_device != -1) {
 		aquabsd_alps_kbd_register_kbd = kos_load_device_function(kbd_device, "register_kbd");
+		aquabsd_alps_kbd_x11_map = kos_load_device_function(kbd_device, "x11_map");
 	}
 
 	return 0;

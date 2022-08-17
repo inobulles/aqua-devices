@@ -6,16 +6,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include <umber.h>
+#define UMBER_COMPONENT "aquabsd.alps.kbd"
+
 #define BUTTON_COUNT AQUABSD_ALPS_KBD_BUTTON_COUNT
-
-#define button_t aquabsd_alps_kbd_button_t
-
-#define BUTTON_ESC AQUABSD_ALPS_KBD_BUTTON_ESC
-
-#define BUTTON_UP AQUABSD_ALPS_KBD_BUTTON_UP
-#define BUTTON_DOWN AQUABSD_ALPS_KBD_BUTTON_DOWN
-#define BUTTON_LEFT AQUABSD_ALPS_KBD_BUTTON_LEFT
-#define BUTTON_RIGHT AQUABSD_ALPS_KBD_BUTTON_RIGHT
 
 #define update_callback_t aquabsd_alps_kbd_update_callback_t
 #define kbd_t aquabsd_alps_kbd_t
