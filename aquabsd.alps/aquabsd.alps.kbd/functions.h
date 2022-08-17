@@ -25,7 +25,12 @@ dynamic int update_kbd(unsigned kbd_id) {
 	return kbd->update_callback(kbd, kbd->update_cb_param);
 }
 
-dynamic unsigned poll_button(unsigned kbd_id, button_t button) {
+dynamic unsigned poll_button(unsigned kbd_id, unsigned button) {
+	if (button > BUTTON_COUNT) {
+		LOG_ERROR("Button number %d is greater than the maximum button count (%d)", BUTTON_COUNT)
+		return 0;
+	}
+
 	return kbds[kbd_id].buttons[button];
 }
 

@@ -285,18 +285,10 @@ static int kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _win) {
 }
 
 static int x11_kbd_map(xcb_keycode_t key) {
-	switch (key) {
-		case 0x09: return AQUABSD_ALPS_KBD_BUTTON_ESC;
-		case 0x17: return AQUABSD_ALPS_KBD_BUTTON_TAB;
-		case 0x85: return AQUABSD_ALPS_KBD_BUTTON_SUPER;
+	// X11, for some reason (which, of course, is not explained anywhere), adds 8 to the standard PC scancode
+	// cf. https://unix.stackexchange.com/a/167959
 
-		case 0x6f: return AQUABSD_ALPS_KBD_BUTTON_UP;
-		case 0x74: return AQUABSD_ALPS_KBD_BUTTON_DOWN;
-		case 0x71: return AQUABSD_ALPS_KBD_BUTTON_LEFT;
-		case 0x72: return AQUABSD_ALPS_KBD_BUTTON_RIGHT;
-	}
-
-	return -1;
+	return key - 8;
 }
 
 static int _close_win(win_t* win) {

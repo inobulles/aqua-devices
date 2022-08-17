@@ -47,7 +47,7 @@ uint64_t send(uint16_t _cmd, void* data) {
 
 	else if (cmd == CMD_POLL_BUTTON) {
 		unsigned kbd_id = args[0];
-		button_t button = args[1];
+		unsigned button = args[1];
 
 		return (uint64_t) poll_button(kbd_id, button);
 	}

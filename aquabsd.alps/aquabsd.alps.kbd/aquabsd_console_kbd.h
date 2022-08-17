@@ -11,7 +11,7 @@ static inline int init_aquabsd_console_kbd(void) {
 	if (aquabsd_console_kbd_initialized) {
 		return 0;
 	}
-	
+
 	// set TTY how we want it
 
 	struct termios tty;
@@ -63,14 +63,14 @@ static int update_aquabsd_console_kbd(kbd_t* kbd, void* _) {
 		}
 
 		if (esc[0] == 217 && esc[1] == 62) {
-			kbd->buttons[BUTTON_ESC] = 1;
+			kbd->buttons[0x01] = 1;
 		}
 
 		else if (esc[0] == '[') { // arrow keys
-			if      (esc[1] == 'A') kbd->buttons[BUTTON_UP]    = 1;
-			else if (esc[1] == 'B') kbd->buttons[BUTTON_DOWN]  = 1;
-			else if (esc[1] == 'C') kbd->buttons[BUTTON_RIGHT] = 1;
-			else if (esc[1] == 'D') kbd->buttons[BUTTON_LEFT]  = 1;
+			if      (esc[1] == 'A') kbd->buttons[0x67] = 1;
+			else if (esc[1] == 'B') kbd->buttons[0x6C] = 1;
+			else if (esc[1] == 'C') kbd->buttons[0x69] = 1;
+			else if (esc[1] == 'D') kbd->buttons[0x6A] = 1;
 		}
 	}
 
