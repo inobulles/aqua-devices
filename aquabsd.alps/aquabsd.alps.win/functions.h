@@ -270,10 +270,16 @@ static int kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _win) {
 	kbd->buf_len = win->kbd_buf_len;
 	kbd->buf = win->kbd_buf;
 
+	kbd->keys_len = win->kbd_keys_len;
+	kbd->keys = win->kbd_keys;
+
 	// we're passing this on to the keyboard device, so reset
 
 	win->kbd_buf_len = 0;
 	win->kbd_buf = NULL;
+
+	win->kbd_keys_len = 0;
+	win->kbd_keys = NULL;
 
 	return 0;
 }
@@ -408,6 +414,9 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 		xcb_key_press_event_t* detail = (void*) event;
 		xcb_keycode_t key = detail->detail;
 
+		// the keycode is the physical scancode of the button pressed on the keyboard
+		// the keysym is the interpretation of the scancode (so depending on keyboard layout and other bindings)
+
 		int index = x11_kbd_map(key);
 
 		if (index >= 0) {
@@ -424,13 +433,22 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 		xlib_event.keycode = detail->detail;
 		xlib_event.state = detail->state;
 
-		int len = XLookupString(&xlib_event, NULL, 0, NULL, NULL);
+		KeySym keysym;
+
+		int len = XLookupString(&xlib_event, NULL, 0, &keysym, NULL);
+
+		// add to keys buffer
+
+		win->kbd_keys = realloc(win->kbd_keys, ++win->kbd_keys_len * sizeof *win->kbd_keys);
+		win->kbd_keys[win->kbd_keys_len - 1] = aquabsd_alps_kbd_x11_map(keysym);
+
+		// add to string buffer
 
 		if (len <= 0) {
 			return 0;
 		}
 
-		unsigned prev_buf_len = win->kbd_buf_len;
+		size_t prev_buf_len = win->kbd_buf_len;
 		win->kbd_buf_len += len;
 
 		win->kbd_buf = realloc(win->kbd_buf, win->kbd_buf_len);
