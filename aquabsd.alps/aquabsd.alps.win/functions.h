@@ -7,7 +7,7 @@
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.win"
 
-// #define EVENT_THREADING_ENABLED
+#define EVENT_THREADING_ENABLED
 
 #define FATAL_ERROR(...) \
 	LOG_FATAL(__VA_ARGS__) \
