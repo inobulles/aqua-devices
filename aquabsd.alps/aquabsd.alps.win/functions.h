@@ -7,7 +7,7 @@
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.win"
 
-#define EVENT_THREADING_ENABLED
+// #define EVENT_THREADING_ENABLED
 
 #define FATAL_ERROR(...) \
 	LOG_FATAL(__VA_ARGS__) \
@@ -270,13 +270,31 @@ static int kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _win) {
 	kbd->buf_len = win->kbd_buf_len;
 	kbd->buf = win->kbd_buf;
 
-	kbd->keys_len = win->kbd_keys_len;
-	kbd->keys = win->kbd_keys;
-
 	// we're passing this on to the keyboard device, so reset
 
 	win->kbd_buf_len = 0;
 	win->kbd_buf = NULL;
+
+	// count keys
+
+	kbd->keys_len = 0;
+
+	for (size_t i = 0; i < win->kbd_keys_len; i++) {
+		kbd->keys_len += !!win->kbd_keys[i];
+	}
+
+	// allocate space for & copy over keys
+
+	kbd->keys = malloc(kbd->keys_len * sizeof *kbd->keys);
+	kbd->keys_len = 0;
+
+	for (size_t i = 0; i < win->kbd_keys_len; i++) {
+		const char* key = win->kbd_keys[i];
+
+		if (key) {
+			kbd->keys[kbd->keys_len++] = key;
+		}
+	}
 
 	return 0;
 }
@@ -510,14 +528,16 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 		// if there are any trailing NULL's, reallocate our keys list to make it smaller
 		// this is theoretically not super necessary, as the keys list will never be too large
 
-		while (win->kbd_keys_len --> 0 && !win->kbd_keys[win->kbd_keys_len - 1]);
+		size_t prev_len = win->kbd_keys_len;
+
+		while (!win->kbd_keys[win->kbd_keys_len - 1] && win->kbd_keys_len --> 1);
 
 		if (!win->kbd_keys_len) {
 			free(win->kbd_keys);
 			win->kbd_keys = NULL;
 		}
 
-		else {
+		else if (win->kbd_keys_len != prev_len) {
 			win->kbd_keys = realloc(win->kbd_keys, win->kbd_keys_len * sizeof *win->kbd_keys);
 		}
 	}
