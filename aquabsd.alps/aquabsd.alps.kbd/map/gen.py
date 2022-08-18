@@ -58,8 +58,14 @@ for line in header.split('\n'):
 			unicode = bits[4]
 			name = '.'.join(bits[5: -1]).lower()
 
+		if unicode == '-':
+			unicode = None
+
+		if unicode is not None:
+			char = chr(int(unicode[2:], 16))
+
 		has_case.append(sym)
-		src += f"""	case {hex(sym)}: return "{name}"; // {current_set}{f" ({unicode})" if unicode is not None and unicode != '-' else ""}
+		src += f"""	case {hex(sym)}: return "{name}"; // {current_set}{f" ({unicode}, {char})" if unicode is not None else ""}
 """
 
 # write to output file
