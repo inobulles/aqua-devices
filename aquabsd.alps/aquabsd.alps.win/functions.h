@@ -278,9 +278,6 @@ static int kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _win) {
 	win->kbd_buf_len = 0;
 	win->kbd_buf = NULL;
 
-	win->kbd_keys_len = 0;
-	win->kbd_keys = NULL;
-
 	return 0;
 }
 
@@ -433,13 +430,36 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 		xlib_event.state = detail->state;
 
 		KeySym keysym;
-
 		int len = XLookupString(&xlib_event, NULL, 0, &keysym, NULL);
 
 		// add to keys buffer
+		// if the key is already in the keys buffer, we don't need to add it
+
+		const char* aqua_key = aquabsd_alps_kbd_x11_map(keysym);
+
+		for (size_t i = 0; i < win->kbd_keys_len; i++) {
+			if (win->kbd_keys[i] == aqua_key) { // we don't need to use 'strcmp'; this is okay 👌
+				goto skip;
+			}
+		}
+
+		// if there's an empty space in the list somewhere, put our key there (instead of reallocating the keys list)
+
+		for (size_t i = 0; i < win->kbd_keys_len; i++) {
+			if (win->kbd_keys[i]) {
+				continue;
+			}
+
+			win->kbd_keys[i] = aqua_key;
+			goto skip;
+		}
+
+		// if our key is not already in the keys list and there's no empty space, add it to the end of the list
 
 		win->kbd_keys = realloc(win->kbd_keys, ++win->kbd_keys_len * sizeof *win->kbd_keys);
-		win->kbd_keys[win->kbd_keys_len - 1] = aquabsd_alps_kbd_x11_map(keysym);
+		win->kbd_keys[win->kbd_keys_len - 1] = aqua_key;
+
+	skip:
 
 		// add to string buffer
 
@@ -462,6 +482,43 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 
 		if (index >= 0) {
 			win->kbd_buttons[index] = 0;
+		}
+
+		// get X11 keysym
+
+		XKeyEvent xlib_event;
+
+		xlib_event.display = win->display;
+		xlib_event.keycode = detail->detail;
+		xlib_event.state = detail->state;
+
+		KeySym keysym;
+		XLookupString(&xlib_event, NULL, 0, &keysym, NULL);
+
+		// remove from keys buffer
+
+		const char* aqua_key = aquabsd_alps_kbd_x11_map(keysym);
+
+		for (size_t i = 0; i < win->kbd_keys_len; i++) {
+			if (win->kbd_keys[i] != aqua_key) {
+				continue;
+			}
+
+			win->kbd_keys[i] = NULL;
+		}
+
+		// if there are any trailing NULL's, reallocate our keys list to make it smaller
+		// this is theoretically not super necessary, as the keys list will never be too large
+
+		while (win->kbd_keys_len --> 0 && !win->kbd_keys[win->kbd_keys_len - 1]);
+
+		if (!win->kbd_keys_len) {
+			free(win->kbd_keys);
+			win->kbd_keys = NULL;
+		}
+
+		else {
+			win->kbd_keys = realloc(win->kbd_keys, win->kbd_keys_len * sizeof *win->kbd_keys);
 		}
 	}
 

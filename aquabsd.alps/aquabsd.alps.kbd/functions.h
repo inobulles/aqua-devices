@@ -14,10 +14,6 @@ dynamic int update_kbd(unsigned kbd_id) {
 		free(kbd->buf);
 	}
 
-	if (kbd->keys) {
-		free(kbd->keys);
-	}
-
 	if (!kbd->update_callback) {
 		return 0;
 	}
