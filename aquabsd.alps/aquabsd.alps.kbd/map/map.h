@@ -4,7 +4,7 @@
 
 static inline const char* __map_x11_to_aqua(int key) {
 	switch (key) {
-	case 0xffffff: return "voidsymbol"; // None
+	case 0xffffff: return "void"; // None
 
 	// XK_MISCELLANY
 

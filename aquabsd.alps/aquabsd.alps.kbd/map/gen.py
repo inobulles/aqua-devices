@@ -40,6 +40,7 @@ for line in header.split('\n'):
 
 	elif line.startswith("#define"):
 		bits = line.split()
+
 		name = (bits[1][3:]
 			.lower()
 			.replace('_', '.'))
@@ -63,6 +64,9 @@ for line in header.split('\n'):
 
 		if unicode is not None:
 			char = chr(int(unicode[2:], 16))
+
+		if name == "voidsymbol":
+			name = "void"
 
 		has_case.append(sym)
 		src += f"""	case {hex(sym)}: return "{name}"; // {current_set}{f" ({unicode}, {char})" if unicode is not None else ""}
