@@ -38,10 +38,10 @@ int (*aquabsd_alps_kbd_update_kbd) (unsigned kbd_id);
 unsigned (*aquabsd_alps_kbd_poll_button) (unsigned kbd_id, unsigned button);
 
 unsigned (*aquabsd_alps_kbd_get_buf_len) (unsigned kbd_id);
-int (*aquabsd_alps_kbd_read_buf) (unsigned kbd_id, void* buf);
+char* (*aquabsd_alps_kbd_get_buf) (unsigned kbd_id);
 
 unsigned (*aquabsd_alps_kbd_get_keys_len) (unsigned kbd_id);
-int (*aquabsd_alps_kbd_read_keys) (unsigned kbd_id, const char** keys);
+const char** (*aquabsd_alps_kbd_get_keys) (unsigned kbd_id);
 
 aquabsd_alps_kbd_t* (*aquabsd_alps_kbd_register_kbd) (const char* name, aquabsd_alps_kbd_update_callback_t update_callback, void* update_cb_param, unsigned set_default);
 const char* (*aquabsd_alps_kbd_x11_map) (int key);
