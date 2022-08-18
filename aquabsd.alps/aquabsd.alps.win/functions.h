@@ -87,6 +87,10 @@ dynamic int delete(win_t* win) {
 		XCloseDisplay(win->display);
 	}
 
+	if (win->kbd_keys) {
+		free(win->kbd_keys);
+	}
+
 	free(win);
 
 	return 0;
