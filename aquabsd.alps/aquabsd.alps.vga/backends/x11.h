@@ -207,7 +207,14 @@ static int x11_kbd_map(xcb_keycode_t key) {
 	// X11, for some reason (which, of course, is not explained anywhere), adds 8 to the standard PC scancode
 	// cf. https://unix.stackexchange.com/a/167959
 
-	return key - 8;
+	int i = key - 8;
+
+	if (i < 0 || i > 255) {
+		LOG_ERROR("Keycode index (%d) not in [0; 255] range", i)
+		return 0;
+	}
+
+	return i;
 }
 
 static unsigned x11_invalidated = 1;
