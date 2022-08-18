@@ -38,18 +38,16 @@ dynamic unsigned get_buf_len(unsigned kbd_id) {
 	return kbds[kbd_id].buf_len;
 }
 
-dynamic unsigned read_buf(unsigned kbd_id, void* buf) {
-	memcpy(buf, kbds[kbd_id].buf, get_buf_len(kbd_id));
-	return 0;
+dynamic char* get_buf(unsigned kbd_id) {
+	return kbds[kbd_id].buf;
 }
 
 dynamic unsigned get_keys_len(unsigned kbd_id) {
 	return kbds[kbd_id].keys_len;
 }
 
-dynamic unsigned read_keys(unsigned kbd_id, const char** keys) {
-	memcpy(keys, kbds[kbd_id].keys, get_keys_len(kbd_id) * sizeof(*keys));
-	return 0;
+dynamic const char** get_keys(unsigned kbd_id) {
+	return kbds[kbd_id].keys;
 }
 
 // functions exclusively accessible to other devices
