@@ -34,7 +34,7 @@ void swap(ftime_t* ftime) {
 	ftime->draw_time = now - ftime->draw_start;
 
 	if (ftime->expected_draw_time < ftime->draw_time) {
-		LOG_WARN("Draw time expectation wasn't conservative enough")
+		LOG_VERBOSE("Draw time expectation wasn't conservative enough")
 	}
 
 	// insert time taken to draw to the list of recorded frametimes
@@ -104,7 +104,7 @@ void done(ftime_t* ftime) {
 		ftime->total_time > ftime->target * DIVERGENCE_TOLERANCE ||
 		ftime->total_time < ftime->target / DIVERGENCE_TOLERANCE
 	) {
-		LOG_WARN("Total frame time (draw + swap + wait times = %g) is not within %g%% of the target (%g); this means the target passed is likely incorrect", ftime->total_time, (DIVERGENCE_TOLERANCE - 1) * 100, ftime->target)
+		LOG_VERBOSE("Total frame time (draw + swap + wait times = %g) is not within %g%% of the target (%g); this means the target passed is likely incorrect", ftime->total_time, (DIVERGENCE_TOLERANCE - 1) * 100, ftime->target)
 	}
 
 	// compute 1% lows (in terms of FPS, so 99th percentile in frametimes)
@@ -127,7 +127,7 @@ void done(ftime_t* ftime) {
 
 	if (ftime->wait_time < 0) {
 		ftime->wait_time = 0;
-		LOG_WARN("Expecting draw time (%g) to take longer than target (%g); this means things are running slower than they should!", ftime->expected_draw_time, ftime->target);
+		LOG_VERBOSE("Expecting draw time (%g) to take longer than target (%g); this means things are running slower than they should!", ftime->expected_draw_time, ftime->target);
 	}
 
 	#define CONSERVANCY 1.2
