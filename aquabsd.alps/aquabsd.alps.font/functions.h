@@ -140,6 +140,8 @@ static void gen_layout(text_t* text) {
 		text->layout = pango_cairo_create_layout(text->cairo);
 	}
 
+	// set text and font attributes
+
 	pango_layout_set_font_description(text->layout, text->font->font_description);
 
 	#define MAX_WIDTH  0x2000
@@ -158,6 +160,21 @@ static void gen_layout(text_t* text) {
 
 	pango_layout_set_wrap(text->layout, PANGO_WRAP_WORD_CHAR); // TODO should this be settable?
 
+	pango_layout_set_justify(text->layout, text->align == ALIGN_JUSTIFY);
+
+	if (text->align == ALIGN_LEFT) {
+		pango_layout_set_alignment(text->layout, PANGO_ALIGN_LEFT);
+	}
+
+	else if (text->align == ALIGN_RIGHT) {
+		pango_layout_set_alignment(text->layout, PANGO_ALIGN_RIGHT);
+	}
+
+	else {
+		#define PANGO_ALIGN_CENTRE PANGO_ALIGN_CENTER // lol
+		pango_layout_set_alignment(text->layout, PANGO_ALIGN_CENTRE);
+	}
+
 	void (*layout_fn) (PangoLayout* layout, const char* str, int len) = pango_layout_set_text;
 
 	if (text->markup) {
@@ -165,6 +182,8 @@ static void gen_layout(text_t* text) {
 	}
 
 	layout_fn(text->layout, text->str, text->len);
+
+	// update layout and get its size
 
 	pango_cairo_update_layout(text->cairo, text->layout);
 	pango_layout_get_size(text->layout, &text->x_res, &text->y_res);
