@@ -217,7 +217,14 @@ dynamic int text_i_to_pos(text_t* text, uint64_t i, uint64_t* x_ref, uint64_t* y
 
 	gen_layout(text);
 
-	/* TODO */
+	PangoRectangle rect;
+	pango_layout_index_to_pos(text->layout, i, &rect);
+
+	*x_ref = rect.x / PANGO_SCALE;
+	*y_ref = rect.y / PANGO_SCALE;
+
+	*width_ref  = rect.width  / PANGO_SCALE;
+	*height_ref = rect.height / PANGO_SCALE;
 
 	return -1;
 }
