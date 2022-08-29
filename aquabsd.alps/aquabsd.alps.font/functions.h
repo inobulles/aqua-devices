@@ -55,7 +55,7 @@ dynamic text_t* create_text(font_t* font, const char* str) {
 	text_colour(text, 1.0, 1.0, 1.0, 1.0);
 	text_size(text, 0);
 	text_wrap(text, 0, 0);
-	text_align(text, ALIGN_CENTRE);
+	text_align(text, ALIGN_RIGHT);
 	text_markup(text, false);
 
 	return text;
@@ -186,7 +186,12 @@ static void gen_layout(text_t* text) {
 	// update layout and get its size
 
 	pango_cairo_update_layout(text->cairo, text->layout);
-	pango_layout_get_size(text->layout, &text->x_res, &text->y_res);
+
+	PangoRectangle extents;
+	pango_layout_get_extents(text->layout, NULL, &extents);
+
+	text->x_res = extents.x + extents.width;
+	text->y_res = extents.y + extents.height;
 
 	text->x_res /= PANGO_SCALE;
 	text->y_res /= PANGO_SCALE;
