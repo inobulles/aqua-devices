@@ -215,11 +215,21 @@ dynamic int text_get_res(text_t* text, uint64_t* x_res_ref, uint64_t* y_res_ref)
 }
 
 dynamic int text_pos_to_i(text_t* text, uint64_t x, uint64_t y) {
+	x *= PANGO_SCALE;
+	y *= PANGO_SCALE;
+
 	gen_layout(text);
 
-	/* TODO */
+	int i, trailing;
+	pango_layout_xy_to_index(text->layout, x, y, &i, &trailing);
 
-	return -1;
+	// 'trailing' tells us where in the character we are
+	// e.g., if we clicked on an "m" in the first half, 'trailing' would be '0'
+	// conversely, if we clicked in the second half, 'trailing; would be '1'
+	// TODO for now, I'm just adding these together to shift the index if clicking on the second half of the character
+	//      however, it would be nice for the user to have access to this information in fine
+
+	return i + trailing;
 }
 
 dynamic int text_i_to_pos(text_t* text, uint64_t i, uint64_t* x_ref, uint64_t* y_ref, uint64_t* width_ref, uint64_t* height_ref) {
