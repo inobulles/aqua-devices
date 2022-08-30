@@ -9,7 +9,12 @@
 #include <pango/pangocairo.h>
 
 typedef struct {
-	PangoFontDescription* font_description;
+	PangoFontDescription* font_descr;
+
+	// initial size may either be in points (non-absolute), or in device units (absolute, what aquaBSD uses)
+
+	bool init_size_abs;
+	double init_size;
 } aquabsd_alps_font_t;
 
 typedef enum {

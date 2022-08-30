@@ -11,15 +11,18 @@
 dynamic font_t* load_font(const char* path) {
 	LOG_INFO("Load font \"%s\"", path)
 
-	PangoFontDescription* font_description = pango_font_description_from_string(path);
+	PangoFontDescription* font_descr = pango_font_description_from_string(path);
 
-	if (!font_description) {
+	if (!font_descr) {
 		LOG_ERROR("Could not load font \"%s\"", path);
 		return NULL;
 	}
 
 	font_t* font = calloc(1, sizeof *font);
-	font->font_description = font_description;
+	font->font_descr = font_descr;
+
+	font->init_size_abs = pango_font_description_get_size_is_absolute(font_descr);
+	font->init_size     = pango_font_description_get_size            (font_descr);
 
 	LOG_SUCCESS("Loaded font: %p", font)
 
@@ -27,7 +30,7 @@ dynamic font_t* load_font(const char* path) {
 }
 
 dynamic int free_font(font_t* font) {
-	pango_font_description_free(font->font_description);
+	pango_font_description_free(font->font_descr);
 	return 0;
 }
 
@@ -140,9 +143,26 @@ static void gen_layout(text_t* text) {
 		text->layout = pango_cairo_create_layout(text->cairo);
 	}
 
-	// set text and font attributes
+	// set font size
+	// a size of 0 (default) means we take the initial font size (which we saved when creating its object)
 
-	pango_layout_set_font_description(text->layout, text->font->font_description);
+	font_t* font = text->font;
+
+	if (text->size) {
+		pango_font_description_set_absolute_size(font->font_descr, text->size * PANGO_SCALE);
+	}
+
+	else if (font->init_size_abs) {
+		pango_font_description_set_absolute_size(font->font_descr, font->init_size);
+	}
+
+	else {
+		pango_font_description_set_size(font->font_descr, font->init_size);
+	}
+
+	// set text attributes
+
+	pango_layout_set_font_description(text->layout, font->font_descr);
 
 	#define MAX_WIDTH  0x2000
 	#define MAX_HEIGHT 0x2000
