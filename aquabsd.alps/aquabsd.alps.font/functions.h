@@ -298,7 +298,7 @@ dynamic int draw_text(text_t* text, uint8_t** bmp_ref) {
 	// set the layout to our text's layout and also set the text colour
 
 	pango_cairo_update_layout(cairo, text->layout);
-	cairo_set_source_rgba(text->cairo, text->r, text->g, text->b, text->a);
+	cairo_set_source_rgba(cairo, text->r, text->g, text->b, text->a);
 
 	// draw the layout
 
