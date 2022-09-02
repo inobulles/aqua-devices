@@ -55,7 +55,7 @@ dynamic text_t* create_text(font_t* font, const char* str) {
 	text_colour(text, 1.0, 1.0, 1.0, 1.0);
 	text_size(text, 0);
 	text_wrap(text, 0, 0);
-	text_align(text, ALIGN_RIGHT);
+	text_align(text, ALIGN_CENTRE);
 	text_markup(text, false);
 
 	return text;
@@ -184,6 +184,7 @@ static void gen_layout(text_t* text) {
 	layout_fn(text->layout, text->str, text->len);
 
 	// update layout and get its size
+	// TODO obviously getting the extents like this is not an ideal solution
 
 	pango_cairo_update_layout(text->cairo, text->layout);
 
