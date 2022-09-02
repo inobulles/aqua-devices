@@ -486,7 +486,7 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 		// add to string buffer
 
 		if (len <= 0) {
-			return 0;
+			goto done;
 		}
 
 		size_t prev_buf_len = win->kbd_buf_len;
@@ -519,6 +519,10 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 
 		// remove from keys buffer
 
+		if (!win->kbd_keys || !win->kbd_keys_len) {
+			goto done;
+		}
+
 		const char* aqua_key = aquabsd_alps_kbd_x11_map(keysym);
 
 		for (size_t i = 0; i < win->kbd_keys_len; i++) {
@@ -546,8 +550,10 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 		}
 	}
 
+done:
+
 	// if we've got 'wm_event_cb', this means a window manager is attached to us
-	// pass on all the other events we receive to it, it probably knows better what to do with them than us
+	// pass on all the events we receive to it, it probably knows better what to do with them than us
 
 	if (win->wm_event_cb) {
 		return win->wm_event_cb(win->wm_object, type, event);
