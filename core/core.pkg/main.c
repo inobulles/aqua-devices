@@ -32,42 +32,42 @@ uint64_t send(uint16_t _cmd, void* data) {
 	}
 
 	else if (cmd == CMD_APP_LIST) {
-		return (uint64_t) app_list();
+		return (uint64_t) (intptr_t) app_list();
 	}
 
 	// package manipulation commands
 
 	else if (cmd == CMD_LOAD) {
-		const char* path = (void*) args[0];
-		return (uint64_t) create_pkg(path);
+		const char* path = (void*) (intptr_t) args[0];
+		return (uint64_t) (intptr_t) create_pkg(path);
 	}
 
 	else if (cmd == CMD_FREE) {
-		pkg_t* pkg = (void*) args[0];
+		pkg_t* pkg = (void*) (intptr_t) args[0];
 
 		free_pkg(pkg);
 		return 0;
 	}
 
 	else if (cmd == CMD_NAME) {
-		pkg_t* pkg = (void*) args[0];
-		return (uint64_t) pkg->name;
+		pkg_t* pkg = (void*) (intptr_t) args[0];
+		return (uint64_t) (intptr_t) pkg->name;
 	}
 
 	else if (cmd == CMD_UNIQUE) {
-		pkg_t* pkg = (void*) args[0];
-		return (uint64_t) pkg->unique;
+		pkg_t* pkg = (void*) (intptr_t) args[0];
+		return (uint64_t) (intptr_t) pkg->unique;
 	}
 
 	else if (cmd == CMD_GENERIC) {
-		pkg_t* pkg = (void*) args[0];
-		const char* key = (void*) args[1];
+		pkg_t* pkg = (void*) (intptr_t) args[0];
+		const char* key = (void*) (intptr_t) args[1];
 
-		return (uint64_t) pkg_read(pkg, key, NULL, NULL);
+		return (uint64_t) (intptr_t) pkg_read(pkg, key, NULL, NULL);
 	}
 
 	else if (cmd == CMD_BOOT) {
-		pkg_t* pkg = (void*) args[0];
+		pkg_t* pkg = (void*) (intptr_t) args[0];
 		return pkg_boot(pkg);
 	}
 
