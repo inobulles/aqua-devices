@@ -343,7 +343,7 @@ static int x11_kbd_map(xcb_keycode_t key) {
 }
 
 static int _close_win(win_t* win) {
-	LOG_VERBOSE("%p: Close window (with the WM_DELETE_WINDOW protocol)")
+	LOG_VERBOSE("%p: Close window (with the WM_DELETE_WINDOW protocol)", win)
 
 	xcb_client_message_event_t event;
 
@@ -1058,7 +1058,7 @@ dynamic void* get_fb(win_t* win, uint8_t bpp) {
 	// create ftime object (if possible)
 
 	win->fb_target_dt = 1. / 60; // TODO
-	LOG_VERBOSE("%p: Create aquabsd.alps.ftime object (targetting %d FPS)", win, 1 / win->fb_target_dt)
+	LOG_VERBOSE("%p: Create aquabsd.alps.ftime object (targetting %g FPS)", win, 1 / win->fb_target_dt)
 
 	if (ftime_device != -1) {
 		win->fb_ftime = aquabsd_alps_ftime_create(win->fb_target_dt);
