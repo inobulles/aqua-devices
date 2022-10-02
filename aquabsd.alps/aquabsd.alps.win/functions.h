@@ -39,7 +39,7 @@ static void sigint_handler(int sig) {
 
 // helper functions (for XCB)
 
-static inline xcb_atom_t __get_intern_atom(win_t* win, const char* name) {
+static inline xcb_atom_t __get_intern_atom(win_t* win, char const* name) {
 	// TODO obviously, this function isn't super ideal for leveraging the benefits XCB provides over Xlib
 	//      at some point, refactor this so that... well all this work converting from Xlib to XCB isn't for nothing
 
@@ -96,7 +96,7 @@ dynamic int delete(win_t* win) {
 	return 0;
 }
 
-dynamic int set_caption(win_t* win, const char* caption) {
+dynamic int set_caption(win_t* win, char const* caption) {
 	// TODO replace with xcb_ewmh_set_wm_name
 
 	LOG_VERBOSE("%p: Set caption to \"%s\"", win, caption)
@@ -293,7 +293,7 @@ static int kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _win) {
 	kbd->keys_len = 0;
 
 	for (size_t i = 0; i < win->kbd_keys_len; i++) {
-		const char* key = win->kbd_keys[i];
+		char const* key = win->kbd_keys[i];
 
 		if (key) {
 			kbd->keys[kbd->keys_len++] = key;
@@ -334,7 +334,7 @@ static int _close_win(win_t* win) {
 	event.data.data32[0] = win->wm_delete_win_atom;
 	event.data.data32[1] = XCB_CURRENT_TIME;
 
-	xcb_send_event(win->connection, 1 /* propagate, i.e. send this to all children of window */, win->win, XCB_EVENT_MASK_NO_EVENT, (const char*) &event);
+	xcb_send_event(win->connection, 1 /* propagate, i.e. send this to all children of window */, win->win, XCB_EVENT_MASK_NO_EVENT, (char const*) &event);
 	xcb_flush(win->connection);
 
 	// if window manager:
@@ -457,7 +457,7 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 		// add to keys buffer
 		// if the key is already in the keys buffer, we don't need to add it
 
-		const char* aqua_key = aquabsd_alps_kbd_x11_map(keysym);
+		char const* aqua_key = aquabsd_alps_kbd_x11_map(keysym);
 
 		for (size_t i = 0; i < win->kbd_keys_len; i++) {
 			if (win->kbd_keys[i] == aqua_key) { // we don't need to use 'strcmp'; this is okay 👌
@@ -523,7 +523,7 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 			goto done;
 		}
 
-		const char* aqua_key = aquabsd_alps_kbd_x11_map(keysym);
+		char const* aqua_key = aquabsd_alps_kbd_x11_map(keysym);
 
 		for (size_t i = 0; i < win->kbd_keys_len; i++) {
 			if (win->kbd_keys[i] != aqua_key) {
@@ -669,7 +669,7 @@ dynamic int modify(win_t* win, float x, float y, unsigned x_res, unsigned y_res)
 
 	LOG_VERBOSE("%p: Modify window geometry (%dx%d+%d+%d)", win, x_res, y_res, x_px, y_px)
 
-	const int32_t transformed[] = {
+	int32_t const transformed[] = {
 		x_px,  y_px,
 		x_res, y_res
 	};
