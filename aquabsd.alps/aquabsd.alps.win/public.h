@@ -130,8 +130,10 @@ struct aquabsd_alps_win_t {
 	bool got_fb;
 	uint8_t fb_bpp;
 
-	xcb_gcontext_t fb_gc;
+	size_t fb_bytes;
+	void* fb_doublebuffer;
 
+	xcb_gcontext_t fb_gc;
 	xcb_format_t* fb_format;
 	xcb_image_t* fb_image;
 

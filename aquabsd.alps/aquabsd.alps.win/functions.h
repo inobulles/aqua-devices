@@ -89,6 +89,7 @@ dynamic int delete(win_t* win) {
 		goto no_fb;
 	}
 
+	free(win->fb_doublebuffer);
 	shmdt(win->fb_image->data);
 	shmctl(win->fb_shm_id, IPC_RMID, 0);
 	xcb_image_destroy(win->fb_image);
@@ -650,6 +651,8 @@ dynamic int loop(win_t* win) {
 		}
 
 		if (win->got_fb) {
+			memcpy(win->fb_image->data, win->fb_doublebuffer, win->fb_bytes);
+
 			xcb_shm_put_image(
 				win->connection, win->win, win->fb_gc,
 				win->fb_image->width, win->fb_image->height, 0, 0,
@@ -990,10 +993,10 @@ dynamic void* get_fb(win_t* win, uint8_t bpp) {
 
 	// create shared memory
 
-	size_t const bytes = win->fb_image->stride * win->fb_image->height;
-	LOG_VERBOSE("%p: Create shared memory (%zu bytes)", win, bytes)
+	win->fb_bytes = win->fb_image->stride * win->fb_image->height;
+	LOG_VERBOSE("%p: Create shared memory (%zu bytes)", win, win->fb_bytes)
 
-	win->fb_shm_id = shmget(IPC_PRIVATE, bytes, IPC_CREAT | 0600);
+	win->fb_shm_id = shmget(IPC_PRIVATE, win->fb_bytes, IPC_CREAT | 0600);
 
 	if (win->fb_shm_id < 0) {
 		LOG_ERROR("%p: Could not create shared memory: %s", win, strerror(errno))
@@ -1023,14 +1026,28 @@ dynamic void* get_fb(win_t* win, uint8_t bpp) {
 		goto err_shmat_xcb;
 	}
 
+	// create doublebuffer
+
+	LOG_VERBOSE("%p: Create doublebuffer", win)
+	win->fb_doublebuffer = calloc(1, win->fb_bytes);
+
+	if (!win->fb_doublebuffer) {
+		LOG_ERROR("%p: Could not allocate doublebuffer: %s", win, strerror(errno));
+		goto err_doublebuffer;
+	}
+
 	// success!
 
 	win->got_fb = true;
 	win->fb_bpp = bpp;
 
-	return win->fb_image->data;
+	return win->fb_doublebuffer;
 
 	// errors
+
+err_doublebuffer:
+
+	xcb_shm_detach(win->connection, win->fb_shm_seg);
 
 err_shmat_xcb:
 
