@@ -856,7 +856,7 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	win->x_res = x_res;
 	win->y_res = y_res;
 
-	const uint32_t win_attribs[] = {
+	uint32_t const win_attribs[] = {
 		XCB_EVENT_MASK_EXPOSURE | // probably not all that important anymore
 		XCB_EVENT_MASK_STRUCTURE_NOTIFY |
 		XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
@@ -895,6 +895,137 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	LOG_SUCCESS("Window created: %p", win)
 
 	return win;
+}
+
+// framebuffer functions
+
+dynamic int setup_fb(win_t* win, uint8_t bpp) {
+	LOG_VERBOSE("%p: Setup framebuffer (bpp = %u)", win, bpp)
+
+	// make sure we haven't already got a framebuffer (potential memory leaks if we don't)
+	// error if the framebuffer we already have is of a different depth
+
+	if (win->got_fb && win->fb_bpp == bpp) {
+		LOG_WARN("%p: Window already has a framebuffer of this depth", win)
+		return 0;
+	}
+
+	if (win->got_fb) {
+		LOG_ERROR("%p: Window already has a framebuffer of a different depth (%u)", win, win->fb_bpp)
+		goto err_got_fb;
+	}
+
+	// create graphics context
+
+	LOG_VERBOSE("%p: Create graphics context", win)
+
+	uint32_t const gc_attribs[] = {
+		win->screen->black_pixel,
+		0,
+	};
+
+	win->fb_gc = xcb_generate_id(win->connection);
+	xcb_create_gc(win->connection, win->fb_gc, win->win, XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES, gc_attribs);
+
+	// get appropriate format for the requested depth
+
+	LOG_VERBOSE("%p: Get appropriate format for the requested depth", win)
+
+	win->fb_format = NULL;
+	xcb_setup_t const* setup = xcb_get_setup(win->connection);
+
+	for (xcb_format_iterator_t it = xcb_setup_pixmap_formats_iterator(setup); it.rem; xcb_format_next(&it)) {
+		win->fb_format = it.data;
+
+		if (win->fb_format->bits_per_pixel /* NOT 'format->depth' */ == bpp) {
+			break;
+		}
+	}
+
+	if (!win->fb_format) {
+		LOG_ERROR("%p: Could not find a format matching the requested depth", win)
+		goto err_format;
+	}
+
+	// create image
+
+	LOG_VERBOSE("%p: Create image", win)
+
+	win->fb_image = xcb_image_create(
+		win->x_res, win->y_res, XCB_IMAGE_FORMAT_Z_PIXMAP,
+		win->fb_format->scanline_pad, win->fb_format->depth, win->fb_format->bits_per_pixel,
+		0, NATIVE_XCB_IMAGE_ORDER, XCB_IMAGE_ORDER_MSB_FIRST,
+		NULL, ~0, 0);
+
+	if (!win->fb_image) {
+		LOG_ERROR("%p: Could not create image", win)
+		goto err_create_image;
+	}
+
+	// create shared memory
+
+	size_t const bytes = win->fb_image->stride * win->fb_image->height;
+	LOG_VERBOSE("%p: Create shared memory (%zu bytes)", win, bytes)
+
+	win->fb_shm_id = shmget(IPC_PRIVATE, bytes, IPC_CREAT | 0600);
+
+	if (win->fb_shm_id < 0) {
+		LOG_ERROR("%p: Could not create shared memory: %s", win, strerror(errno))
+		goto err_shmget;
+	}
+
+	// attach shared memory to image
+
+	LOG_VERBOSE("%p: Attach shared memory", win)
+
+	win->fb_image->data = shmat(win->fb_shm_id, 0, 0);
+
+	if (win->fb_image->data == (void* const) -1) {
+		LOG_ERROR("%p: Could not attach shared memory: %s", win, strerror(errno))
+		goto err_shmat;
+	}
+
+	win->fb_shm_seg = xcb_generate_id(win->connection);
+
+	xcb_void_cookie_t const cookie = xcb_shm_attach_checked(win->connection, win->fb_shm_seg, win->fb_shm_id, 0);
+	xcb_generic_error_t* const err = xcb_request_check(win->connection, cookie);
+
+	if (err) {
+		LOG_ERROR("%p: Could not attach shared memory: XCB error code %d", win, err->error_code)
+
+		free(err);
+		goto err_shmat_xcb;
+	}
+
+	// success!
+
+	win->got_fb = true;
+	win->fb_bpp = bpp;
+
+	return 0;
+
+	// errors
+
+err_shmat_xcb:
+
+	shmdt(win->fb_image->data);
+
+err_shmat:
+
+	shmctl(win->fb_shm_id, IPC_RMID, 0);
+
+err_shmget:
+
+	xcb_image_destroy(win->fb_image);
+
+err_create_image:
+err_format:
+
+	xcb_free_gc(win->connection, win->fb_gc);
+
+err_got_fb:
+
+	return -1;
 }
 
 // functions exposed exclusively to devices

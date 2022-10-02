@@ -1,16 +1,20 @@
 #if !defined(__AQUABSD_ALPS_WIN)
 #define __AQUABSD_ALPS_WIN
 
-#include <aquabsd.alps.mouse/public.h>
 #include <aquabsd.alps.kbd/public.h>
+#include <aquabsd.alps.mouse/public.h>
 
-#include <stdbool.h>
 #include <pthread.h>
+#include <stdbool.h>
 
+#include <sys/shm.h>
+
+#include <xcb/shm.h>
 #include <xcb/xcb.h>
-#include <xcb/xcb_icccm.h>
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_ewmh.h>
+#include <xcb/xcb_icccm.h>
+#include <xcb/xcb_image.h>
 
 // for compatibility with EGL/GLX, we must use Xlib alongside XCB:
 // https://xcb.freedesktop.org/opengl/
@@ -104,7 +108,7 @@ struct aquabsd_alps_win_t {
 	void* kbd_buf;
 
 	size_t kbd_keys_len;
-	const char** kbd_keys;
+	char const** kbd_keys;
 
 	// in case we need a doubly-linked list of windows
 
@@ -114,12 +118,25 @@ struct aquabsd_alps_win_t {
 	// potential EGL stuff, if needed
 	// these fields are used by the aquabsd.alps.ogl device and should not be accessed by us
 
-	unsigned pixmap_modified;
+	bool pixmap_modified;
 
 	xcb_pixmap_t egl_pixmap;
 	uint32_t /* GLuint */ egl_texture;
 	void* /* EGLImageKHR */ egl_image;
 	// void* /* EGLSurface */ egl_surface;
+
+	// potential framebuffer stuff, if needed
+
+	bool got_fb;
+	uint8_t fb_bpp;
+
+	xcb_gcontext_t fb_gc;
+
+	xcb_format_t* fb_format;
+	xcb_image_t* fb_image;
+
+	int fb_shm_id;
+	xcb_shm_seg_t fb_shm_seg;
 
 	// potential WM stuff, if needed
 	// these fields are used by the aquabsd.alps.wm device, and we should use them for what they are intended
@@ -135,7 +152,7 @@ struct aquabsd_alps_win_t {
 aquabsd_alps_win_t* (*aquabsd_alps_win_create) (unsigned x_res, unsigned y_res);
 int (*aquabsd_alps_win_delete) (aquabsd_alps_win_t* win);
 
-int (*aquabsd_alps_win_set_caption) (aquabsd_alps_win_t* win, const char* caption);
+int (*aquabsd_alps_win_set_caption) (aquabsd_alps_win_t* win, char const* caption);
 char* (*aquabsd_alps_win_get_caption) (aquabsd_alps_win_t* win);
 
 aquabsd_alps_win_state_t (*aquabsd_alps_win_get_state) (aquabsd_alps_win_t* win);
