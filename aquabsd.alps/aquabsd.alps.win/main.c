@@ -42,17 +42,33 @@ typedef enum {
 } cmd_t;
 
 int load(void) {
-	mouse_device = kos_query_device(0, (uint64_t) "aquabsd.alps.mouse");
+	// aquabsd.alps.ftime
 
-	if (mouse_device != -1) {
-		aquabsd_alps_mouse_register_mouse = kos_load_device_function(mouse_device, "register_mouse");
+	ftime_device = kos_query_device(0, (uint64_t) "aquabsd.alps.ftime");
+
+	if (ftime_device != -1) {
+		aquabsd_alps_ftime_create = kos_load_device_function(ftime_device, "create");
+		aquabsd_alps_ftime_draw   = kos_load_device_function(ftime_device, "draw"  );
+		aquabsd_alps_ftime_swap   = kos_load_device_function(ftime_device, "swap"  );
+		aquabsd_alps_ftime_done   = kos_load_device_function(ftime_device, "done"  );
+		aquabsd_alps_ftime_delete = kos_load_device_function(ftime_device, "delete");
 	}
+
+	// aquabsd.alps.kbd
 
 	kbd_device = kos_query_device(0, (uint64_t) "aquabsd.alps.kbd");
 
 	if (kbd_device != -1) {
 		aquabsd_alps_kbd_register_kbd = kos_load_device_function(kbd_device, "register_kbd");
-		aquabsd_alps_kbd_x11_map = kos_load_device_function(kbd_device, "x11_map");
+		aquabsd_alps_kbd_x11_map      = kos_load_device_function(kbd_device, "x11_map");
+	}
+
+	// aquabsd.alps.mouse
+
+	mouse_device = kos_query_device(0, (uint64_t) "aquabsd.alps.mouse");
+
+	if (mouse_device != -1) {
+		aquabsd_alps_mouse_register_mouse = kos_load_device_function(mouse_device, "register_mouse");
 	}
 
 	return 0;

@@ -89,6 +89,10 @@ dynamic int delete(win_t* win) {
 		goto no_fb;
 	}
 
+	if (win->fb_ftime) {
+		aquabsd_alps_ftime_delete(win->fb_ftime);
+	}
+
 	free(win->fb_doublebuffer);
 	shmdt(win->fb_image->data);
 	shmctl(win->fb_shm_id, IPC_RMID, 0);
@@ -259,7 +263,14 @@ static inline int call_cb(win_t* win, cb_t type) {
 		return -1;
 	}
 
-	return kos_callback(cb, 2, (uint64_t) win, param);
+	double dt = win->fb_target_dt;
+
+	if (type == CB_DRAW && win->fb_ftime) {
+		dt = aquabsd_alps_ftime_draw(win->fb_ftime);
+	}
+
+	uint64_t udt = ((union { double _; uint64_t u; }) dt).u;
+	return kos_callback(cb, 3, (uint64_t) win, param, udt);
 }
 
 // event stuff
@@ -651,6 +662,10 @@ dynamic int loop(win_t* win) {
 		}
 
 		if (win->got_fb) {
+			if (win->fb_ftime) {
+				aquabsd_alps_ftime_swap(win->fb_ftime);
+			}
+
 			memcpy(win->fb_image->data, win->fb_doublebuffer, win->fb_bytes);
 
 			xcb_shm_put_image(
@@ -661,6 +676,10 @@ dynamic int loop(win_t* win) {
 				win->fb_shm_seg, 0);
 
 			xcb_flush(win->connection);
+
+			if (win->fb_ftime) {
+				aquabsd_alps_ftime_done(win->fb_ftime);
+			}
 		}
 
 		// see: https://github.com/inobulles/aqua-devices/issues/3
@@ -1034,6 +1053,19 @@ dynamic void* get_fb(win_t* win, uint8_t bpp) {
 	if (!win->fb_doublebuffer) {
 		LOG_ERROR("%p: Could not allocate doublebuffer: %s", win, strerror(errno));
 		goto err_doublebuffer;
+	}
+
+	// create ftime object (if possible)
+
+	win->fb_target_dt = 1. / 60; // TODO
+	LOG_VERBOSE("%p: Create aquabsd.alps.ftime object (targetting %d FPS)", win, 1 / win->fb_target_dt)
+
+	if (ftime_device != -1) {
+		win->fb_ftime = aquabsd_alps_ftime_create(win->fb_target_dt);
+	}
+
+	else {
+		LOG_WARN("%p: aquabsd.alps.ftime device not loaded; frametimes may be a little all over the place", win)
 	}
 
 	// success!

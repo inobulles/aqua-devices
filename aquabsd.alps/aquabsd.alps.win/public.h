@@ -1,6 +1,7 @@
 #if !defined(__AQUABSD_ALPS_WIN)
 #define __AQUABSD_ALPS_WIN
 
+#include <aquabsd.alps.ftime/public.h>
 #include <aquabsd.alps.kbd/public.h>
 #include <aquabsd.alps.mouse/public.h>
 
@@ -139,6 +140,9 @@ struct aquabsd_alps_win_t {
 
 	int fb_shm_id;
 	xcb_shm_seg_t fb_shm_seg;
+
+	double fb_target_dt;
+	aquabsd_alps_ftime_t* fb_ftime;
 
 	// potential WM stuff, if needed
 	// these fields are used by the aquabsd.alps.wm device, and we should use them for what they are intended
