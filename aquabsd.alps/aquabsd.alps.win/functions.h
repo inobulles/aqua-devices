@@ -83,6 +83,19 @@ static char* atom_to_str(win_t* win, xcb_atom_t atom) {
 dynamic int delete(win_t* win) {
 	LOG_VERBOSE("%p: Delete window", win);
 
+	// free framebuffer stuff if we have a framebuffer
+
+	if (!win->got_fb) {
+		goto no_fb;
+	}
+
+	shmdt(win->fb_image->data);
+	shmctl(win->fb_shm_id, IPC_RMID, 0);
+	xcb_image_destroy(win->fb_image);
+	xcb_free_gc(win->connection, win->fb_gc);
+
+no_fb:
+
 	if (win->display) {
 		XCloseDisplay(win->display);
 	}
