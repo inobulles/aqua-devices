@@ -233,11 +233,11 @@ dynamic int register_cb(win_t* win, cb_t type, uint64_t cb, uint64_t param) {
 // this means that the device can choose what to do before & after calling the original callback registered to the window
 
 static inline int call_cb(win_t* win, cb_t type) {
-	uint64_t cb = win->cbs[type];
-	uint64_t param = win->cb_params[type];
+	uint64_t const cb = win->cbs[type];
+	uint64_t const param = win->cb_params[type];
 
 	if (win->dev_cbs[type]) {
-		void* dev_param = win->dev_cb_params[type];
+		void* const dev_param = win->dev_cb_params[type];
 		return win->dev_cbs[type](win, dev_param, cb, param);
 	}
 
@@ -636,6 +636,19 @@ dynamic int loop(win_t* win) {
 			_close_win(win);
 		}
 
+		if (win->got_fb) {
+			xcb_shm_put_image(
+				win->connection, win->win, win->fb_gc,
+				win->fb_image->width, win->fb_image->height, 0, 0,
+				win->fb_image->width, win->fb_image->height, 0, 0,
+				win->fb_image->depth, win->fb_image->format, 0,
+				win->fb_shm_seg, 0);
+
+			xcb_flush(win->connection);
+		}
+
+		// see: https://github.com/inobulles/aqua-devices/issues/3
+
 		win->mouse_scroll = win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z];
 		win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] = 0;
 	}
@@ -899,7 +912,7 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 
 // framebuffer functions
 
-dynamic int setup_fb(win_t* win, uint8_t bpp) {
+dynamic void* get_fb(win_t* win, uint8_t bpp) {
 	LOG_VERBOSE("%p: Setup framebuffer (bpp = %u)", win, bpp)
 
 	// make sure we haven't already got a framebuffer (potential memory leaks if we don't)
@@ -907,7 +920,7 @@ dynamic int setup_fb(win_t* win, uint8_t bpp) {
 
 	if (win->got_fb && win->fb_bpp == bpp) {
 		LOG_WARN("%p: Window already has a framebuffer of this depth", win)
-		return 0;
+		return win->fb_image->data;
 	}
 
 	if (win->got_fb) {
@@ -1002,7 +1015,7 @@ dynamic int setup_fb(win_t* win, uint8_t bpp) {
 	win->got_fb = true;
 	win->fb_bpp = bpp;
 
-	return 0;
+	return win->fb_image->data;
 
 	// errors
 
@@ -1025,7 +1038,7 @@ err_format:
 
 err_got_fb:
 
-	return -1;
+	return NULL;
 }
 
 // functions exposed exclusively to devices
