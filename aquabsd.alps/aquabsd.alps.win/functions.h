@@ -39,7 +39,7 @@ static void sigint_handler(int sig) {
 
 // helper functions (for XCB)
 
-static inline xcb_atom_t __get_intern_atom(win_t* win, const char* name) {
+static inline xcb_atom_t __get_intern_atom(win_t* win, char const* name) {
 	// TODO obviously, this function isn't super ideal for leveraging the benefits XCB provides over Xlib
 	//      at some point, refactor this so that... well all this work converting from Xlib to XCB isn't for nothing
 
@@ -83,6 +83,24 @@ static char* atom_to_str(win_t* win, xcb_atom_t atom) {
 dynamic int delete(win_t* win) {
 	LOG_VERBOSE("%p: Delete window", win);
 
+	// free framebuffer stuff if we have a framebuffer
+
+	if (!win->got_fb) {
+		goto no_fb;
+	}
+
+	if (win->fb_ftime) {
+		aquabsd_alps_ftime_delete(win->fb_ftime);
+	}
+
+	free(win->fb_doublebuffer);
+	shmdt(win->fb_image->data);
+	shmctl(win->fb_shm_id, IPC_RMID, 0);
+	xcb_image_destroy(win->fb_image);
+	xcb_free_gc(win->connection, win->fb_gc);
+
+no_fb:
+
 	if (win->display) {
 		XCloseDisplay(win->display);
 	}
@@ -96,7 +114,7 @@ dynamic int delete(win_t* win) {
 	return 0;
 }
 
-dynamic int set_caption(win_t* win, const char* caption) {
+dynamic int set_caption(win_t* win, char const* caption) {
 	// TODO replace with xcb_ewmh_set_wm_name
 
 	LOG_VERBOSE("%p: Set caption to \"%s\"", win, caption)
@@ -233,11 +251,11 @@ dynamic int register_cb(win_t* win, cb_t type, uint64_t cb, uint64_t param) {
 // this means that the device can choose what to do before & after calling the original callback registered to the window
 
 static inline int call_cb(win_t* win, cb_t type) {
-	uint64_t cb = win->cbs[type];
-	uint64_t param = win->cb_params[type];
+	uint64_t const cb = win->cbs[type];
+	uint64_t const param = win->cb_params[type];
 
 	if (win->dev_cbs[type]) {
-		void* dev_param = win->dev_cb_params[type];
+		void* const dev_param = win->dev_cb_params[type];
 		return win->dev_cbs[type](win, dev_param, cb, param);
 	}
 
@@ -245,7 +263,14 @@ static inline int call_cb(win_t* win, cb_t type) {
 		return -1;
 	}
 
-	return kos_callback(cb, 2, (uint64_t) win, param);
+	double dt = win->fb_target_dt;
+
+	if (type == CB_DRAW && win->fb_ftime) {
+		dt = aquabsd_alps_ftime_draw(win->fb_ftime);
+	}
+
+	uint64_t udt = ((union { double _; uint64_t u; }) dt).u;
+	return kos_callback(cb, 3, (uint64_t) win, param, udt);
 }
 
 // event stuff
@@ -293,7 +318,7 @@ static int kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _win) {
 	kbd->keys_len = 0;
 
 	for (size_t i = 0; i < win->kbd_keys_len; i++) {
-		const char* key = win->kbd_keys[i];
+		char const* key = win->kbd_keys[i];
 
 		if (key) {
 			kbd->keys[kbd->keys_len++] = key;
@@ -318,7 +343,7 @@ static int x11_kbd_map(xcb_keycode_t key) {
 }
 
 static int _close_win(win_t* win) {
-	LOG_VERBOSE("%p: Close window (with the WM_DELETE_WINDOW protocol)")
+	LOG_VERBOSE("%p: Close window (with the WM_DELETE_WINDOW protocol)", win)
 
 	xcb_client_message_event_t event;
 
@@ -334,7 +359,7 @@ static int _close_win(win_t* win) {
 	event.data.data32[0] = win->wm_delete_win_atom;
 	event.data.data32[1] = XCB_CURRENT_TIME;
 
-	xcb_send_event(win->connection, 1 /* propagate, i.e. send this to all children of window */, win->win, XCB_EVENT_MASK_NO_EVENT, (const char*) &event);
+	xcb_send_event(win->connection, 1 /* propagate, i.e. send this to all children of window */, win->win, XCB_EVENT_MASK_NO_EVENT, (char const*) &event);
 	xcb_flush(win->connection);
 
 	// if window manager:
@@ -457,7 +482,7 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 		// add to keys buffer
 		// if the key is already in the keys buffer, we don't need to add it
 
-		const char* aqua_key = aquabsd_alps_kbd_x11_map(keysym);
+		char const* aqua_key = aquabsd_alps_kbd_x11_map(keysym);
 
 		for (size_t i = 0; i < win->kbd_keys_len; i++) {
 			if (win->kbd_keys[i] == aqua_key) { // we don't need to use 'strcmp'; this is okay 👌
@@ -523,7 +548,7 @@ static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
 			goto done;
 		}
 
-		const char* aqua_key = aquabsd_alps_kbd_x11_map(keysym);
+		char const* aqua_key = aquabsd_alps_kbd_x11_map(keysym);
 
 		for (size_t i = 0; i < win->kbd_keys_len; i++) {
 			if (win->kbd_keys[i] != aqua_key) {
@@ -636,6 +661,29 @@ dynamic int loop(win_t* win) {
 			_close_win(win);
 		}
 
+		if (win->got_fb) {
+			if (win->fb_ftime) {
+				aquabsd_alps_ftime_swap(win->fb_ftime);
+			}
+
+			memcpy(win->fb_image->data, win->fb_doublebuffer, win->fb_bytes);
+
+			xcb_shm_put_image(
+				win->connection, win->win, win->fb_gc,
+				win->fb_image->width, win->fb_image->height, 0, 0,
+				win->fb_image->width, win->fb_image->height, 0, 0,
+				win->fb_image->depth, win->fb_image->format, 0,
+				win->fb_shm_seg, 0);
+
+			xcb_flush(win->connection);
+
+			if (win->fb_ftime) {
+				aquabsd_alps_ftime_done(win->fb_ftime);
+			}
+		}
+
+		// see: https://github.com/inobulles/aqua-devices/issues/3
+
 		win->mouse_scroll = win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z];
 		win->mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Z] = 0;
 	}
@@ -669,7 +717,7 @@ dynamic int modify(win_t* win, float x, float y, unsigned x_res, unsigned y_res)
 
 	LOG_VERBOSE("%p: Modify window geometry (%dx%d+%d+%d)", win, x_res, y_res, x_px, y_px)
 
-	const int32_t transformed[] = {
+	int32_t const transformed[] = {
 		x_px,  y_px,
 		x_res, y_res
 	};
@@ -856,7 +904,7 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	win->x_res = x_res;
 	win->y_res = y_res;
 
-	const uint32_t win_attribs[] = {
+	uint32_t const win_attribs[] = {
 		XCB_EVENT_MASK_EXPOSURE | // probably not all that important anymore
 		XCB_EVENT_MASK_STRUCTURE_NOTIFY |
 		XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
@@ -895,6 +943,164 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	LOG_SUCCESS("Window created: %p", win)
 
 	return win;
+}
+
+// framebuffer functions
+
+dynamic void* get_fb(win_t* win, uint8_t bpp) {
+	LOG_VERBOSE("%p: Setup framebuffer (bpp = %u)", win, bpp)
+
+	// make sure we haven't already got a framebuffer (potential memory leaks if we don't)
+	// error if the framebuffer we already have is of a different depth
+
+	if (win->got_fb && win->fb_bpp == bpp) {
+		LOG_WARN("%p: Window already has a framebuffer of this depth", win)
+		return win->fb_image->data;
+	}
+
+	if (win->got_fb) {
+		LOG_ERROR("%p: Window already has a framebuffer of a different depth (%u)", win, win->fb_bpp)
+		goto err_got_fb;
+	}
+
+	// create graphics context
+
+	LOG_VERBOSE("%p: Create graphics context", win)
+
+	uint32_t const gc_attribs[] = {
+		win->screen->black_pixel,
+		0,
+	};
+
+	win->fb_gc = xcb_generate_id(win->connection);
+	xcb_create_gc(win->connection, win->fb_gc, win->win, XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES, gc_attribs);
+
+	// get appropriate format for the requested depth
+
+	LOG_VERBOSE("%p: Get appropriate format for the requested depth", win)
+
+	win->fb_format = NULL;
+	xcb_setup_t const* setup = xcb_get_setup(win->connection);
+
+	for (xcb_format_iterator_t it = xcb_setup_pixmap_formats_iterator(setup); it.rem; xcb_format_next(&it)) {
+		win->fb_format = it.data;
+
+		if (win->fb_format->bits_per_pixel /* NOT 'format->depth' */ == bpp) {
+			break;
+		}
+	}
+
+	if (!win->fb_format) {
+		LOG_ERROR("%p: Could not find a format matching the requested depth", win)
+		goto err_format;
+	}
+
+	// create image
+
+	LOG_VERBOSE("%p: Create image", win)
+
+	win->fb_image = xcb_image_create(
+		win->x_res, win->y_res, XCB_IMAGE_FORMAT_Z_PIXMAP,
+		win->fb_format->scanline_pad, win->fb_format->depth, win->fb_format->bits_per_pixel,
+		0, NATIVE_XCB_IMAGE_ORDER, XCB_IMAGE_ORDER_MSB_FIRST,
+		NULL, ~0, 0);
+
+	if (!win->fb_image) {
+		LOG_ERROR("%p: Could not create image", win)
+		goto err_create_image;
+	}
+
+	// create shared memory
+
+	win->fb_bytes = win->fb_image->stride * win->fb_image->height;
+	LOG_VERBOSE("%p: Create shared memory (%zu bytes)", win, win->fb_bytes)
+
+	win->fb_shm_id = shmget(IPC_PRIVATE, win->fb_bytes, IPC_CREAT | 0600);
+
+	if (win->fb_shm_id < 0) {
+		LOG_ERROR("%p: Could not create shared memory: %s", win, strerror(errno))
+		goto err_shmget;
+	}
+
+	// attach shared memory to image
+
+	LOG_VERBOSE("%p: Attach shared memory", win)
+
+	win->fb_image->data = shmat(win->fb_shm_id, 0, 0);
+
+	if (win->fb_image->data == (void* const) -1) {
+		LOG_ERROR("%p: Could not attach shared memory: %s", win, strerror(errno))
+		goto err_shmat;
+	}
+
+	win->fb_shm_seg = xcb_generate_id(win->connection);
+
+	xcb_void_cookie_t const cookie = xcb_shm_attach_checked(win->connection, win->fb_shm_seg, win->fb_shm_id, 0);
+	xcb_generic_error_t* const err = xcb_request_check(win->connection, cookie);
+
+	if (err) {
+		LOG_ERROR("%p: Could not attach shared memory: XCB error code %d", win, err->error_code)
+
+		free(err);
+		goto err_shmat_xcb;
+	}
+
+	// create doublebuffer
+
+	LOG_VERBOSE("%p: Create doublebuffer", win)
+	win->fb_doublebuffer = calloc(1, win->fb_bytes);
+
+	if (!win->fb_doublebuffer) {
+		LOG_ERROR("%p: Could not allocate doublebuffer: %s", win, strerror(errno));
+		goto err_doublebuffer;
+	}
+
+	// create ftime object (if possible)
+
+	win->fb_target_dt = 1. / 60; // TODO
+	LOG_VERBOSE("%p: Create aquabsd.alps.ftime object (targetting %g FPS)", win, 1 / win->fb_target_dt)
+
+	if (ftime_device != -1) {
+		win->fb_ftime = aquabsd_alps_ftime_create(win->fb_target_dt);
+	}
+
+	else {
+		LOG_WARN("%p: aquabsd.alps.ftime device not loaded; frametimes may be a little all over the place", win)
+	}
+
+	// success!
+
+	win->got_fb = true;
+	win->fb_bpp = bpp;
+
+	return win->fb_doublebuffer;
+
+	// errors
+
+err_doublebuffer:
+
+	xcb_shm_detach(win->connection, win->fb_shm_seg);
+
+err_shmat_xcb:
+
+	shmdt(win->fb_image->data);
+
+err_shmat:
+
+	shmctl(win->fb_shm_id, IPC_RMID, 0);
+
+err_shmget:
+
+	xcb_image_destroy(win->fb_image);
+
+err_create_image:
+err_format:
+
+	xcb_free_gc(win->connection, win->fb_gc);
+
+err_got_fb:
+
+	return NULL;
 }
 
 // functions exposed exclusively to devices
