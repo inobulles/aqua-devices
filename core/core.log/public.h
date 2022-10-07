@@ -1,5 +1,5 @@
-#if !defined(__CORE_FS)
-#define __CORE_FS
+#if !defined(__CORE_LOG)
+#define __CORE_LOG
 
 #include <stddef.h>
 #include <stdint.h>
