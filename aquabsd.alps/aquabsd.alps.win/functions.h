@@ -7,7 +7,7 @@
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.win"
 
-#define EVENT_THREADING_ENABLED
+// #define EVENT_THREADING_ENABLED
 
 #define FATAL_ERROR(...) \
 	LOG_FATAL(__VA_ARGS__) \
@@ -318,7 +318,7 @@ static int x11_kbd_map(xcb_keycode_t key) {
 }
 
 static int _close_win(win_t* win) {
-	LOG_VERBOSE("%p: Close window (with the WM_DELETE_WINDOW protocol)")
+	LOG_VERBOSE("%p: Close window (with the WM_DELETE_WINDOW protocol)", win)
 
 	xcb_client_message_event_t event;
 
@@ -342,7 +342,7 @@ static int _close_win(win_t* win) {
 	// window managers completely ignore XCB_CLIENT_MESSAGE events, idk why
 	// I've probably spent the last 5 hours working on this problem (as is usually the case with XCB) with no solution, so I give up, not even going to mark this as TODO
 
-	if (win->wm_event_cb && win->event_threading_enabled) {
+	if (win->wm_event_cb) {
 		win->running = 0;
 	}
 
@@ -352,6 +352,8 @@ static int _close_win(win_t* win) {
 // process a specific event
 
 static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
+	LOG_FATAL("type = %d", type)
+
 	// window management events
 
 	if (type == XCB_CLIENT_MESSAGE) {
@@ -604,7 +606,7 @@ static void* event_thread(void* _win) {
 
 dynamic int loop(win_t* win) {
 	// don't ever explicitly break out of this loop or return from this function;
-	// instead, wait until the event thread has gracefully exitted
+	// instead, wait until the event thread has gracefully exited
 	// we call _close_win instead of just setting win->running to wake up the event thread
 
 	LOG_VERBOSE("%p: Start window loop", win)

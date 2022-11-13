@@ -234,8 +234,8 @@ static void rem_win(wm_t* wm, win_t* win) {
 
 	// finally, free the window object itself
 
-	free(win);
 	call_cb(wm, win, CB_DELETE);
+	free(win);
 
 	wm->win_count--;
 	update_client_list(wm);
