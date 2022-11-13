@@ -10,7 +10,7 @@ typedef struct {
 } aquabsd_alps_ftime_record_t;
 
 typedef struct {
-	double target; // what frametimes are we targetting? (1/60 for 60 Hz, 1/144 for 144 Hz, &c)
+	double target; // what frametimes are we targeting? (1/60 for 60 Hz, 1/144 for 144 Hz, &c)
 
 	size_t record_count; // how many frametimes have we recorded so far?
 	aquabsd_alps_ftime_record_t* records; // sorted (largest to smallest) list of recorded frametimes

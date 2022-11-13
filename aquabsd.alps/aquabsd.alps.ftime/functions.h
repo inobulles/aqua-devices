@@ -6,7 +6,7 @@
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
-static inline double __get_time(void) {
+static double __get_time(void) {
 	struct timespec timer;
 	clock_gettime(CLOCK_MONOTONIC, &timer);
 
