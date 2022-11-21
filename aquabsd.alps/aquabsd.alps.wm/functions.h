@@ -822,6 +822,8 @@ dynamic wm_t* create(void) {
 		wm->root->ewmh._NET_SUPPORTING_WM_CHECK,
 		wm->root->ewmh._NET_CLIENT_LIST,
 
+		wm->root->ewmh._NET_WM_PID,
+
 		wm->root->ewmh._NET_WM_NAME,
 		wm->root->ewmh._NET_WM_VISIBLE_NAME,
 

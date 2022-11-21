@@ -1,8 +1,9 @@
+#include <errno.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
-#include <errno.h>
+#include <unistd.h>
 
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.win"
@@ -786,6 +787,11 @@ static win_t* _create_setup(void) {
 	if (!xcb_ewmh_init_atoms_replies(&win->ewmh, cookies, NULL)) {
 		FATAL_ERROR("Failed to get EWMH atoms")
 	}
+
+	// set '_NET_WM_PID' atom
+
+	pid_t pid = getpid();
+	xcb_change_property(win->connection, XCB_PROP_MODE_REPLACE, win->win, win->ewmh._NET_WM_PID, XCB_ATOM_INTEGER, 32, 1, &pid);
 
 	// get AQUA DWD protocol atoms
 
