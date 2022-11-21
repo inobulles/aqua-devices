@@ -352,8 +352,6 @@ static int _close_win(win_t* win) {
 // process a specific event
 
 static int process_event(win_t* win, xcb_generic_event_t* event, int type) {
-	LOG_FATAL("type = %d", type)
-
 	// window management events
 
 	if (type == XCB_CLIENT_MESSAGE) {
