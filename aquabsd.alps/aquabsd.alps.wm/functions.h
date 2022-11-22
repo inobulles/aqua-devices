@@ -413,7 +413,7 @@ static int process_event(void* _wm, int type, xcb_generic_event_t* event) {
 		// make it so that we receive this window's mouse events too
 		// this is saying we want focus change and button events from the window
 
-		const uint32_t attribs[] = {
+		uint32_t const attribs[] = {
 			XCB_EVENT_MASK_FOCUS_CHANGE |
 			XCB_EVENT_MASK_PROPERTY_CHANGE
 		};

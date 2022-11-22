@@ -15,6 +15,7 @@ typedef enum {
 
 	CMD_CLOSE               = 0x636C, // 'cl'
 	CMD_GRAB_FOCUS          = 0x6667, // 'gf'
+	CMD_EXCLUSIVE           = 0x6578, // 'ex'
 
 	CMD_MODIFY              = 0x6D76, // 'mv'
 
@@ -110,6 +111,13 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_GRAB_FOCUS) {
 		win_t* win = (void*) args[0];
 		return grab_focus(win);
+	}
+
+	else if (cmd == CMD_EXCLUSIVE) {
+		win_t* win = (void*) args[0];
+		bool exclusive = args[1];
+
+		return set_exclusive(win, exclusive);
 	}
 
 	else if (cmd == CMD_MODIFY) {

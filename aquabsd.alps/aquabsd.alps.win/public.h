@@ -104,7 +104,7 @@ struct aquabsd_alps_win_t {
 	void* kbd_buf;
 
 	size_t kbd_keys_len;
-	const char** kbd_keys;
+	char const** kbd_keys;
 
 	// in case we need a doubly-linked list of windows
 
@@ -135,7 +135,7 @@ struct aquabsd_alps_win_t {
 aquabsd_alps_win_t* (*aquabsd_alps_win_create) (unsigned x_res, unsigned y_res);
 int (*aquabsd_alps_win_delete) (aquabsd_alps_win_t* win);
 
-int (*aquabsd_alps_win_set_caption) (aquabsd_alps_win_t* win, const char* caption);
+int (*aquabsd_alps_win_set_caption) (aquabsd_alps_win_t* win, char const* caption);
 char* (*aquabsd_alps_win_get_caption) (aquabsd_alps_win_t* win);
 
 aquabsd_alps_win_state_t (*aquabsd_alps_win_get_state) (aquabsd_alps_win_t* win);

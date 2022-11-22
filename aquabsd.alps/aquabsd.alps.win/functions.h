@@ -653,11 +653,32 @@ dynamic int close_win(win_t* win) {
 dynamic int grab_focus(win_t* win) {
 	// this could be helpful in the future:
 	// https://github.com/Cloudef/monsterwm-xcb/blob/master/monsterwm.c
+	// for some fucking reason, 'xcb_set_input_focus' prevents us from ungrabbing shit
 
 	LOG_VERBOSE("%p: Grab focus", win)
 
-	xcb_set_input_focus(win->connection, XCB_INPUT_FOCUS_PARENT, win->win, XCB_CURRENT_TIME);
+	// xcb_set_input_focus(win->connection, XCB_INPUT_FOCUS_POINTER_ROOT, win->win, XCB_CURRENT_TIME);
 	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_STACK_MODE, (unsigned[]) { XCB_STACK_MODE_ABOVE });
+
+	xcb_flush(win->connection);
+
+	return 0;
+}
+
+dynamic int set_exclusive(win_t* win, bool exclusive) {
+	LOG_VERBOSE("%p: Make %sexclusive", win, exclusive ? "" : "un")
+
+	if (exclusive) {
+		uint32_t event_mask =
+			XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
+			XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION;
+
+		xcb_grab_pointer(win->connection, 1, win->win, event_mask, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+	}
+
+	else {
+		xcb_ungrab_pointer(win->connection, XCB_CURRENT_TIME);
+	}
 
 	xcb_flush(win->connection);
 
