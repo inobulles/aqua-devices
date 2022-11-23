@@ -673,7 +673,6 @@ dynamic int set_exclusive(win_t* win, bool exclusive) {
 			XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION;
 
 		xcb_grab_pointer(win->connection, 1, win->win, event_mask, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
-		grab_focus(win);
 	}
 
 	else {
