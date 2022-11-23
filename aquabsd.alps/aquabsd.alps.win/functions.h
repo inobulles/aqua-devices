@@ -653,11 +653,10 @@ dynamic int close_win(win_t* win) {
 dynamic int grab_focus(win_t* win) {
 	// this could be helpful in the future:
 	// https://github.com/Cloudef/monsterwm-xcb/blob/master/monsterwm.c
-	// for some fucking reason, 'xcb_set_input_focus' prevents us from ungrabbing shit
 
 	LOG_VERBOSE("%p: Grab focus", win)
 
-	// xcb_set_input_focus(win->connection, XCB_INPUT_FOCUS_POINTER_ROOT, win->win, XCB_CURRENT_TIME);
+	xcb_set_input_focus(win->connection, XCB_INPUT_FOCUS_POINTER_ROOT, win->win, XCB_CURRENT_TIME);
 	xcb_configure_window(win->connection, win->win, XCB_CONFIG_WINDOW_STACK_MODE, (unsigned[]) { XCB_STACK_MODE_ABOVE });
 
 	xcb_flush(win->connection);
@@ -674,10 +673,16 @@ dynamic int set_exclusive(win_t* win, bool exclusive) {
 			XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION;
 
 		xcb_grab_pointer(win->connection, 1, win->win, event_mask, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+		grab_focus(win);
 	}
 
 	else {
+		// setting input focus to root window is necessary to fix a weird XCB bug/behaviour
+		// basically, when the pointer is grabbed, 'xcb_set_input_focus' just doesn't work, dk why
+		// shame we can't then use 'XCB_INPUT_FOCUS_PARENT' properly then but whatever I'm past the point of caring tbh
+
 		xcb_ungrab_pointer(win->connection, XCB_CURRENT_TIME);
+		xcb_set_input_focus(win->connection, XCB_INPUT_FOCUS_PARENT, win->root, XCB_CURRENT_TIME);
 	}
 
 	xcb_flush(win->connection);
@@ -770,9 +775,9 @@ static win_t* _create_setup(void) {
 
 	LOG_VERBOSE("Get information about the window manager (i.e. the root window)")
 
-	xcb_window_t root = win->screen->root;
+	win->root = win->screen->root;
 
-	xcb_get_geometry_cookie_t root_geom_cookie = xcb_get_geometry(win->connection, root);
+	xcb_get_geometry_cookie_t root_geom_cookie = xcb_get_geometry(win->connection, win->root);
 	xcb_get_geometry_reply_t* root_geom = xcb_get_geometry_reply(win->connection, root_geom_cookie, NULL);
 
 	win->wm_x_res = root_geom->width;
@@ -894,7 +899,7 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 	win->win = xcb_generate_id(win->connection);
 
 	xcb_create_window(
-		win->connection, XCB_COPY_FROM_PARENT, win->win, win->screen->root,
+		win->connection, XCB_COPY_FROM_PARENT, win->win, win->root,
 		0, 0, win->x_res, win->y_res, 0, // window geometry
 		XCB_WINDOW_CLASS_INPUT_OUTPUT, win->screen->root_visual,
 		XCB_CW_EVENT_MASK, win_attribs);

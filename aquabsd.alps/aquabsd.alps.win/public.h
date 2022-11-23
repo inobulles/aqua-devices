@@ -52,6 +52,7 @@ struct aquabsd_alps_win_t {
 
 	xcb_connection_t* connection;
 	xcb_screen_t* screen;
+	xcb_window_t root;
 
 	xcb_window_t win;
 	xcb_window_t auxiliary; // in case we wanted to process events from one window but draw to another
