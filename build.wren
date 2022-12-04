@@ -1,10 +1,6 @@
-// install dependencies
-
-Deps.git("https://github.com/inobulles/umber")
-Deps.git("https://github.com/inobulles/iar")
-
 // compile all devices
 // combine this with the creation of the installation map
+// TODO how should we be able to send custom options, such as the devset?
 
 var install = {}
 var devset = "core"
