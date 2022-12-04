@@ -9,14 +9,16 @@ var devices = File.list(devset, 1)
 	.where { |path| path.startsWith("%(devset)/%(devset).") }
 
 devices.each { |path|
-	if (File.bob(path, ["build"]) != 0) {
-		return
+	if (Meta.instruction() != "install" && Meta.instruction() != "test" /* TODO technically this should work, problem is the devices obviously don't each have an installation map so... they don't know how to build a testing environment */) {
+		if (File.bob(path, [Meta.instruction()]) != 0) {
+			return
+		}
 	}
 
 	var name = path.split("/")[-1]
 	var filename = name + ".vdev"
 
-	install[filename] = "%(OS.prefix())/share/aqua/devices/%(filename)"
+	install[filename] = "%(Meta.prefix())/share/aqua/devices/%(filename)"
 }
 
 System.print(install)
