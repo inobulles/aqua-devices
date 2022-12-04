@@ -81,6 +81,8 @@ static win_t* add_win(wm_t* wm, xcb_window_t id) {
 	// copy over relevant information to the new shell window
 
 	win->connection = wm->root->connection;
+
+	win->root = wm->root->win;
 	win->win = id;
 
 	win->wm_protocols_atom  = wm->root->wm_protocols_atom;

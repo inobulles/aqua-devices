@@ -668,7 +668,7 @@ dynamic int set_exclusive(win_t* win, bool exclusive) {
 	LOG_VERBOSE("%p: Make %sexclusive", win, exclusive ? "" : "un")
 
 	if (exclusive) {
-		uint32_t event_mask =
+		uint32_t const event_mask =
 			XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
 			XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_BUTTON_MOTION;
 
