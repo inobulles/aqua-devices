@@ -1,12 +1,24 @@
+// get options from environment variables
+
+var devset = Meta.getenv("DEVSET")
+
+if (devset == null) {
+	devset = File.read("devset")
+}
+
+if (devset == null) {
+	devset = "core"
+}
+
+File.write("devset", devset)
+
 // compile all devices
 // combine this with the creation of the installation map
-// TODO how should we be able to send custom options, such as the devset?
 
 var install = {}
-var devset = "core"
 
 var devices = File.list(devset, 1)
-	.where { |path| path.startsWith("%(devset)/%(devset).") }
+	.where { |path| path.startsWith("%(devset)/") }
 
 devices.each { |path|
 	if (Meta.instruction() != "install" && Meta.instruction() != "test" /* TODO technically this should work, problem is the devices obviously don't each have an installation map so... they don't know how to build a testing environment */) {
@@ -20,8 +32,6 @@ devices.each { |path|
 
 	install[filename] = "%(Meta.prefix())/share/aqua/devices/%(filename)"
 }
-
-System.print(install)
 
 // TODO testing
 
