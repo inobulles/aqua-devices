@@ -10,6 +10,8 @@ cc.add_opt("-Wall")
 cc.add_opt("-Wextra")
 cc.add_opt("-Werror")
 
+cc.add_lib("x11")
+cc.add_lib("x11-xcb")
 cc.add_lib("xcb")
 cc.add_lib("xcb-ewmh")
 cc.add_lib("xcb-icccm")
