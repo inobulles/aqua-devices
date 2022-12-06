@@ -10,7 +10,8 @@ if (devset == null) {
 	devset = "core"
 }
 
-File.write("devset", devset)
+devset = devset.trim()
+File.write("devset", devset + '\n')
 
 // compile all devices
 // combine this with the creation of the installation map
