@@ -36,7 +36,7 @@ static inline int init_aquabsd_console_kbd(void) {
 	return 0;
 }
 
-static int update_aquabsd_console_kbd(kbd_t* kbd, void* _) {
+static int update_aquabsd_console_kbd(kbd_t* kbd, __attribute__((unused)) void* _) {
 	// make sure the keyboard has already been initialized
 
 	if (init_aquabsd_console_kbd() < 0) {
