@@ -1,9 +1,11 @@
 // get options from environment variables
 
 var devset = Meta.getenv("DEVSET")
+var just_read = false
 
 if (devset == null) {
 	devset = File.read("devset")
+	just_read = devset != null
 }
 
 if (devset == null) {
@@ -11,7 +13,10 @@ if (devset == null) {
 }
 
 devset = devset.trim()
-File.write("devset", devset + '\n')
+
+if (!just_read) {
+	File.write("devset", devset + "\n")
+}
 
 // compile all devices
 // combine this with the creation of the installation map
