@@ -10,10 +10,6 @@ cc.add_opt("-Wall")
 cc.add_opt("-Wextra")
 cc.add_opt("-Werror")
 
-cc.add_lib("cairo")
-cc.add_lib("pango")
-cc.add_lib("pangocairo")
-
 var src = File.list(".")
 	.where { |path| path.endsWith(".c") }
 
