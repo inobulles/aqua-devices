@@ -121,7 +121,7 @@ dynamic context_t* create_win_context(aquabsd_alps_win_t* win) {
 
 	context->target_ftime = 1. / 60; // TODO
 
-	if (ftime_device != -1) {
+	if (ftime_device != (uint64_t) -1) {
 		context->ftime = aquabsd_alps_ftime_create(context->target_ftime);
 	}
 
