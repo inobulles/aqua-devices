@@ -34,7 +34,7 @@ typedef enum {
 int load(void) {
 	uint64_t win_device = kos_query_device(0, (uint64_t) "aquabsd.alps.win");
 
-	if (win_device == -1) {
+	if (win_device == (uint64_t) -1) {
 		return -1; // we cannot possibly function without the 'aquabsd.alps.win' device
 	}
 
