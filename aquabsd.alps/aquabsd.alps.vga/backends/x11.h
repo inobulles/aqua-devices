@@ -349,7 +349,7 @@ static int x11_flip(void) {
 	return return_value;
 }
 
-static int x11_mouse_update_callback(aquabsd_alps_mouse_t* mouse, void* _) {
+static int x11_mouse_update_callback(aquabsd_alps_mouse_t* mouse, __attribute__((unused)) void* _) {
 	x11_mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_X] =       (float) x11_mouse_x / x11_mode.width;
 	x11_mouse_axes[AQUABSD_ALPS_MOUSE_AXIS_Y] = 1.0 - (float) x11_mouse_y / x11_mode.height;
 
@@ -361,7 +361,7 @@ static int x11_mouse_update_callback(aquabsd_alps_mouse_t* mouse, void* _) {
 	return 0;
 }
 
-static int x11_kbd_update_callback(aquabsd_alps_kbd_t* kbd, void* _) {
+static int x11_kbd_update_callback(aquabsd_alps_kbd_t* kbd, __attribute__((unused)) void* _) {
 	memcpy(kbd->buttons, x11_kbd_buttons, sizeof kbd->buttons);
 	return 0;
 }
@@ -416,7 +416,7 @@ static int x11_init(void) {
 
 	uint64_t mouse_device = kos_query_device(0, (uint64_t) "aquabsd.alps.mouse");
 
-	if (mouse_device != -1) {
+	if (mouse_device != (uint64_t) -1) {
 		aquabsd_alps_mouse_register_mouse = kos_load_device_function(mouse_device, "register_mouse");
 		aquabsd_alps_mouse_register_mouse("aquabsd.alps.vga X11 backend mouse", x11_mouse_update_callback, NULL, 1);
 	}
@@ -427,7 +427,7 @@ static int x11_init(void) {
 
 	uint64_t kbd_device = kos_query_device(0, (uint64_t) "aquabsd.alps.kbd");
 
-	if (kbd_device != -1) {
+	if (kbd_device != (uint64_t) -1) {
 		aquabsd_alps_kbd_register_kbd = kos_load_device_function(kbd_device, "register_kbd");
 		aquabsd_alps_kbd_register_kbd("aquabsd.alps.vga X11 backend keyboard", x11_kbd_update_callback, NULL, 1);
 	}
