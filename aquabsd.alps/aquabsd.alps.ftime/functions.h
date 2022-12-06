@@ -37,10 +37,10 @@ void swap(ftime_t* ftime) {
 		LOG_VERBOSE("Draw time expectation wasn't conservative enough")
 	}
 
-	// insert time taken to draw to the list of recorded frametimes
+	// insert time taken to draw to the list of recorded frametimee
 	// this may look like O(n^2), but it's actually O(n)
 
-	for (ssize_t i = 0; i < ftime->record_count; i++) {
+	for (ssize_t i = 0; i < (ssize_t) ftime->record_count; i++) {
 		record_t* record = &ftime->records[i];
 
 		if (ftime->draw_time < record->frametime) {
@@ -74,7 +74,7 @@ added_time:
 
 	// replace records which are too old (older than 1 second) by the next record in the list (smaller)
 
-	for (ssize_t i = 0; i < ftime->record_count - 1; i++) {
+	for (ssize_t i = 0; i < (ssize_t) ftime->record_count - 1; i++) {
 		record_t* record = &ftime->records[i];
 		double record_age = now - record->when;
 
