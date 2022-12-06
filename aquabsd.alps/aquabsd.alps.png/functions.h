@@ -134,7 +134,7 @@ static inline int __render_bitmap(png_t* png) {
 
 	png_bytep* row_pointers = malloc(png->height * sizeof *row_pointers);
 
-	for (int i = 0; i < png->height; i++) {
+	for (size_t i = 0; i < png->height; i++) {
 		row_pointers[i] = png->bitmap + png->row_bytes * i;
 	}
 
