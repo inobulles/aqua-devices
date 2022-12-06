@@ -19,7 +19,7 @@ src
 // create dynamic library
 
 var linker = Linker.new(cc)
-linker.link(src.toList, ["fetch"], "aquabsd.alps.font.vdev", true)
+linker.link(src.toList, ["fetch"], "aquabsd.alps.net.vdev", true)
 
 // TODO testing
 
