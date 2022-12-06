@@ -41,13 +41,13 @@ typedef enum {
 int load(void) {
 	mouse_device = kos_query_device(0, (uint64_t) "aquabsd.alps.mouse");
 
-	if (mouse_device != -1) {
+	if (mouse_device != (uint64_t) -1) {
 		aquabsd_alps_mouse_register_mouse = kos_load_device_function(mouse_device, "register_mouse");
 	}
 
 	kbd_device = kos_query_device(0, (uint64_t) "aquabsd.alps.kbd");
 
-	if (kbd_device != -1) {
+	if (kbd_device != (uint64_t) -1) {
 		aquabsd_alps_kbd_register_kbd = kos_load_device_function(kbd_device, "register_kbd");
 		aquabsd_alps_kbd_x11_map = kos_load_device_function(kbd_device, "x11_map");
 	}
