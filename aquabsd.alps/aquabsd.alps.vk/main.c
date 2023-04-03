@@ -1,5 +1,5 @@
-#include <aquabsd.alps.vulkan/private.h>
-#include <aquabsd.alps.vulkan/functions.h>
+#include <aquabsd.alps.vk/private.h>
+#include <aquabsd.alps.vk/functions.h>
 
 typedef enum {
 	CMD_EMPTY
