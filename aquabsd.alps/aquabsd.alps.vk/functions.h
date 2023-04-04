@@ -93,6 +93,9 @@ void free_context(context_t* context) {
 	if (context->has_device)
 		vkDestroyDevice(context->device, NULL);
 
+	if (context->has_surface)
+		vkDestroySurfaceKHR(context->instance, context->surface, NULL);
+
 	if (context->created_debug_report_cb) {
 		IMPORT_FUNC(vkDestroyDebugReportCallbackEXT);
 
@@ -111,6 +114,8 @@ aquabsd_alps_vk_context_t* create_context(
 	size_t ver_minor,
 	size_t ver_patch
 ) {
+	VkResult rv = VK_SUCCESS;
+
 	// TODO some LOG_VERBOSE's here and there, so that all this work isn't hidden away ;)
 
 	context_t* const context = calloc(1, sizeof *context);
@@ -141,7 +146,7 @@ aquabsd_alps_vk_context_t* create_context(
 		.ppEnabledExtensionNames = extensions,
 	};
 
-	VkResult rv = vkCreateInstance(&instance_create, NULL, &context->instance);
+	rv = vkCreateInstance(&instance_create, NULL, &context->instance);
 
 	if (rv != VK_SUCCESS) {
 		LOG_FATAL("vkCreateInstance: %s", vk_error_str(rv))
@@ -177,6 +182,25 @@ aquabsd_alps_vk_context_t* create_context(
 		goto err;
 
 	dyn_vkCreateDebugReportCallbackEXT(context->instance, &debug_report_cb_create, NULL, &context->debug_report);
+
+	// create surface for XCB window of passed window
+
+	VkXcbSurfaceCreateInfoKHR surface_create = {
+		.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
+		.pNext = NULL,
+		.flags = 0,
+		.connection = win->connection,
+		.window = win->win,
+	};
+
+	rv = vkCreateXcbSurfaceKHR(context->instance, &surface_create, NULL, &context->surface);
+
+	if (rv != VK_SUCCESS) {
+		LOG_FATAL("vkCreateXcbSurfaceKHR(%p): %s", win, vk_error_str(rv))
+		goto err;
+	}
+
+	context->has_surface = true;
 
 	// find an appropriate physical device
 	// just use the first one for now
@@ -234,7 +258,22 @@ aquabsd_alps_vk_context_t* create_context(
 
 found: {}
 
-	// create device
+	// check if physical device supports our surface
+
+	VkBool32 supported = VK_FALSE;
+	rv = vkGetPhysicalDeviceSurfaceSupportKHR(gpu, queue_family_index, context->surface, &supported);
+
+	if (rv != VK_SUCCESS) {
+		LOG_FATAL("vkGetPhysicalDeviceSurfaceSupportKHR: %s", vk_error_str(rv))
+		goto err;
+	}
+
+	if (!supported) {
+		LOG_FATAL("Physical device doesn't support window surface")
+		goto err;
+	}
+
+	// create logical device
 
 	float const queue_prios[] = { 1 };
 
@@ -263,24 +302,6 @@ found: {}
 	}
 
 	context->has_device = true;
-
-	// create surface for XCB window of passed window
-
-	VkXcbSurfaceCreateInfoKHR surface_create = {
-		.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
-		.pNext = NULL,
-		.flags = 0,
-		.connection = win->connection,
-		.window = win->win,
-	};
-
-	VkSurfaceKHR surface;
-	rv = vkCreateXcbSurfaceKHR(context->instance, &surface_create, NULL, &surface);
-
-	if (rv != VK_SUCCESS) {
-		LOG_FATAL("vkCreateXcbSurfaceKHR(%p): %s", win, vk_error_str(rv))
-		goto err;
-	}
 
 	return context;
 

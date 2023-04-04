@@ -31,6 +31,9 @@ typedef struct {
 	bool has_device;
 	VkDevice device;
 
+	bool has_surface;
+	VkSurfaceKHR surface;
+
 	// backend stuff
 
 	aquabsd_alps_vk_context_type_t backend_type;
