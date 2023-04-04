@@ -20,11 +20,15 @@ typedef struct {
 	// Vulkan stuff
 
 	VkDebugReportCallbackEXT debug_report;
+	VkDebugReportCallbackCreateInfoEXT debug_report_cb;
 
 	bool has_instance;
 	VkInstance instance;
 
 	bool created_debug_report_cb;
+
+	bool has_device;
+	VkDevice device;
 
 	// backend stuff
 

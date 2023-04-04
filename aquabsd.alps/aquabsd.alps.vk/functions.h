@@ -46,11 +46,14 @@ void* get_func(context_t* context, const char* name) {
 // gotten functions are prefixed with dyn_ so they don't conflict with unused declarations in vulkan.h
 
 #define IMPORT_FUNC(name) \
-	PFN_##name dyn_##name = (PFN_##name) vkGetInstanceProcAddr(context->instance, #name); \
+	PFN_##name const dyn_##name = (PFN_##name) vkGetInstanceProcAddr(context->instance, #name); \
 	if (!name) /* just log - leave error handling to caller */ \
 		LOG_FATAL("Can't get function pointer for " #name)
 
 void free_context(context_t* context) {
+	if (context->has_device)
+		vkDestroyDevice(context->device, NULL);
+
 	if (context->created_debug_report_cb) {
 		IMPORT_FUNC(vkDestroyDebugReportCallbackEXT);
 
@@ -74,22 +77,22 @@ aquabsd_alps_vk_context_t* create_context(
 
 	// create instance
 
-	char const* validation_layers[] = {
+	char const* const validation_layers[] = {
 		"VK_LAYER_LUNARG_standard_validation",
 	};
 
-	char const* extensions[] = {
+	char const* const extensions[] = {
 		VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
 	};
 
-	VkApplicationInfo app = {
+	VkApplicationInfo const app = {
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		.apiVersion = VK_MAKE_VERSION(1, 0, 2),
 		.applicationVersion = VK_MAKE_VERSION(ver_major, ver_minor, ver_patch),
 		.pApplicationName = name,
 	};
 
-	VkInstanceCreateInfo instance_create = {
+	VkInstanceCreateInfo const instance_create = {
 		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 		.pApplicationInfo = &app,
 		.enabledLayerCount = sizeof(validation_layers) / sizeof(*validation_layers),
@@ -98,7 +101,7 @@ aquabsd_alps_vk_context_t* create_context(
 		.ppEnabledExtensionNames = extensions,
 	};
 
-	VkResult const rv = vkCreateInstance(&instance_create, NULL, &context->instance);
+	VkResult rv = vkCreateInstance(&instance_create, NULL, &context->instance);
 
 	if (rv != VK_SUCCESS) {
 		if (0) {}
@@ -191,10 +194,10 @@ aquabsd_alps_vk_context_t* create_context(
 	VkQueueFamilyProperties* const family_props = calloc(family_count, sizeof *family_props);
 	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &family_count, family_props);
 
-	size_t graphics_family_i;
+	size_t queue_family_index;
 
-	for (graphics_family_i = 0; graphics_family_i < family_count; graphics_family_i++) {
-		VkQueueFamilyProperties* const props = &family_props[graphics_family_i];
+	for (queue_family_index = 0; queue_family_index < family_count; queue_family_index++) {
+		VkQueueFamilyProperties* const props = &family_props[queue_family_index];
 
 		if (props->queueFlags & VK_QUEUE_GRAPHICS_BIT)
 			goto found;
@@ -203,7 +206,56 @@ aquabsd_alps_vk_context_t* create_context(
 	LOG_FATAL("No queue family supporting graphics found")
 	goto err;
 
-found:
+found: {}
+
+	// create device
+
+	float const queue_prios[] = { 1 };
+
+	VkDeviceQueueCreateInfo const device_queue_create[] = {
+		{
+			.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,
+			.queueFamilyIndex = queue_family_index,
+			.queueCount = sizeof(queue_prios) / sizeof(*queue_prios),
+			.pQueuePriorities = queue_prios,
+		}
+	};
+
+	VkDeviceCreateInfo const device_create = {
+		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		.queueCreateInfoCount = sizeof(device_queue_create) / sizeof(*device_queue_create),
+		.pQueueCreateInfos = device_queue_create,
+		.enabledExtensionCount = sizeof(extensions) / sizeof(*extensions),
+		.ppEnabledExtensionNames = extensions,
+	};
+
+	rv = vkCreateDevice(gpu, &device_create, NULL, &context->device);
+
+	if (rv != VK_SUCCESS) {
+		if (0) {}
+
+		#define CASE(name) \
+			else if (rv == name) \
+				LOG_FATAL("vkCreateInstance: " #name)
+
+		CASE(VK_ERROR_OUT_OF_HOST_MEMORY)
+		CASE(VK_ERROR_OUT_OF_DEVICE_MEMORY)
+		CASE(VK_ERROR_INITIALIZATION_FAILED)
+		CASE(VK_ERROR_EXTENSION_NOT_PRESENT)
+		CASE(VK_ERROR_FEATURE_NOT_PRESENT)
+		CASE(VK_ERROR_TOO_MANY_OBJECTS)
+		CASE(VK_ERROR_DEVICE_LOST)
+
+		#undef CASE
+
+		else {
+			LOG_FATAL("vkCreateInstance: %d", rv)
+		}
+
+		goto err;
+	}
+
+	context->has_device = true;
 
 	return context;
 
