@@ -168,19 +168,42 @@ aquabsd_alps_vk_context_t* create_context(
 	vkEnumeratePhysicalDevices(context->instance, &gpu_count, gpus);
 
 	for (size_t i = 0; i < gpu_count; i++) {
-		VkPhysicalDevice const gpu = gpus[i];
+		VkPhysicalDevice* const gpu = &gpus[i];
 
 		VkPhysicalDeviceProperties props;
-		vkGetPhysicalDeviceProperties(gpu, &props);
+		vkGetPhysicalDeviceProperties(*gpu, &props);
 
-		LOG_VERBOSE("Found physical device: %s (%x:%x)", props.deviceName, props.vendorID, props.deviceID)
+		LOG_VERBOSE("Found physical device %zu: %s (%x:%x)", i, props.deviceName, props.vendorID, props.deviceID)
 	}
 
-	VkPhysicalDevice const gpu = gpus[0];
+	VkPhysicalDevice const gpu = gpus[0]; // XXX this can't be a reference as gpus will be freed
 	free(gpus);
 
 	VkPhysicalDeviceProperties props;
 	vkGetPhysicalDeviceProperties(gpu, &props);
+
+	// check if physical device has a queue family which supports graphics
+	// TODO this should factor into our search for an appropriate physical device
+
+	uint32_t family_count;
+	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &family_count, NULL);
+
+	VkQueueFamilyProperties* const family_props = calloc(family_count, sizeof *family_props);
+	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &family_count, family_props);
+
+	size_t graphics_family_i;
+
+	for (graphics_family_i = 0; graphics_family_i < family_count; graphics_family_i++) {
+		VkQueueFamilyProperties* const props = &family_props[graphics_family_i];
+
+		if (props->queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			goto found;
+	}
+
+	LOG_FATAL("No queue family supporting graphics found")
+	goto err;
+
+found:
 
 	return context;
 
