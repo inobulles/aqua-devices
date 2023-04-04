@@ -5,6 +5,7 @@
 #include <aquabsd.alps.win/public.h>
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_xcb.h>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>

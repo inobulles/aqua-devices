@@ -105,6 +105,7 @@ void free_context(context_t* context) {
 }
 
 aquabsd_alps_vk_context_t* create_context(
+	aquabsd_alps_win_t* win,
 	char const* name,
 	size_t ver_major,
 	size_t ver_minor,
@@ -262,6 +263,24 @@ found: {}
 	}
 
 	context->has_device = true;
+
+	// create surface for XCB window of passed window
+
+	VkXcbSurfaceCreateInfoKHR surface_create = {
+		.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
+		.pNext = NULL,
+		.flags = 0,
+		.connection = win->connection,
+		.window = win->win,
+	};
+
+	VkSurfaceKHR surface;
+	rv = vkCreateXcbSurfaceKHR(context->instance, &surface_create, NULL, &surface);
+
+	if (rv != VK_SUCCESS) {
+		LOG_FATAL("vkCreateXcbSurfaceKHR(%p): %s", win, vk_error_str(rv))
+		goto err;
+	}
 
 	return context;
 
