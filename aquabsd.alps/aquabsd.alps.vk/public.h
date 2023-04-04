@@ -4,6 +4,8 @@
 #include <aquabsd.alps.ftime/public.h>
 #include <aquabsd.alps.win/public.h>
 
+#include <vulkan/vulkan.h>
+
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
@@ -14,6 +16,15 @@ typedef enum {
 
 typedef struct {
 	unsigned x_res, y_res;
+
+	// Vulkan stuff
+
+	VkDebugReportCallbackEXT debug_report;
+
+	bool has_instance;
+	VkInstance instance;
+
+	bool created_debug_report_cb;
 
 	// backend stuff
 
