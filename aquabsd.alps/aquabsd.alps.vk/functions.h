@@ -197,7 +197,11 @@ aquabsd_alps_vk_context_t* create_context(
 		VkPhysicalDeviceProperties props;
 		vkGetPhysicalDeviceProperties(*gpu, &props);
 
-		LOG_VERBOSE("Found physical device %zu: %s (%x:%x)", i, props.deviceName, props.vendorID, props.deviceID)
+		int const major = VK_VERSION_MAJOR(props.apiVersion);
+		int const minor = VK_VERSION_MINOR(props.apiVersion);
+		int const patch = VK_VERSION_PATCH(props.apiVersion);
+
+		LOG_VERBOSE("Found physical device %zu: %s (%x:%x, Vulkan %d.%d.%d)", i, props.deviceName, props.vendorID, props.deviceID, major, minor, patch)
 	}
 
 	VkPhysicalDevice const gpu = gpus[0]; // XXX this can't be a reference as gpus will be freed
