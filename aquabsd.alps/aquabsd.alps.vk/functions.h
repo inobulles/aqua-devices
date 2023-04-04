@@ -153,6 +153,35 @@ aquabsd_alps_vk_context_t* create_context(
 
 	dyn_vkCreateDebugReportCallbackEXT(context->instance, &debug_report_cb_create, NULL, &context->debug_report);
 
+	// find an appropriate physical device
+	// just use the first one for now
+
+	uint32_t gpu_count;
+	vkEnumeratePhysicalDevices(context->instance, &gpu_count, NULL);
+
+	if (!gpu_count) {
+		LOG_FATAL("No physical devices found")
+		goto err;
+	}
+
+	VkPhysicalDevice* const gpus = calloc(gpu_count, sizeof *gpus);
+	vkEnumeratePhysicalDevices(context->instance, &gpu_count, gpus);
+
+	for (size_t i = 0; i < gpu_count; i++) {
+		VkPhysicalDevice const gpu = gpus[i];
+
+		VkPhysicalDeviceProperties props;
+		vkGetPhysicalDeviceProperties(gpu, &props);
+
+		LOG_VERBOSE("Found physical device: %s (%x:%x)", props.deviceName, props.vendorID, props.deviceID)
+	}
+
+	VkPhysicalDevice const gpu = gpus[0];
+	free(gpus);
+
+	VkPhysicalDeviceProperties props;
+	vkGetPhysicalDeviceProperties(gpu, &props);
+
 	return context;
 
 err:
