@@ -3,7 +3,7 @@
 
 #include <aquabsd.alps.vk/private.h>
 
-VKAPI_ATTR VkBool32 VKAPI_CALL debug_cb(
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_cb(
 	VkDebugReportFlagsEXT flags,
 	VkDebugReportObjectTypeEXT type,
 	uint64_t src_obj,
@@ -35,6 +35,45 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug_cb(
 		LOG_ERROR("@%s: %s", layer_prefix, msg)
 
 	return false;
+}
+
+static char const* vk_error_str(VkResult err) {
+	#define CASE(error) \
+		case error: return #error;
+
+	switch (err) {
+		CASE(VK_ERROR_OUT_OF_HOST_MEMORY)
+		CASE(VK_ERROR_OUT_OF_DEVICE_MEMORY)
+		CASE(VK_ERROR_INITIALIZATION_FAILED)
+		CASE(VK_ERROR_DEVICE_LOST)
+		CASE(VK_ERROR_MEMORY_MAP_FAILED)
+		CASE(VK_ERROR_LAYER_NOT_PRESENT)
+		CASE(VK_ERROR_EXTENSION_NOT_PRESENT)
+		CASE(VK_ERROR_FEATURE_NOT_PRESENT)
+		CASE(VK_ERROR_INCOMPATIBLE_DRIVER)
+		CASE(VK_ERROR_TOO_MANY_OBJECTS)
+		CASE(VK_ERROR_FORMAT_NOT_SUPPORTED)
+
+		// Khronos extensions
+
+		CASE(VK_ERROR_SURFACE_LOST_KHR)
+		CASE(VK_ERROR_NATIVE_WINDOW_IN_USE_KHR)
+		CASE(VK_SUBOPTIMAL_KHR)
+		CASE(VK_ERROR_OUT_OF_DATE_KHR)
+		CASE(VK_ERROR_INCOMPATIBLE_DISPLAY_KHR)
+
+		// other extensions
+
+		CASE(VK_ERROR_VALIDATION_FAILED_EXT)
+
+	case VK_SUCCESS:
+		return "Success; this shouldn't happen, aquabsd.alps.vk has a bug";
+
+	default:
+		return "unknown Vulkan error";
+	}
+
+	#undef CASE
 }
 
 void* get_func(context_t* context, const char* name) {
@@ -104,25 +143,7 @@ aquabsd_alps_vk_context_t* create_context(
 	VkResult rv = vkCreateInstance(&instance_create, NULL, &context->instance);
 
 	if (rv != VK_SUCCESS) {
-		if (0) {}
-
-		#define CASE(name) \
-			else if (rv == name) \
-				LOG_FATAL("vkCreateInstance: " #name)
-
-		CASE(VK_ERROR_OUT_OF_HOST_MEMORY)
-		CASE(VK_ERROR_OUT_OF_DEVICE_MEMORY)
-		CASE(VK_ERROR_INITIALIZATION_FAILED)
-		CASE(VK_ERROR_LAYER_NOT_PRESENT)
-		CASE(VK_ERROR_EXTENSION_NOT_PRESENT)
-		CASE(VK_ERROR_INCOMPATIBLE_DRIVER)
-
-		#undef CASE
-
-		else {
-			LOG_FATAL("vkCreateInstance: %d", rv)
-		}
-
+		LOG_FATAL("vkCreateInstance: %s", vk_error_str(rv))
 		goto err;
 	}
 
@@ -232,26 +253,7 @@ found: {}
 	rv = vkCreateDevice(gpu, &device_create, NULL, &context->device);
 
 	if (rv != VK_SUCCESS) {
-		if (0) {}
-
-		#define CASE(name) \
-			else if (rv == name) \
-				LOG_FATAL("vkCreateInstance: " #name)
-
-		CASE(VK_ERROR_OUT_OF_HOST_MEMORY)
-		CASE(VK_ERROR_OUT_OF_DEVICE_MEMORY)
-		CASE(VK_ERROR_INITIALIZATION_FAILED)
-		CASE(VK_ERROR_EXTENSION_NOT_PRESENT)
-		CASE(VK_ERROR_FEATURE_NOT_PRESENT)
-		CASE(VK_ERROR_TOO_MANY_OBJECTS)
-		CASE(VK_ERROR_DEVICE_LOST)
-
-		#undef CASE
-
-		else {
-			LOG_FATAL("vkCreateInstance: %d", rv)
-		}
-
+		LOG_FATAL("vkCreateDevice: %s", vk_error_str(rv))
 		goto err;
 	}
 
