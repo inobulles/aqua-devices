@@ -20,7 +20,7 @@ src
 
 // create dynamic library
 
-var linker = Linker.new(cc)
+var linker = Linker.new()
 linker.link(src.toList, ["fetch"], "aquabsd.alps.net.vdev", true)
 
 // TODO testing
