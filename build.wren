@@ -29,6 +29,8 @@ var devices = File.list(devset, 1)
 Meta.setenv("DEVSET_INC_PATH", "%(Meta.cwd())/%(devset)")
 
 devices.each { |path|
+	System.print("Device %(path)")
+
 	if (File.bob(path, ["build"]) != 0) {
 		return
 	}
