@@ -20,7 +20,7 @@ src
 
 // create dynamic library
 
-var linker = Linker.new(cc)
+var linker = Linker.new()
 linker.link(src.toList, [], "core.time.vdev", true)
 
 // TODO testing

@@ -24,7 +24,7 @@ src
 
 // create dynamic library
 
-var linker = Linker.new(cc)
+var linker = Linker.new()
 linker.link(src.toList, ["umber"], "core.log.vdev", true)
 
 // TODO testing
