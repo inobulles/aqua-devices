@@ -25,7 +25,7 @@ src
 // create dynamic library
 
 var linker = Linker.new()
-linker.link(src.toList, [], "aquabsd.alps.vulkan.vdev", true)
+linker.link(src.toList, [], "aquabsd.alps.vk.vdev", true)
 
 // TODO testing
 
