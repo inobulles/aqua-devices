@@ -36,7 +36,7 @@ devices.each { |path|
 	var name = path.split("/")[-1]
 	var filename = name + ".vdev"
 
-	install[filename] = "%(Meta.prefix())/share/aqua/devices/%(filename)"
+	install[filename] = "share/aqua/devices/%(filename)"
 }
 
 // TODO testing
