@@ -25,6 +25,11 @@ src
 // create dynamic library
 
 var linker = Linker.new()
+
+linker.add_lib("cairo")
+linker.add_lib("pango")
+linker.add_lib("pangocairo")
+
 linker.link(src.toList, [], "aquabsd.alps.font.vdev", true)
 
 // TODO testing

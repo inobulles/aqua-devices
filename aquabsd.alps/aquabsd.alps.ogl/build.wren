@@ -25,6 +25,11 @@ src
 // create dynamic library
 
 var linker = Linker.new()
+
+linker.add_lib("egl")
+linker.add_lib("xcb")
+linker.add_lib("xcb-composite")
+
 linker.link(src.toList, [], "aquabsd.alps.ogl.vdev", true)
 
 // TODO testing

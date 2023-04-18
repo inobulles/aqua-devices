@@ -30,6 +30,17 @@ src
 // create dynamic library
 
 var linker = Linker.new()
+
+linker.add_lib("x11")
+linker.add_lib("x11-xcb")
+linker.add_lib("xcb")
+linker.add_lib("xcb-composite")
+linker.add_lib("xcb-ewmh")
+linker.add_lib("xcb-icccm")
+linker.add_lib("xcb-randr")
+linker.add_lib("xcb-shape")
+linker.add_lib("xcb-xfixes")
+
 linker.link(src.toList, [], "aquabsd.alps.wm.vdev", true)
 
 // TODO testing

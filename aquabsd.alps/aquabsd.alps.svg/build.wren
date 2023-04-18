@@ -24,6 +24,9 @@ src
 // create dynamic library
 
 var linker = Linker.new()
+
+linker.add_lib("librsvg-2.0")
+
 linker.link(src.toList, [], "aquabsd.alps.svg.vdev", true)
 
 // TODO testing
