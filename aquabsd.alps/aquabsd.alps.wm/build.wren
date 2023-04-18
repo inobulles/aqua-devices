@@ -10,6 +10,7 @@ cc.add_opt("-std=c99")
 cc.add_opt("-Wall")
 cc.add_opt("-Wextra")
 cc.add_opt("-Werror")
+cc.add_opt("-D_DEFAULT_SOURCE")
 
 cc.add_lib("x11")
 cc.add_lib("x11-xcb")
