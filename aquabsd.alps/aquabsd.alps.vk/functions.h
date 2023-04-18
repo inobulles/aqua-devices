@@ -1,8 +1,6 @@
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.vk"
 
-#include <aquabsd.alps.vk/private.h>
-
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_cb(
 	VkDebugReportFlagsEXT flags,
 	VkDebugReportObjectTypeEXT type,
@@ -107,7 +105,7 @@ void free_context(context_t* context) {
 		vkDestroyInstance(context->instance, NULL);
 }
 
-aquabsd_alps_vk_context_t* create_context(
+context_t* create_win_context(
 	aquabsd_alps_win_t* win,
 	char const* name,
 	size_t ver_major,

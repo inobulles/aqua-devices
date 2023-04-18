@@ -57,6 +57,5 @@ aquabsd_alps_vk_context_t* (*aquabsd_alps_vk_create_win_context) (aquabsd_alps_w
 int (*aquabsd_alps_vk_delete_context) (aquabsd_alps_vk_context_t* context);
 
 void* (*aquabsd_alps_vk_get_function) (aquabsd_alps_vk_context_t* context, const char* name);
-int (*aquabsd_alps_vk_bind_win_tex) (aquabsd_alps_vk_context_t* context, aquabsd_alps_win_t* win);
 
 #endif
