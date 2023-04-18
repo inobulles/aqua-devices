@@ -23,6 +23,9 @@ src
 // create dynamic library
 
 var linker = Linker.new()
+
+linker.add_lib("libpng")
+
 linker.link(src.toList, [], "aquabsd.alps.png.vdev", true)
 
 // TODO testing
