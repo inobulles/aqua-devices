@@ -69,9 +69,7 @@ static int read_apps(char*** list_ref) {
 		}
 
 		char* path;
-
-		if (asprintf(&path, APPS_PATH "/%s", app->d_name))
-			;
+		if (asprintf(&path, APPS_PATH "/%s", app->d_name)) {}
 
 		*list_ref = realloc(*list_ref, count * sizeof **list_ref);
 		(*list_ref)[count - 1] = path; // apparently indexing has a higher precedence than dereferencing 🤷
