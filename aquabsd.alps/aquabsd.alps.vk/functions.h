@@ -119,13 +119,16 @@ context_t* create_win_context(
 	context_t* const context = calloc(1, sizeof *context);
 
 	// create instance
+	// TODO we need validation layers!
 
 	char const* const validation_layers[] = {
-		"VK_LAYER_LUNARG_standard_validation",
+		// "VK_LAYER_LUNARG_standard_validation",
 	};
 
 	char const* const extensions[] = {
 		VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+		VK_KHR_SURFACE_EXTENSION_NAME,
+		VK_KHR_XCB_SURFACE_EXTENSION_NAME,
 	};
 
 	VkApplicationInfo const app = {
