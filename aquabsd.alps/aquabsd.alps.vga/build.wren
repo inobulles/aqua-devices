@@ -11,6 +11,7 @@ cc.add_opt("-std=c99")
 cc.add_opt("-Wall")
 cc.add_opt("-Wextra")
 cc.add_opt("-Werror")
+cc.add_opt("-D_DEFAULT_SOURCE")
 
 if (Meta.getenv("WITHOUT_X11") != null) {
 	cc.add_opt("-DWITHOUT_X11")

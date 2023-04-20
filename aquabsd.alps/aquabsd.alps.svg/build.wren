@@ -12,6 +12,7 @@ cc.add_opt("-Wall")
 cc.add_opt("-Wextra")
 cc.add_opt("-Werror")
 // cc.add_opt("-DAQUABSD_ALPS_SVG_NEW_RSVG")
+cc.add_opt("-D_DEFAULT_SOURCE")
 
 cc.add_lib("librsvg-2.0")
 
