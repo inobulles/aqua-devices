@@ -12,6 +12,8 @@ cc.add_opt("-Wall")
 cc.add_opt("-Wextra")
 cc.add_opt("-Werror")
 
+cc.add_opt("-g")
+
 cc.add_lib("egl")
 cc.add_lib("xcb")
 cc.add_lib("xcb-composite")
@@ -25,7 +27,7 @@ src
 // create dynamic library
 
 var linker = Linker.new()
-linker.link(src.toList, [], "aquabsd.alps.vk.vdev", true)
+linker.link(src.toList, ["vulkan"], "aquabsd.alps.vk.vdev", true)
 
 // TODO testing
 
