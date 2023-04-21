@@ -189,8 +189,15 @@ context_t* create_win_context(
 	if (!dyn_vkCreateDebugReportCallbackEXT)
 		goto err;
 
-	dyn_vkCreateDebugReportCallbackEXT(context->instance, &debug_report_cb_create, NULL, &context->debug_report);
+	rv = dyn_vkCreateDebugReportCallbackEXT(context->instance, &debug_report_cb_create, NULL, &context->debug_report);
+	
+	if (rv != VK_SUCCESS){
+		LOG_FATAL("vkCreateDebugReportCallbackEXT(%p): %s", win, vk_error_str(rv))
+		goto err;
+	}
 
+	context->created_debug_report_cb = true;
+	
 	// create surface for XCB window of passed window
 
 	VkXcbSurfaceCreateInfoKHR surface_create = {
