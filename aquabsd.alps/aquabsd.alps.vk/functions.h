@@ -84,7 +84,7 @@ void* get_func(context_t* context, const char* name) {
 
 #define IMPORT_FUNC(name) \
 	PFN_##name const dyn_##name = (PFN_##name) vkGetInstanceProcAddr(context->instance, #name); \
-	if (!name) /* just log - leave error handling to caller */ \
+	if (!dyn_##name) /* just log - leave error handling to caller */ \
 		LOG_FATAL("Can't get function pointer for " #name)
 
 void free_context(context_t* context) {
