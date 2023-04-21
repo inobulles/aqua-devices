@@ -1,6 +1,11 @@
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.vk"
 
+#include <aquabsd.alps.vk/private.h>
+
+// #define USE_EXT_DEBUG_REPORT
+
+#if defined(USE_EXT_DEBUG_REPORT)
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_cb(
 	VkDebugReportFlagsEXT flags,
 	VkDebugReportObjectTypeEXT type,
@@ -34,6 +39,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_cb(
 
 	return false;
 }
+#endif
 
 static char const* vk_error_str(VkResult err) {
 	#define CASE(error) \
@@ -126,7 +132,9 @@ context_t* create_win_context(
 	};
 
 	char const* const extensions[] = {
+#if defined(USE_EXT_DEBUG_REPORT)
 		VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+#endif
 		VK_KHR_SURFACE_EXTENSION_NAME,
 		VK_KHR_XCB_SURFACE_EXTENSION_NAME,
 	};
@@ -156,6 +164,7 @@ context_t* create_win_context(
 
 	context->has_instance = true;
 
+#if defined(USE_EXT_DEBUG_REPORT)
 	// setup debugging
 	// other possible validation layers include:
 	// - VK_LAYER_LUNARG_threading
@@ -183,6 +192,7 @@ context_t* create_win_context(
 		goto err;
 
 	dyn_vkCreateDebugReportCallbackEXT(context->instance, &debug_report_cb_create, NULL, &context->debug_report);
+#endif
 
 	// create surface for XCB window of passed window
 

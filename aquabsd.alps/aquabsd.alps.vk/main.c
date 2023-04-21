@@ -1,4 +1,3 @@
-#include <aquabsd.alps.vk/private.h>
 #include <aquabsd.alps.vk/functions.h>
 
 typedef enum {
