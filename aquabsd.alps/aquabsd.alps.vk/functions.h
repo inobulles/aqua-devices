@@ -287,7 +287,7 @@ found: {}
 
 	VkDeviceQueueCreateInfo const device_queue_create[] = {
 		{
-			.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,
+			.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
 			.queueFamilyIndex = queue_family_index,
 			.queueCount = sizeof(queue_prios) / sizeof(*queue_prios),
 			.pQueuePriorities = queue_prios,
