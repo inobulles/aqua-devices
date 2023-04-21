@@ -3,9 +3,6 @@
 
 #include <aquabsd.alps.vk/private.h>
 
-// #define USE_EXT_DEBUG_REPORT
-
-#if defined(USE_EXT_DEBUG_REPORT)
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_cb(
 	VkDebugReportFlagsEXT flags,
 	VkDebugReportObjectTypeEXT type,
@@ -39,7 +36,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_cb(
 
 	return false;
 }
-#endif
 
 static char const* vk_error_str(VkResult err) {
 	#define CASE(error) \
@@ -124,20 +120,31 @@ context_t* create_win_context(
 
 	context_t* const context = calloc(1, sizeof *context);
 
-	// create instance
-	// TODO we need validation layers!
+	// extension and validation layer lists
+	// other possible validation layers include:
+	// - VK_LAYER_LUNARG_standard_validation
+	// - VK_LAYER_LUNARG_threading
+	// - VK_LAYER_GOOGLE_threading
+	// - VK_LAYER_LUNARG_draw_state
+	// - VK_LAYER_LUNARG_image
+	// - VK_LAYER_LUNARG_mem_tracker
+	// - VK_LAYER_LUNARG_object_tracker
+	// - VK_LAYER_LUNARG_param_checker
 
 	char const* const validation_layers[] = {
-		// "VK_LAYER_LUNARG_standard_validation",
+		"VK_LAYER_KHRONOS_validation",
 	};
 
-	char const* const extensions[] = {
-#if defined(USE_EXT_DEBUG_REPORT)
+	char const* const instance_extensions[] = {
 		VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-#endif
 		VK_KHR_SURFACE_EXTENSION_NAME,
 		VK_KHR_XCB_SURFACE_EXTENSION_NAME,
 	};
+
+	char const* const device_extensions[] = {
+	};
+
+	// create instance
 
 	VkApplicationInfo const app = {
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -151,8 +158,8 @@ context_t* create_win_context(
 		.pApplicationInfo = &app,
 		.enabledLayerCount = sizeof(validation_layers) / sizeof(*validation_layers),
 		.ppEnabledLayerNames = validation_layers,
-		.enabledExtensionCount = sizeof(extensions) / sizeof(*extensions),
-		.ppEnabledExtensionNames = extensions,
+		.enabledExtensionCount = sizeof(instance_extensions) / sizeof(*instance_extensions),
+		.ppEnabledExtensionNames = instance_extensions,
 	};
 
 	rv = vkCreateInstance(&instance_create, NULL, &context->instance);
@@ -164,16 +171,7 @@ context_t* create_win_context(
 
 	context->has_instance = true;
 
-#if defined(USE_EXT_DEBUG_REPORT)
 	// setup debugging
-	// other possible validation layers include:
-	// - VK_LAYER_LUNARG_threading
-	// - VK_LAYER_GOOGLE_threading
-	// - VK_LAYER_LUNARG_draw_state
-	// - VK_LAYER_LUNARG_image
-	// - VK_LAYER_LUNARG_mem_tracker
-	// - VK_LAYER_LUNARG_object_tracker
-	// - VK_LAYER_LUNARG_param_checker
 
 	VkDebugReportCallbackCreateInfoEXT debug_report_cb_create = {
 		.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -192,7 +190,6 @@ context_t* create_win_context(
 		goto err;
 
 	dyn_vkCreateDebugReportCallbackEXT(context->instance, &debug_report_cb_create, NULL, &context->debug_report);
-#endif
 
 	// create surface for XCB window of passed window
 
@@ -301,8 +298,8 @@ found: {}
 		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 		.queueCreateInfoCount = sizeof(device_queue_create) / sizeof(*device_queue_create),
 		.pQueueCreateInfos = device_queue_create,
-		.enabledExtensionCount = sizeof(extensions) / sizeof(*extensions),
-		.ppEnabledExtensionNames = extensions,
+		.enabledExtensionCount = sizeof(device_extensions) / sizeof(*device_extensions),
+		.ppEnabledExtensionNames = device_extensions,
 	};
 
 	rv = vkCreateDevice(gpu, &device_create, NULL, &context->device);
