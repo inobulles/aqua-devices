@@ -94,6 +94,29 @@ static void _read_data_from_input_stream(png_structp png, png_bytep ptr, png_siz
 	stream->ptr += bytes;
 }
 
+static inline int __render_bitmap(png_t* png) {
+	if (setjmp(png_jmpbuf(png->png))) {
+		LOG_ERROR("setjmp: %s", strerror(errno))
+		return -1;
+	}
+
+	png->row_bytes = png_get_rowbytes(png->png, png->info);
+	png->bytes = png->row_bytes * png->height;
+
+	png->bitmap = malloc(png->bytes);
+
+	png_bytep* row_pointers = malloc(png->height * sizeof *row_pointers);
+
+	for (size_t i = 0; i < png->height; i++) {
+		row_pointers[i] = png->bitmap + png->row_bytes * i;
+	}
+
+	png_read_image(png->png, row_pointers);
+	free(row_pointers); // TODO this is never freed when long jump occurs
+
+	return 0;
+}
+
 dynamic png_t* load_png(void* ptr) {
 	LOG_INFO("Load PNG (%p)", ptr)
 
@@ -115,33 +138,11 @@ dynamic png_t* load_png(void* ptr) {
 	png_set_read_fn(png->png, &png->stream, _read_data_from_input_stream);
 
 	__read_info(png, sizeof header);
+	__render_bitmap(png);
 
 	LOG_SUCCESS("Loaded PNG (%dx%dx%d): %p", png->width, png->height, png->bit_depth, png)
 
 	return png;
-}
-
-static inline int __render_bitmap(png_t* png) {
-	if (setjmp(png_jmpbuf(png->png))) {
-		LOG_ERROR("setjmp: %s", strerror(errno))
-		return -1;
-	}
-
-	png->row_bytes = png_get_rowbytes(png->png, png->info);
-	png->bytes = png->row_bytes * png->height;
-
-	png->bitmap = malloc(png->bytes);
-
-	png_bytep* row_pointers = malloc(png->height * sizeof *row_pointers);
-
-	for (size_t i = 0; i < png->height; i++) {
-		row_pointers[i] = png->bitmap + png->row_bytes * i;
-	}
-
-	png_read_image(png->png, row_pointers);
-	free(row_pointers);
-
-	return 0;
 }
 
 dynamic int draw_png(png_t* png, uint8_t** bitmap_ref, uint64_t* bpp_ref, uint64_t* width_ref, uint64_t* height_ref) {
