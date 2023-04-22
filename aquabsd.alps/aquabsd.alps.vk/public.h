@@ -34,6 +34,8 @@ typedef struct {
 
 	bool has_surface;
 	VkSurfaceKHR surface;
+	
+	uint32_t graphic_queue;
 
 	// backend stuff
 
