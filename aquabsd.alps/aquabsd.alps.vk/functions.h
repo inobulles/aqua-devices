@@ -279,6 +279,10 @@ found: {}
 	VkBool32 supported = VK_FALSE;
 	rv = vkGetPhysicalDeviceSurfaceSupportKHR(context->gpu, queue_family_index, context->surface, &supported);
 
+	context->graphic_queue = queue_family_index;
+	
+	LOG_FATAL(" LA LA FAMILLY DU GRAPHIC EST LA SUIVANTE :  %u", queue_family_index);
+
 	if (rv != VK_SUCCESS) {
 		LOG_FATAL("vkGetPhysicalDeviceSurfaceSupportKHR: %s", vk_error_str(rv))
 		goto err;
