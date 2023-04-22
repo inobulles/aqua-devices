@@ -78,7 +78,7 @@ uint64_t send(uint16_t _cmd, void* data) {
 
 	else if (cmd == CMD_GET_SURFACE) {
 		context_t* context = (void*) args[0];
-		return (uint64_t) context->surface;
+		return (uint64_t) &context->surface;
 	}
 	
 	else if (cmd == CMD_GET_GRAPHIC_QUEUE) {
