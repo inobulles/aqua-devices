@@ -5,6 +5,8 @@ typedef enum {
 	CMD_DELETE       = 0x6364, // 'dc'
 
 	CMD_GET_FUNCTION = 0x6766, // 'gf'
+	CMD_GET_INSTANCE = 0x6769, // 'gi'
+	CMD_GET_SURFACE  = 0x6773, // 'gs'
 } cmd_t;
 
 int load(void) {
@@ -54,6 +56,16 @@ uint64_t send(uint16_t _cmd, void* data) {
 		const char* name = (void*) args[1];
 
 		return (uint64_t) get_func(context, name);
+	}
+
+	else if (cmd == CMD_GET_INSTANCE) {
+		context_t* context = (void*) args[0];
+		return (uint64_t) context->instance;
+	}
+
+	else if (cmd == CMD_GET_SURFACE) {
+		context_t* context = (void*) args[0];
+		return (uint64_t) context->surface;
 	}
 
 	return -1;
