@@ -244,20 +244,20 @@ context_t* create_win_context(
 		LOG_VERBOSE("Found physical device %zu: %s (%x:%x, Vulkan %d.%d.%d)", i, props.deviceName, props.vendorID, props.deviceID, major, minor, patch)
 	}
 
-	VkPhysicalDevice const gpu = gpus[0]; // XXX this can't be a reference as gpus will be freed
+	context->gpu = gpus[0]; // XXX this can't be a reference as gpus will be freed
 	free(gpus);
 
 	VkPhysicalDeviceProperties props;
-	vkGetPhysicalDeviceProperties(gpu, &props);
+	vkGetPhysicalDeviceProperties(context->gpu, &props);
 
 	// check if physical device has a queue family which supports graphics
 	// TODO this should factor into our search for an appropriate physical device
 
 	uint32_t family_count;
-	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &family_count, NULL);
+	vkGetPhysicalDeviceQueueFamilyProperties(context->gpu, &family_count, NULL);
 
 	VkQueueFamilyProperties* const family_props = calloc(family_count, sizeof *family_props);
-	vkGetPhysicalDeviceQueueFamilyProperties(gpu, &family_count, family_props);
+	vkGetPhysicalDeviceQueueFamilyProperties(context->gpu, &family_count, family_props);
 
 	size_t queue_family_index;
 
@@ -276,7 +276,7 @@ found: {}
 	// check if physical device supports our surface
 
 	VkBool32 supported = VK_FALSE;
-	rv = vkGetPhysicalDeviceSurfaceSupportKHR(gpu, queue_family_index, context->surface, &supported);
+	rv = vkGetPhysicalDeviceSurfaceSupportKHR(context->gpu, queue_family_index, context->surface, &supported);
 
 	if (rv != VK_SUCCESS) {
 		LOG_FATAL("vkGetPhysicalDeviceSurfaceSupportKHR: %s", vk_error_str(rv))
@@ -309,7 +309,7 @@ found: {}
 		.ppEnabledExtensionNames = device_extensions,
 	};
 
-	rv = vkCreateDevice(gpu, &device_create, NULL, &context->device);
+	rv = vkCreateDevice(context->gpu, &device_create, NULL, &context->device);
 
 	if (rv != VK_SUCCESS) {
 		LOG_FATAL("vkCreateDevice: %s", vk_error_str(rv))

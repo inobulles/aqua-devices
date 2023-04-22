@@ -1,13 +1,14 @@
 #include <aquabsd.alps.vk/functions.h>
 
 typedef enum {
-	CMD_CREATE       = 0x6363, // 'cc'
-	CMD_DELETE       = 0x6364, // 'dc'
+	CMD_CREATE          = 0x6363, // 'cc'
+	CMD_DELETE          = 0x6364, // 'dc'
 
-	CMD_GET_FUNCTION = 0x6766, // 'gf'
-	CMD_GET_INSTANCE = 0x6769, // 'gi'
-	CMD_GET_DEVICE   = 0x6763, // 'gd'
-	CMD_GET_SURFACE  = 0x6773, // 'gs'
+	CMD_GET_FUNCTION    = 0x6766, // 'gf'
+	CMD_GET_INSTANCE    = 0x6769, // 'gi'
+	CMD_GET_DEVICE      = 0x6763, // 'gd'
+	CMD_GET_PHYS_DEVICE = 0x6770, // 'gp'
+	CMD_GET_SURFACE     = 0x6773, // 'gs'
 } cmd_t;
 
 int load(void) {
@@ -67,6 +68,11 @@ uint64_t send(uint16_t _cmd, void* data) {
 	else if (cmd == CMD_GET_DEVICE) {
 		context_t* context = (void*) args[0];
 		return (uint64_t) context->device;
+	}
+
+	else if (cmd == CMD_GET_PHYS_DEVICE) {
+		context_t* context = (void*) args[0];
+		return (uint64_t) &context->gpu;
 	}
 
 	else if (cmd == CMD_GET_SURFACE) {

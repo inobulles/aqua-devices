@@ -30,6 +30,7 @@ typedef struct {
 
 	bool has_device;
 	VkDevice device;
+	VkPhysicalDevice gpu;
 
 	bool has_surface;
 	VkSurfaceKHR surface;
