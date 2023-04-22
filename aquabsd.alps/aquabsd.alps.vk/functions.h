@@ -142,6 +142,7 @@ context_t* create_win_context(
 	};
 
 	char const* const device_extensions[] = {
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	};
 
 	// create instance
