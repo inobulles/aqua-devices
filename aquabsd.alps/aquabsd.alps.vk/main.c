@@ -9,7 +9,8 @@ typedef enum {
 	CMD_GET_DEVICE      		= 0x6763, // 'gd'
 	CMD_GET_PHYS_DEVICE 		= 0x6770, // 'gp'
 	CMD_GET_SURFACE     		= 0x6773, // 'gs'
-	CMD_GET_GRAPHIC_QUEUE		= 0X6771, // 'gq' 
+	CMD_GET_GRAPHIC_QUEUE		= 0x6771, // 'gq' 
+	CMD_GET_PRESENT_QUEUE 		= 0x7071, // 'pq'
 } cmd_t;
 
 int load(void) {
@@ -86,5 +87,9 @@ uint64_t send(uint16_t _cmd, void* data) {
 		return (uint64_t) context->graphic_queue; 
 	}
 
+	else if (cmd == CMD_GET_PRESENT_QUEUE) {
+		context_t* context = (void*) args[0];
+		return (uint64_t) context->present_queue; 
+	}
 	return -1;
 }
