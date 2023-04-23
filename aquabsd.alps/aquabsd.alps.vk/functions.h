@@ -260,10 +260,9 @@ context_t* create_win_context(
 	VkQueueFamilyProperties* const family_props = calloc(family_count, sizeof *family_props);
 	vkGetPhysicalDeviceQueueFamilyProperties(context->gpu, &family_count, family_props);
 
-	size_t queue_family_index;
-
-	for (queue_family_index = 0; queue_family_index < family_count; queue_family_index++) {
-		VkQueueFamilyProperties* const props = &family_props[queue_family_index];
+	size_t graphic_queue_family_index;
+	for (graphic_queue_family_index = 0; graphic_queue_family_index < family_count; graphic_queue_family_index++) {
+		VkQueueFamilyProperties* const props = &family_props[graphic_queue_family_index];
 
 		if (props->queueFlags & VK_QUEUE_GRAPHICS_BIT)
 			goto found;
@@ -277,14 +276,16 @@ found: {}
 	// check if physical device supports our surface
 
 	VkBool32 supported = VK_FALSE;
-	rv = vkGetPhysicalDeviceSurfaceSupportKHR(context->gpu, queue_family_index, context->surface, &supported);
+	rv = vkGetPhysicalDeviceSurfaceSupportKHR(context->gpu, graphic_queue_family_index, context->surface, &supported);
 
-	context->graphic_queue = queue_family_index;
+	context->graphic_queue = graphic_queue_family_index;
 	
 	if (rv != VK_SUCCESS) {
 		LOG_FATAL("vkGetPhysicalDeviceSurfaceSupportKHR: %s", vk_error_str(rv))
 		goto err;
 	}
+	
+	context->present_queue = graphic_queue_family_index;
 
 	if (!supported) {
 		LOG_FATAL("Physical device doesn't support window surface")
@@ -298,7 +299,7 @@ found: {}
 	VkDeviceQueueCreateInfo const device_queue_create[] = {
 		{
 			.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-			.queueFamilyIndex = queue_family_index,
+			.queueFamilyIndex = graphic_queue_family_index,
 			.queueCount = sizeof(queue_prios) / sizeof(*queue_prios),
 			.pQueuePriorities = queue_prios,
 		}

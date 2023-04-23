@@ -36,6 +36,7 @@ typedef struct {
 	VkSurfaceKHR surface;
 	
 	uint32_t graphic_queue;
+	uint32_t present_queue;
 
 	// backend stuff
 
