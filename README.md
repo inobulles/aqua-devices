@@ -1,7 +1,7 @@
 # aqua-devices
 
 This repository contains the source code for all AQUA device sets and devices for a range of different platforms.
-Each top-level directory corresponds to a set of devices (a "device set") which are meant to work together on a specific platform or configuration.
+Each top-level directory corresponds to a set of devices (a "device set" or "devset") which are meant to work together on a specific platform or configuration.
 Here is a quick overview of each device set:
 
 ## Core devices
@@ -29,7 +29,7 @@ This is what each device does:
 |`aquabsd.alps.ftime`|Manages frametimes in a generic way for everything that needs to display stuff to the screen.|
 |`aquabsd.alps.kbd`|Provides keyboard input.|
 |`aquabsd.alps.mouse`|Provides mouse input, either through X11, either through the `sc`/`vt` virtual consoles on [aquaBSD core](https://github.com/inobulles/aquabsd-core).|
-|`aquabsd.alps.net`|Provides an interface to recieve from/send to the network.|
+|`aquabsd.alps.net`|Provides an interface to receive from/send to the network.|
 |`aquabsd.alps.ogl`|Provides a way to create OpenGL contexts (with EGL), to load OpenGL API functions, and handles swapping with the help of `aquabsd.alps.ftime`.|
 |`aquabsd.alps.png`|Provides mechanisms for loading PNG images and rendering them (through [libpng](http://www.libpng.org/pub/png/libpng.html)).|
 |`aquabsd.alps.svg`|Provides mechanisms for loading SVG graphics and rendering them (through [librsvg](https://gitlab.gnome.org/GNOME/librsvg)).|
