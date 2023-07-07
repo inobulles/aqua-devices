@@ -22,21 +22,26 @@ if (!just_read) {
 // combine this with the creation of the installation map
 
 var install = {}
+var devset_stack = devset.split(",")
 
-var devices = File.list(devset, 1)
-	.where { |path| path.startsWith("%(devset)/") }
+while (devset_stack.count > 0) {
+	devset = devset_stack.removeAt(0) // TODO just make this .pop in Bob's dialect of Wren
 
-Meta.setenv("DEVSET_INC_PATH", "%(Meta.cwd())/%(devset)")
+	var devices = File.list(devset, 1)
+		.where { |path| path.startsWith("%(devset)/") }
 
-devices.each { |path|
-	if (File.bob(path, ["build"]) != 0) {
-		return
+	Meta.setenv("DEVSET_INC_PATH", "%(Meta.cwd())/%(devset)")
+
+	devices.each { |path|
+		if (File.bob(path, ["build"]) != 0) {
+			return
+		}
+
+		var name = path.split("/")[-1]
+		var filename = name + ".vdev"
+
+		install[filename] = "share/aqua/devices/%(filename)"
 	}
-
-	var name = path.split("/")[-1]
-	var filename = name + ".vdev"
-
-	install[filename] = "share/aqua/devices/%(filename)"
 }
 
 // TODO testing
