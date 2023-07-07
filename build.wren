@@ -1,42 +1,62 @@
+var DEVSET_ENV = "DEVSET"
+var DEVSET_FILE = "devset"
+var DEFAULT_DEVSET = "core"
+var DEPS_FILE = "deps"
+
 // get options from environment variables
 
-var devset = Meta.getenv("DEVSET")
+var devset = Meta.getenv(DEVSET_ENV)
 var just_read = false
 
 if (devset == null) {
-	devset = File.read("devset")
+	devset = File.read(DEVSET_FILE)
 	just_read = devset != null
 }
 
 if (devset == null) {
-	devset = "core"
+	devset = DEFAULT_DEVSET
 }
 
 devset = devset.trim()
 
 if (!just_read) {
-	File.write("devset", devset + "\n")
+	File.write(DEVSET_FILE, devset + "\n")
 }
 
-// compile all devices
+// compile all devsets
 // combine this with the creation of the installation map
 
 var install = {}
+var devset_stack = devset.split(",")
 
-var devices = File.list(devset, 1)
-	.where { |path| path.startsWith("%(devset)/") }
+while (devset_stack.count > 0) {
+	devset = devset_stack.removeAt(0) // TODO just make this .pop in Bob's dialect of Wren
 
-Meta.setenv("DEVSET_INC_PATH", "%(Meta.cwd())/%(devset)")
+	// read dependent devsets and add them to the stack
 
-devices.each { |path|
-	if (File.bob(path, ["build"]) != 0) {
-		return
+	var deps = File.read("%(devset)/%(DEPS_FILE)").trim().split(",")
+
+	if (deps[0] != "") {
+		devset_stack = devset_stack + deps // TODO allow +=
 	}
 
-	var name = path.split("/")[-1]
-	var filename = name + ".vdev"
+	// compile all devices of devset
 
-	install[filename] = "share/aqua/devices/%(filename)"
+	var devices = File.list(devset, 1)
+		.where { |path| path.startsWith("%(devset)/") && !path.endsWith(DEPS_FILE) }
+
+	Meta.setenv("DEVSET_INC_PATH", "%(Meta.cwd())/%(devset)")
+
+	devices.each { |path|
+		if (File.bob(path, ["build"]) != 0) {
+			return
+		}
+
+		var name = path.split("/")[-1]
+		var filename = name + ".vdev"
+
+		install[filename] = "share/aqua/devices/%(filename)"
+	}
 }
 
 // TODO testing
