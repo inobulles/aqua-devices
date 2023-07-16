@@ -28,7 +28,7 @@ src
 // create dynamic library
 
 var linker = Linker.new()
-linker.link(src.toList, [], "aquabsd.black.wgpu.vdev", true)
+linker.link(src.toList, ["wgpu_native", "m"], "aquabsd.black.wgpu.vdev", true)
 
 // TODO testing
 
