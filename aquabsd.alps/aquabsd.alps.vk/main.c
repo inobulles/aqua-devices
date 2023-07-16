@@ -1,16 +1,16 @@
 #include <aquabsd.alps.vk/functions.h>
 
 typedef enum {
-	CMD_CREATE          		= 0x6363, // 'cc'
-	CMD_DELETE          		= 0x6364, // 'dc'
+	CMD_CREATE            = 0x6363, // 'cc'
+	CMD_DELETE            = 0x6364, // 'dc'
 
-	CMD_GET_FUNCTION    		= 0x6766, // 'gf'
-	CMD_GET_INSTANCE    		= 0x6769, // 'gi'
-	CMD_GET_DEVICE      		= 0x6763, // 'gd'
-	CMD_GET_PHYS_DEVICE 		= 0x6770, // 'gp'
-	CMD_GET_SURFACE     		= 0x6773, // 'gs'
-	CMD_GET_GRAPHIC_QUEUE   = 0x6771, // 'gq' 
-	CMD_GET_PRESENT_QUEUE   = 0x7071, // 'pq'
+	CMD_GET_FUNCTION      = 0x6766, // 'gf'
+	CMD_GET_INSTANCE      = 0x6769, // 'gi'
+	CMD_GET_DEVICE        = 0x6763, // 'gd'
+	CMD_GET_PHYS_DEVICE   = 0x6770, // 'gp'
+	CMD_GET_SURFACE       = 0x6773, // 'gs'
+	CMD_GET_GRAPHIC_QUEUE = 0x6771, // 'gq' 
+	CMD_GET_PRESENT_QUEUE = 0x7071, // 'pq'
 } cmd_t;
 
 int load(void) {
