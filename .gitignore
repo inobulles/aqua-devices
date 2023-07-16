@@ -5,3 +5,5 @@ devset
 keysyms.xml
 keysymdef.h
 bin
+aquabsd.black/aquabsd.black.wgpu/wgpu.h
+aquabsd.black/aquabsd.black.wgpu/wgpu_types.h
