@@ -159,13 +159,13 @@ lib_out = f"""// This Source Form is subject to the terms of the AQUA Software L
 
 static uint64_t wgpu_device = -1;
 
-static WGPUSurface wgpu_surface_from_win(WGPUInstance instance, aquabsd_alps_win_t win) {{
+static WGPUSurface wgpu_surface_from_win(WGPUInstance instance, win_t win) {{
 	struct {{
 		WGPUInstance instance;
 		void* win;
-	}} {PACKED}* const args = {{
+	}} {PACKED} const args = {{
 		.instance = instance,
-		.win = (void*) win,
+		.win = (void*) win->internal_win,
 	}};
 
 	return (WGPUSurface) send_device(wgpu_device, {CMD_SURFACE_FROM_WIN}, (void*) &args);
