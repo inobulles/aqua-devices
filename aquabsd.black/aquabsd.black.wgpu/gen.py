@@ -157,9 +157,19 @@ lib_out = f"""// This Source Form is subject to the terms of the AQUA Software L
 
 #include "wgpu_types.h"
 
-static uint64_t wgpu_device = -1;
+static device_t wgpu_device = -1;
 
-static WGPUSurface wgpu_surface_from_win(WGPUInstance instance, win_t win) {{
+static int wgpu_init(void) {{
+	wgpu_device = query_device("aquabsd.black.wgpu");
+
+	if (wgpu_device == NO_DEVICE) {{
+		return -ERR_NO_DEVICE;
+	}}
+
+	return SUCCESS;
+}}
+
+static WGPUSurface wgpu_surface_from_win(WGPUInstance instance, win_t* win) {{
 	struct {{
 		WGPUInstance instance;
 		void* win;
