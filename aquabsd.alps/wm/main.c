@@ -1,5 +1,5 @@
-#include <aquabsd.alps.wm/private.h>
-#include <aquabsd.alps.wm/functions.h>
+#include <aquabsd.alps/wm/private.h>
+#include <aquabsd.alps/wm/functions.h>
 
 typedef enum {
 	CMD_CREATE           = 0x6377, // 'cw'
