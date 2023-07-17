@@ -1,8 +1,8 @@
 // heavily inspired by the accepted answer on this SO question: https://stackoverflow.com/questions/65251904/draw-pixels-in-a-linux-window-without-opengl-in-c
 // also, as linked in the SO answer, this link helped a lot in migrating from Xlib to XCB: https://xcb.freedesktop.org/tutorial/basicwindowsanddrawing/
 
-#include <aquabsd.alps.mouse/public.h>
-#include <aquabsd.alps.kbd/public.h>
+#include <aquabsd.alps/mouse/public.h>
+#include <aquabsd.alps/kbd/public.h>
 
 #include <sys/ipc.h>
 #include <sys/shm.h>

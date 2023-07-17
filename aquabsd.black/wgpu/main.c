@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include "webgpu.h"
 
-#include <aquabsd.alps.win/public.h>
+#include <aquabsd.alps/win/public.h>
 
 typedef enum {
 	CMD_SURFACE_FROM_WIN = 0x0000,
