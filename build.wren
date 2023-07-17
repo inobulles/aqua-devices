@@ -29,12 +29,14 @@ if (!just_read) {
 var install = {}
 var devset_stack = devset.split(",")
 
+Meta.setenv("DEVSET_INC_PATH", "%(Meta.cwd())/src")
+
 while (devset_stack.count > 0) {
 	devset = devset_stack.removeAt(0) // TODO just make this .pop in Bob's dialect of Wren
 
 	// read dependent devsets and add them to the stack
 
-	var deps = File.read("%(devset)/%(DEPS_FILE)").trim().split(",")
+	var deps = File.read("src/%(devset)/%(DEPS_FILE)").trim().split(",")
 
 	if (deps[0] != "") {
 		devset_stack = devset_stack + deps // TODO allow +=
@@ -42,10 +44,8 @@ while (devset_stack.count > 0) {
 
 	// compile all devices of devset
 
-	var devices = File.list(devset, 1)
-		.where { |path| path.startsWith("%(devset)/") && !path.endsWith(DEPS_FILE) }
-
-	Meta.setenv("DEVSET_INC_PATH", "%(Meta.cwd())") // TODO wtf??
+	var devices = File.list("src/%(devset)", 1)
+		.where { |path| path.startsWith("src/%(devset)/") && !path.endsWith(DEPS_FILE) }
 
 	devices.each { |path|
 		if (File.bob(path, ["build"]) != 0) {
@@ -53,7 +53,7 @@ while (devset_stack.count > 0) {
 		}
 
 		var name = path.split("/")[-1]
-		var filename = name + ".vdev"
+		var filename = "%(devset).%(name).vdev"
 
 		install[filename] = "share/aqua/devices/%(filename)"
 	}
