@@ -1,7 +1,7 @@
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.vk"
 
-#include <aquabsd.alps.vk/private.h>
+#include <aquabsd.alps/vk/private.h>
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_cb(
 	VkDebugReportFlagsEXT flags,

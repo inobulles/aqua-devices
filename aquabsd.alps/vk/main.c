@@ -1,4 +1,4 @@
-#include <aquabsd.alps.vk/functions.h>
+#include <aquabsd.alps/vk/functions.h>
 
 typedef enum {
 	CMD_CREATE            = 0x6363, // 'cc'

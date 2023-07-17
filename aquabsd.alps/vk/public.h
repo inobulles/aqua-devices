@@ -1,8 +1,8 @@
 #if !defined(__AQUABSD_ALPS_VK)
 #define __AQUABSD_ALPS_VK
 
-#include <aquabsd.alps.ftime/public.h>
-#include <aquabsd.alps.win/public.h>
+#include <aquabsd.alps/ftime/public.h>
+#include <aquabsd.alps/win/public.h>
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_xcb.h>
