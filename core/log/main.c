@@ -1,4 +1,4 @@
-#include <core.log/private.h>
+#include <core/log/private.h>
 
 typedef enum {
 	CMD_LOG = 0x6C67, // 'lg'
