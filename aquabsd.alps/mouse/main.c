@@ -1,8 +1,8 @@
 // TODO support for multiple mice and counting/listing functions
 //      maybe also network mice?
 
-#include <aquabsd.alps.mouse/private.h>
-#include <aquabsd.alps.mouse/functions.h>
+#include <aquabsd.alps/mouse/private.h>
+#include <aquabsd.alps/mouse/functions.h>
 
 typedef enum {
 	CMD_GET_DEFAULT_MOUSE_ID = 0x646D, // 'dm'

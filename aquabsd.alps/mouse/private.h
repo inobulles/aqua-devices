@@ -1,6 +1,6 @@
 #define dynamic
 
-#include <aquabsd.alps.mouse/public.h>
+#include <aquabsd.alps/mouse/public.h>
 
 #include <stdio.h>
 #include <stdint.h>
@@ -31,5 +31,5 @@ static mouse_t* mice;
 	static unsigned aquabsd_console_mouse_id;
 	#define AQUABSD_CONSOLE_MOUSE
 
-	#include <aquabsd.alps.mouse/aquabsd_console_mouse.h>
+	#include <aquabsd.alps/mouse/aquabsd_console_mouse.h>
 #endif
