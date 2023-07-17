@@ -1,5 +1,4 @@
-aquabsd.alps.ui
-.aquabsd.alps.ui
+aquabsd.alps/ui
 *.sw[op]
 devset
 keysyms.xml
