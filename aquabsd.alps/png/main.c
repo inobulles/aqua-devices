@@ -1,5 +1,5 @@
-#include <aquabsd.alps.png/private.h>
-#include <aquabsd.alps.png/functions.h>
+#include <aquabsd.alps/png/private.h>
+#include <aquabsd.alps/png/functions.h>
 
 typedef enum {
 	CMD_LOAD = 0x6C64, // 'ld'
