@@ -1,6 +1,6 @@
 #define dynamic
 
-#include <aquabsd.alps.vga/public.h>
+#include <aquabsd.alps/vga/public.h>
 
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.vga"
@@ -28,9 +28,9 @@ static int (*backend_reset) (void);
 #endif
 
 #if !defined(WITHOUT_X11)
-	#include <aquabsd.alps.vga/backends/x11.h>
+	#include <aquabsd.alps/vga/backends/x11.h>
 #endif
 
 #if !defined(WITHOUT_AQUABSD_VGA)
-	#include <aquabsd.alps.vga/backends/aquabsd_vga.h>
+	#include <aquabsd.alps/vga/backends/aquabsd_vga.h>
 #endif

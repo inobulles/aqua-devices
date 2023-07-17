@@ -1,5 +1,5 @@
-#include <aquabsd.alps.vga/private.h>
-#include <aquabsd.alps.vga/functions.h>
+#include <aquabsd.alps/vga/private.h>
+#include <aquabsd.alps/vga/functions.h>
 
 typedef enum {
 	CMD_MODE_COUNT  = 0x6D63, // 'mc'
