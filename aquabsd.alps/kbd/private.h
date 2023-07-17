@@ -1,7 +1,7 @@
 #define dynamic
 
-#include <aquabsd.alps.kbd/public.h>
-#include <aquabsd.alps.kbd/map/map.h>
+#include <aquabsd.alps/kbd/public.h>
+#include <aquabsd.alps/kbd/map/map.h>
 
 #include <stdio.h>
 #include <stdint.h>
@@ -23,5 +23,5 @@ static kbd_t* kbds;
 	static unsigned aquabsd_console_kbd_id;
 	#define AQUABSD_CONSOLE_KBD
 
-	#include <aquabsd.alps.kbd/aquabsd_console_kbd.h>
+	#include <aquabsd.alps/kbd/aquabsd_console_kbd.h>
 #endif

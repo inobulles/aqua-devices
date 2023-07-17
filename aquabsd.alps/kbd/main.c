@@ -1,8 +1,8 @@
 // for now, you can only poll individual keyboard buttons, such as arrows
 // in the future though, I'll have an event system to receive and unicode character, as I don't want applications to have to deal with keymaps
 
-#include <aquabsd.alps.kbd/private.h>
-#include <aquabsd.alps.kbd/functions.h>
+#include <aquabsd.alps/kbd/private.h>
+#include <aquabsd.alps/kbd/functions.h>
 
 typedef enum {
 	CMD_GET_DEFAULT_KBD_ID = 0x646B, // 'dk'
