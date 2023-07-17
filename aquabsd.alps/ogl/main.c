@@ -1,7 +1,7 @@
 // TODO for resizing, investigate if how picom does it is any good ('src/backend/gl/gl_common.c' line 1606): https://github.com/yshui/picom/blob/1fec938740149924e66e799e97dba108c7a3f5cf/src/backend/gl/gl_common.c
 
-#include <aquabsd.alps.ogl/private.h>
-#include <aquabsd.alps.ogl/functions.h>
+#include <aquabsd.alps/ogl/private.h>
+#include <aquabsd.alps/ogl/functions.h>
 
 typedef enum {
 	CMD_CREATE       = 0x6363, // 'cc'
