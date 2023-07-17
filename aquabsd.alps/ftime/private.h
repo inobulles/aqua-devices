@@ -1,4 +1,4 @@
-#include <aquabsd.alps.ftime/public.h>
+#include <aquabsd.alps/ftime/public.h>
 
 #include <umber.h>
 #define UMBER_COMPONENT "aquabsd.alps.ftime"
