@@ -45,7 +45,7 @@ while (devset_stack.count > 0) {
 	var devices = File.list(devset, 1)
 		.where { |path| path.startsWith("%(devset)/") && !path.endsWith(DEPS_FILE) }
 
-	Meta.setenv("DEVSET_INC_PATH", "%(Meta.cwd())/%(devset)")
+	Meta.setenv("DEVSET_INC_PATH", "%(Meta.cwd())") // TODO wtf??
 
 	devices.each { |path|
 		if (File.bob(path, ["build"]) != 0) {
