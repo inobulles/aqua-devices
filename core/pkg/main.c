@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include <core.pkg/functions.h>
+#include <core/pkg/functions.h>
 
 pkg_t* (*create_pkg) (const char* path);
 void (*free_pkg) (pkg_t* pkg);
