@@ -1,8 +1,8 @@
 #if !defined(__AQUABSD_ALPS_WIN)
 #define __AQUABSD_ALPS_WIN
 
-#include <aquabsd.alps.mouse/public.h>
-#include <aquabsd.alps.kbd/public.h>
+#include <aquabsd.alps/mouse/public.h>
+#include <aquabsd.alps/kbd/public.h>
 
 #include <stdbool.h>
 #include <pthread.h>
