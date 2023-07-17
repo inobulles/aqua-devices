@@ -1,5 +1,5 @@
-#include <aquabsd.alps.svg/private.h>
-#include <aquabsd.alps.svg/functions.h>
+#include <aquabsd.alps/svg/private.h>
+#include <aquabsd.alps/svg/functions.h>
 
 typedef enum {
 	CMD_LOAD_SVG = 0x6C73, // 'ls'

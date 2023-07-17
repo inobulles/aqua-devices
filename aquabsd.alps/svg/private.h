@@ -1,6 +1,6 @@
 #define dynamic
 
-#include <aquabsd.alps.svg/public.h>
+#include <aquabsd.alps/svg/public.h>
 
 #include <stdlib.h>
 #include <stdint.h>
