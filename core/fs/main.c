@@ -1,4 +1,4 @@
-#include <core.fs/functions.h>
+#include <core/fs/functions.h>
 
 typedef enum {
 	CMD_OPEN  = 0x6F70, // 'op'

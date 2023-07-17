@@ -1,7 +1,7 @@
 // TODO see how things behave when taking multiple threads into account
 //      there may be a need for some mutices around the temporary chdir for realpath
 
-#include <core.fs/private.h>
+#include <core/fs/private.h>
 
 // some KOS-set variables which are interesting to us
 

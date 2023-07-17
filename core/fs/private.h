@@ -1,6 +1,6 @@
 #define dynamic
 
-#include <core.fs/public.h>
+#include <core/fs/public.h>
 
 #include <errno.h>
 #include <stdbool.h>
