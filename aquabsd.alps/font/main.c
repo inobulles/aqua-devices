@@ -1,5 +1,5 @@
-#include <aquabsd.alps.font/private.h>
-#include <aquabsd.alps.font/functions.h>
+#include <aquabsd.alps/font/private.h>
+#include <aquabsd.alps/font/functions.h>
 
 typedef enum {
 	CMD_LOAD_FONT     = 0x6C66, // 'lf'
