@@ -6,11 +6,15 @@
 //      the real solution is probably to just not chdir actually
 
 #include <core/fs/private.h>
+#include <core/pkg/pkg_t.h>
 
 // some KOS-set variables which are interesting to us
 
 char* conf_path;
 char* unique_path;
+
+void* (*pkg_read) (pkg_t* pkg, char const* key, iar_node_t* parent, uint64_t* bytes_ref);
+pkg_t* boot_pkg;
 
 // helpful macros
 
@@ -21,10 +25,88 @@ char* unique_path;
 	} \
 } while (0)
 
+static void strfree(char** str_ref) {
+	if (*str_ref) {
+		free(*str_ref);
+	}
+}
+
 // access commands
+
+static descr_t* res_open(char const* path, flags_t flags) {
+	// make sure the flags make sense
+	// we can't write to the resources drive!
+
+	flags_t const illegal_flags = FLAGS_WRITE | FLAGS_APPEND | FLAGS_CREATE;
+
+	if (flags & illegal_flags) {
+		LOG_ERROR("Passed flags (0x%x) are illegal on the resource drive (matches 0x%x)", flags, illegal_flags)
+		return NULL;
+	}
+
+	// build key
+
+	char* __attribute__((cleanup(strfree))) key = NULL;
+	if (asprintf(&key, "res/%s", path)) {}
+
+	// read resource
+
+	uint64_t bytes;
+	void* const mem = pkg_read(boot_pkg, "res/main.wgsl", NULL, &bytes);
+
+	if (mem == NULL) {
+		LOG_ERROR("pkg_read(\"%s\"): Failed to read key on boot package", key)
+		return NULL;
+	}
+
+	descr_t* const descr = calloc(1, sizeof *descr);
+
+	descr->drive = strdup("res");
+	descr->res_drive = true;
+
+	descr->path = strdup(path);
+	descr->flags = flags;
+
+	descr->fd = -1;
+	descr->size = bytes;
+	descr->mem = mem;
+
+	return descr;
+}
 
 descr_t* fs_open(char const* drive, char const* path, flags_t flags) {
 	descr_t* rv = NULL;
+
+	// TODO check permissions here, when we implement permissions
+
+	// identify drive
+
+	if (strcmp(drive, "res") == 0) {
+		return res_open(path, flags);
+	}
+
+	char* dir = NULL;
+
+	if (strcmp(drive, "sys") == 0) {
+		dir = "/";
+	}
+
+	else if (strcmp(drive, "cfg") == 0) {
+		dir = conf_path;
+	}
+
+	else if (strcmp(drive, "wrk") == 0) {
+		// don't go anywhere; we're already where we need to be
+	}
+
+	else if (strcmp(drive, "unq") == 0) {
+		dir = unique_path;
+	}
+
+	else {
+		LOG_WARN("Couldn't identify drive of '%s:%s'", drive, path)
+		goto error;
+	}
 
 	// flags for open(2) & mmap(2) syscalls later
 
@@ -63,32 +145,7 @@ descr_t* fs_open(char const* drive, char const* path, flags_t flags) {
 		o_flags |= O_CREAT;
 	}
 
-	// TODO check permissions here, when we implement permissions
-
-	// chdir into the drive we want to access
-
-	char* dir = NULL;
-
-	if (strcmp(drive, "sys") == 0) {
-		dir = "/";
-	}
-
-	else if (strcmp(drive, "cfg") == 0) {
-		dir = conf_path;
-	}
-
-	else if (strcmp(drive, "unq") == 0) {
-		dir = unique_path;
-	}
-
-	else if (strcmp(drive, "wrk") == 0) {
-		// don't go anywhere; we're already where we need to be
-	}
-
-	else {
-		LOG_WARN("Couldn't identify drive of '%s:%s'", drive, path)
-		goto error;
-	}
+	// change into directory of file
 
 	char* const cwd = getcwd(NULL, 0);
 
@@ -209,10 +266,19 @@ err_t fs_close(descr_t* descr) {
 	free(descr->path);
 
 	if (descr->mem) {
-		munmap(descr->mem, descr->size);
+		if (descr->res_drive) {
+			free(descr->mem);
+		}
+
+		else {
+			munmap(descr->mem, descr->size);
+		}
 	}
 
-	close(descr->fd);
+	if (descr->fd >= 0) {
+		close(descr->fd);
+	}
+
 	free(descr);
 
 	return ERR_SUCCESS;
@@ -247,6 +313,11 @@ void* fs_mmap(descr_t* descr) {
 err_t fs_read(descr_t* descr, void* buf, size_t len) {
 	VALIDATE_DESCR(ERR_GENERIC);
 
+	if (descr->res_drive) {
+		LOG_WARN("Can't use the read command on files on the resource drive - use the mmap command instead")
+		return ERR_GENERIC;
+	}
+
 	if (read(descr->fd, buf, len) < 0) {
 		LOG_WARN("read(%p, %zu): %s", descr, len, strerror(errno))
 		return ERR_GENERIC;
@@ -257,6 +328,11 @@ err_t fs_read(descr_t* descr, void* buf, size_t len) {
 
 err_t fs_write(descr_t* descr, void const* buf, size_t len) {
 	VALIDATE_DESCR(ERR_GENERIC);
+
+	if (descr->res_drive) {
+		LOG_WARN("Can't use the write command on files on the resource drive")
+		return ERR_GENERIC;
+	}
 
 	if (write(descr->fd, buf, len) < 0) {
 		LOG_WARN("write(%p, %zu): %s", descr, len, strerror(errno))

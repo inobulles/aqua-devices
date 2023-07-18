@@ -3,13 +3,13 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <sys/types.h> // for some reason, 'ssize_t' is not in 'stddef.h'
 
 typedef enum {
 	CORE_FS_FLAGS_READ   = 0b00001, // O_RDONLY/O_RDWR, PROT_READ
 	CORE_FS_FLAGS_WRITE  = 0b00010, // O_WRONLY/O_RDWR, PROT_WRITE
-	CORE_FS_FLAGS_EXEC   = 0b00100, // PROT_EXEC
 	CORE_FS_FLAGS_APPEND = 0b01000, // O_APPEND
 	CORE_FS_FLAGS_CREATE = 0b10000, // O_CREAT: create file/directory if it doesn't yet exist (TODO: vs O_EXCL?)
 } core_fs_flags_t;
@@ -23,6 +23,8 @@ typedef enum {
 
 typedef struct {
 	char* drive;
+	bool res_drive;
+
 	char* path;
 	core_fs_flags_t flags;
 

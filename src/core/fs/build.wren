@@ -15,6 +15,7 @@ cc.add_opt("-Wall")
 cc.add_opt("-Wextra")
 cc.add_opt("-Werror")
 cc.add_opt("-D_DEFAULT_SOURCE")
+cc.add_opt("-g")
 
 var src = File.list(".")
 	.where { |path| path.endsWith(".c") }
