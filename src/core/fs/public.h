@@ -1,5 +1,7 @@
-#if !defined(__CORE_FS)
-#define __CORE_FS
+// This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
+// Copyright (c) 2023 Aymeric Wibo
+
+#pragma once
 
 #include <stddef.h>
 #include <sys/types.h> // for some reason, 'ssize_t' is not in 'stddef.h'
@@ -37,5 +39,3 @@ ssize_t          (*core_fs_size)  (core_fs_descr_t* descr);
 void*            (*core_fs_mmap)  (core_fs_descr_t* descr);
 core_fs_err_t    (*core_fs_read)  (core_fs_descr_t* descr, void* buf, size_t len);
 core_fs_err_t    (*core_fs_write) (core_fs_descr_t* descr, const void* buf, size_t len);
-
-#endif
