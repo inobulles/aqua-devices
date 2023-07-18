@@ -157,7 +157,7 @@ lib_out = f"""// This Source Form is subject to the terms of the AQUA Software L
 
 #include "wgpu_types.h"
 
-static device_t wgpu_device = -1;
+static device_t wgpu_device = NO_DEVICE;
 
 static int wgpu_init(void) {{
 	wgpu_device = query_device("aquabsd.black.wgpu");
