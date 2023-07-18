@@ -1,3 +1,6 @@
+// This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
+// Copyright (c) 2023 Aymeric Wibo
+
 var DEVSET_ENV = "DEVSET"
 var DEVSET_FILE = "devset"
 var DEFAULT_DEVSET = "core"
@@ -45,7 +48,7 @@ while (devset_stack.count > 0) {
 	// compile all devices of devset
 
 	var devices = File.list("src/%(devset)", 1)
-		.where { |path| path.startsWith("src/%(devset)/") && !path.endsWith(DEPS_FILE) }
+		.where { |path| path.startsWith("src/%(devset)/") && !path.endsWith(DEPS_FILE) && !path.endsWith("README.md") }
 
 	devices.each { |path|
 		if (File.bob(path, ["build"]) != 0) {
