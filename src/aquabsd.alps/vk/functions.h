@@ -233,10 +233,10 @@ context_t* create_win_context(
 	vkEnumeratePhysicalDevices(context->instance, &gpu_count, gpus);
 
 	for (size_t i = 0; i < gpu_count; i++) {
-		VkPhysicalDevice* const gpu = &gpus[i];
+		VkPhysicalDevice const gpu = gpus[i];
 
 		VkPhysicalDeviceProperties props;
-		vkGetPhysicalDeviceProperties(*gpu, &props);
+		vkGetPhysicalDeviceProperties(gpu, &props);
 
 		int const major = VK_VERSION_MAJOR(props.apiVersion);
 		int const minor = VK_VERSION_MINOR(props.apiVersion);
