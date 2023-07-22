@@ -6,3 +6,6 @@ keysymdef.h
 bin
 aquabsd.black/wgpu/wgpu.h
 aquabsd.black/wgpu/wgpu_types.h
+*.core
+compile_commands.json
+.cache
