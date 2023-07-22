@@ -34,6 +34,12 @@ var devset_stack = devset.split(",")
 
 Meta.setenv("DEVSET_INC_PATH", "%(Meta.cwd())/src")
 
+var instruction = Meta.instruction()
+
+if (!["build", "lsp"].contains(instruction)) {
+	instruction = "build"
+}
+
 while (devset_stack.count > 0) {
 	devset = devset_stack.removeAt(0) // TODO just make this .pop in Bob's dialect of Wren
 
@@ -51,7 +57,7 @@ while (devset_stack.count > 0) {
 		.where { |path| path.startsWith("src/%(devset)/") && !path.endsWith(DEPS_FILE) && !path.endsWith("README.md") }
 
 	devices.each { |path|
-		if (File.bob(path, ["build"]) != 0) {
+		if (File.bob(path, [instruction]) != 0) {
 			return
 		}
 
