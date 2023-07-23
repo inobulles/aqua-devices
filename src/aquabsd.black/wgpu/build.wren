@@ -9,7 +9,6 @@ var inc_path = Meta.getenv("DEVSET_INC_PATH")
 cc.add_opt("-I%(inc_path)")
 
 cc.add_opt("-I/usr/local/include")
-cc.add_opt("-I../../aquabsd.alps")
 cc.add_opt("-fPIC")
 cc.add_opt("-std=c99")
 cc.add_opt("-Wall")
