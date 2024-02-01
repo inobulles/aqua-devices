@@ -17,7 +17,17 @@ typedef struct {
 	WGPUTextureFormat surface_preferred_format;
 	WGPUSwapChain swapchain;
 	WGPUQueue queue;
+
+	// state between prerendering and postrendering
+
+	WGPUTextureView texture_view;
+	WGPUCommandEncoder command_encoder;
+	WGPURenderPassEncoder render_pass_encoder;
+	WGPUCommandBuffer command_buffer;
 } backend_wgpu_t;
 
 backend_wgpu_t* backend_wgpu_create(aquabsd_alps_win_t* win);
 void backend_wgpu_destroy(void* wgpu);
+
+int backend_wgpu_prerender(void* wgpu);
+int backend_wgpu_postrender(void* wgpu);
