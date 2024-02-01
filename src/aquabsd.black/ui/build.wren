@@ -19,6 +19,11 @@ cc.add_opt("-g")
 
 cc.add_opt("-DWITH_WGPU")
 
+cc.add_lib("wgpu-native")
+cc.add_lib("cairo")
+cc.add_lib("pango")
+cc.add_lib("pangocairo")
+
 var src = File.list(".")
 	.where { |path| path.endsWith(".c") }
 
@@ -28,7 +33,7 @@ src
 // create dynamic library
 
 var linker = Linker.new()
-linker.link(src.toList, ["m"], "aquabsd.black.ui.vdev", true)
+linker.link(src.toList, ["wgpu_native", "m"], "aquabsd.black.ui.vdev", true)
 
 // TODO testing
 
