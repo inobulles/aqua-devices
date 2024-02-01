@@ -1,11 +1,9 @@
-aquabsd.alps/ui
+src/aquabsd.alps/ui
 *.sw[op]
 devset
 keysyms.xml
 keysymdef.h
 bin
-aquabsd.black/wgpu/wgpu.h
-aquabsd.black/wgpu/wgpu_types.h
 *.core
 compile_commands.json
 .cache
