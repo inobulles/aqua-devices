@@ -57,22 +57,22 @@ typedef struct {
 	int x_res, y_res;
 } aquabsd_alps_font_text_t;
 
-aquabsd_alps_font_t* (*aquabsd_alps_font_load_font) (const char* path);
-int (*aquabsd_alps_font_free_font) (aquabsd_alps_font_t* font);
+static aquabsd_alps_font_t* (*aquabsd_alps_font_load_font) (const char* path);
+static int (*aquabsd_alps_font_free_font) (aquabsd_alps_font_t* font);
 
-aquabsd_alps_font_text_t* (*aquabsd_alps_font_create_text) (aquabsd_alps_font_t* font, const char* str);
-int (*aquabsd_alps_font_free_text) (aquabsd_alps_font_text_t* text);
+static aquabsd_alps_font_text_t* (*aquabsd_alps_font_create_text) (aquabsd_alps_font_t* font, const char* str);
+static int (*aquabsd_alps_font_free_text) (aquabsd_alps_font_text_t* text);
 
-int (*aquabsd_alps_font_text_colour) (aquabsd_alps_font_text_t* text, float r, float g, float b, float a);
-int (*aquabsd_alps_font_text_size) (aquabsd_alps_font_text_t* text, uint64_t size);
-int (*aquabsd_alps_font_text_wrap) (aquabsd_alps_font_text_t* text, uint64_t wrap_width, uint64_t wrap_height);
-int (*aquabsd_alps_font_text_align) (aquabsd_alps_font_text_t* text, aquabsd_alps_font_align_t align);
-int (*aquabsd_alps_font_text_markup) (aquabsd_alps_font_text_t* text, bool markup);
+static int (*aquabsd_alps_font_text_colour) (aquabsd_alps_font_text_t* text, float r, float g, float b, float a);
+static int (*aquabsd_alps_font_text_size) (aquabsd_alps_font_text_t* text, uint64_t size);
+static int (*aquabsd_alps_font_text_wrap) (aquabsd_alps_font_text_t* text, uint64_t wrap_width, uint64_t wrap_height);
+static int (*aquabsd_alps_font_text_align) (aquabsd_alps_font_text_t* text, aquabsd_alps_font_align_t align);
+static int (*aquabsd_alps_font_text_markup) (aquabsd_alps_font_text_t* text, bool markup);
 
-int (*aquabsd_alps_font_text_get_res) (aquabsd_alps_font_text_t* text, uint64_t* x_res_ref, uint64_t* y_res_ref);
-int (*aquabsd_alps_font_text_pos_to_i) (aquabsd_alps_font_text_t* text, uint64_t x, uint64_t y);
-int (*aquabsd_alps_font_text_i_to_pos) (aquabsd_alps_font_text_t* text, uint64_t i, uint64_t* x_ref, uint64_t* y_ref, uint64_t* width_ref, uint64_t* height_ref);
+static int (*aquabsd_alps_font_text_get_res) (aquabsd_alps_font_text_t* text, uint64_t* x_res_ref, uint64_t* y_res_ref);
+static int (*aquabsd_alps_font_text_pos_to_i) (aquabsd_alps_font_text_t* text, uint64_t x, uint64_t y);
+static int (*aquabsd_alps_font_text_i_to_pos) (aquabsd_alps_font_text_t* text, uint64_t i, uint64_t* x_ref, uint64_t* y_ref, uint64_t* width_ref, uint64_t* height_ref);
 
-int (*aquabsd_alps_font_draw_text) (aquabsd_alps_font_text_t* text, uint8_t** bmp_ref);
+static int (*aquabsd_alps_font_draw_text) (aquabsd_alps_font_text_t* text, uint8_t** bmp_ref);
 
 #endif
