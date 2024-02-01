@@ -884,63 +884,6 @@ dynamic win_t* create(unsigned x_res, unsigned y_res) {
 		return NULL;
 	}
 
-	// find a depth/visual we like
-	// if we can't find a 32-bit depth one, just use the root depth/visual
-	// thanks to http://metan.ucw.cz/blog/things-i-wanted-to-know-about-libxcb.html
-	// (although there is some irony in the whole "saner API for X programming" thing 😛)
-	// also thanks to i3bar source
-
-	LOG_VERBOSE("Look for a depth/visual we like")
-
-	xcb_visualtype_t* visual = NULL;
-	int depth = 0;
-
-	for (
-		xcb_depth_iterator_t depth_iter = xcb_screen_allowed_depths_iterator(win->screen);
-		depth_iter.rem;
-		xcb_depth_next(&depth_iter)
-	) {
-		if (depth_iter.data->depth != 32) {
-			continue;
-		}
-
-		depth = depth_iter.data->depth;
-
-		for (
-			xcb_visualtype_iterator_t visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
-			visual_iter.rem;
-			xcb_visualtype_next(&visual_iter)
-		) {
-			visual = visual_iter.data;
-
-			if (
-				visual->_class != XCB_VISUAL_CLASS_TRUE_COLOR &&
-				visual->_class != XCB_VISUAL_CLASS_DIRECT_COLOR
-			) {
-				continue;
-			}
-
-			if (visual->bits_per_rgb_value != 8) {
-				continue;
-			}
-
-			goto found;
-		}
-	}
-
-	visual->visual_id = win->screen->root_visual;
-	depth = win->screen->root_depth;
-
-found: {}
-
-	xcb_colormap_t const colourmap = xcb_generate_id(win->connection);
-	xcb_void_cookie_t cookie = xcb_create_colormap_checked(win->connection, XCB_COLORMAP_ALLOC_NONE, colourmap, win->root, visual->visual_id);
-
-	if (xcb_request_check(win->connection, cookie)) {
-		LOG_ERROR("Failed to create colourmap")
-		return NULL;
-	}
-
 	// create window
 
 	LOG_VERBOSE("Actually create X window")
@@ -948,35 +891,21 @@ found: {}
 	win->x_res = x_res;
 	win->y_res = y_res;
 
-	uint32_t const mask =
-		XCB_CW_BACK_PIXEL |
-		XCB_CW_BORDER_PIXEL |
-		XCB_CW_EVENT_MASK |
-		XCB_CW_COLORMAP;
-
 	const uint32_t win_attribs[] = {
-		win->screen->black_pixel,
-		win->screen->black_pixel,
 		XCB_EVENT_MASK_EXPOSURE | // probably not all that important anymore
 		XCB_EVENT_MASK_STRUCTURE_NOTIFY |
 		XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
 		XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_POINTER_MOTION |
 		XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE,
-		colourmap,
 	};
 
 	win->win = xcb_generate_id(win->connection);
 
-	cookie = xcb_create_window_checked(
-		win->connection, depth, win->win, win->root,
-		30, 30, win->x_res, win->y_res, 0, // window geometry
-		XCB_WINDOW_CLASS_INPUT_OUTPUT, visual->visual_id,
-		mask, win_attribs);
-
-	if (xcb_request_check(win->connection, cookie)) {
-		LOG_ERROR("Failed to create window")
-		return NULL;
-	}
+	xcb_create_window(
+		win->connection, XCB_COPY_FROM_PARENT, win->win, win->root,
+		0, 0, win->x_res, win->y_res, 0, // window geometry
+		XCB_WINDOW_CLASS_INPUT_OUTPUT, win->screen->root_visual,
+		XCB_CW_EVENT_MASK, win_attribs);
 
 	// set sensible minimum and maximum sizes for the window
 
