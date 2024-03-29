@@ -23,10 +23,7 @@ dynamic int free_png(png_t* png) {
 	return 0;
 }
 
-static inline png_t* __load_png(header, header_len) // pre-ANSI C go brrrr
-	size_t header_len;
-	char header[header_len];
-{
+static inline png_t* __load_png(size_t header_len, char header[header_len]) {
 	png_t* png = calloc(1, sizeof *png);
 
 	// make sure file is PNG
@@ -128,7 +125,7 @@ dynamic png_t* load_png(void* ptr) {
 	char header[8];
 	memcpy(header, ptr, sizeof header);
 
-	png_t* png = __load_png(header, sizeof header);
+	png_t* png = __load_png(sizeof header, header);
 
 	if (!png) {
 		return NULL;
