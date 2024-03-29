@@ -14,10 +14,8 @@ typedef struct {
 	// these are objects filled in by registry events
 
 	struct wl_compositor* compositor;
-	struct wl_shell* shell;
 
 	struct wl_surface* surface;
-	struct wl_shell_surface* shell_surface;
 } win_t;
 
 win_t* win_create(size_t width, size_t height);
