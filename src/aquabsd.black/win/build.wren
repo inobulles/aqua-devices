@@ -25,7 +25,7 @@ src
 // create dynamic library
 
 var linker = Linker.new()
-linker.link(src.toList, ["m"], "aquabsd.black.win.vdev", true)
+linker.link(src.toList, ["m", "wayland-client"], "aquabsd.black.win.vdev", true)
 
 // TODO testing
 
