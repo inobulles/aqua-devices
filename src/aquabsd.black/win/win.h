@@ -24,18 +24,20 @@ typedef struct {
 
 	char aquabsd_black_win_signature[16];
 
-	// preferences
+	// preferences and state
 
 	size_t x_res;
 	size_t y_res;
 	bool has_fb;
 	bool should_close;
+	uint32_t prev_frame_time;
 
 	// wayland stuff
 
 	struct wl_display* display;
 	struct wl_registry* registry;
 	struct wl_surface* surface;
+	struct wl_callback* frame_cb;
 
 	// these are objects filled in by registry events
 

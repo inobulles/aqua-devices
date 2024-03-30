@@ -3,6 +3,7 @@
 
 #include "win.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -239,6 +240,46 @@ static struct xdg_toplevel_listener const xdg_toplevel_listener = {
 	.close = xdg_toplevel_close_handler,
 };
 
+static void frame_done_handler(void* data, struct wl_callback* cb, uint32_t time) {
+	(void) time;
+
+	win_t* const win = data;
+
+	uint32_t const dt = time - win->prev_frame_time;
+	LOG_VERBOSE("New frame requested (dt = %g ms)", dt);
+
+	assert(cb == win->frame_cb);
+	wl_callback_destroy(cb);
+
+	// request another frame
+
+	win->frame_cb = wl_surface_frame(win->surface);
+	static struct wl_callback_listener const frame_listener;
+	wl_callback_add_listener(win->frame_cb, &frame_listener, win);
+
+	// create frame
+
+	if (call_cb(win, WIN_CB_KIND_DRAW)) {
+		LOG_VERBOSE("Draw callback requested window to close");
+		win->should_close = true;
+		goto done;
+	}
+
+	// submit frame
+
+	wl_surface_attach(win->surface, win->buffer, 0, 0);
+	wl_surface_damage_buffer(win->surface, 0, 0, INT32_MAX, INT32_MAX);
+	wl_surface_commit(win->surface);
+
+done:
+
+	win->prev_frame_time = time;
+}
+
+static struct wl_callback_listener const frame_listener = {
+	.done = frame_done_handler,
+};
+
 win_t* win_create(size_t x_res, size_t y_res, bool has_fb) {
 	LOG_INFO("Creating window with desired initial size %zux%zu (with%s a framebuffer)", x_res, y_res, has_fb ? "" : "out");
 
@@ -325,12 +366,25 @@ win_t* win_create(size_t x_res, size_t y_res, bool has_fb) {
 	LOG_VERBOSE("Commit window surface");
 	wl_surface_commit(win->surface);
 
+	LOG_VERBOSE("Register a surface frame callback");
+	win->frame_cb = wl_surface_frame(win->surface);
+
+	if (win->frame_cb == NULL) {
+		LOG_ERROR("Failed to register a surface frame callback");
+		win_destroy(win);
+		return NULL;
+	}
+
+	wl_callback_add_listener(win->frame_cb, &frame_listener, win);
+
 	LOG_SUCCESS("Window created");
 
 	return win;
 }
 
 void win_destroy(win_t* win) {
+	// wayland stuff
+
 	if (win->display) {
 		wl_display_disconnect(win->display);
 	}
@@ -343,6 +397,12 @@ void win_destroy(win_t* win) {
 		wl_surface_destroy(win->surface);
 	}
 
+	if (win->frame_cb) {
+		wl_callback_destroy(win->frame_cb);
+	}
+
+	// objects filled in by registry events
+
 	if (win->compositor) {
 		wl_compositor_destroy(win->compositor);
 	}
@@ -354,6 +414,8 @@ void win_destroy(win_t* win) {
 	if (win->xdg_wm_base) {
 		xdg_wm_base_destroy(win->xdg_wm_base);
 	}
+
+	// XDG stuff
 
 	if (win->xdg_surface) {
 		xdg_surface_destroy(win->xdg_surface);
@@ -383,14 +445,8 @@ int win_loop(win_t* win) {
 	LOG_INFO("Start window loop");
 
 	while (wl_display_dispatch(win->display) >= 0) {
-		// TODO not an actual draw loop
-
 		if (win->should_close) {
 			break;
-		}
-
-		if (call_cb(win, WIN_CB_KIND_DRAW) == 1) {
-			// TODO close window
 		}
 	}
 
