@@ -224,9 +224,19 @@ static void xdg_toplevel_configure_handler(void* data, struct xdg_toplevel* xdg_
 	win->y_res = height;
 }
 
+static void xdg_toplevel_close_handler(void* data, struct xdg_toplevel* xdg_toplevel) {
+	(void) xdg_toplevel;
+
+	win_t* const win = data;
+
+	LOG_VERBOSE("Window closed");
+
+	win->should_close = true;
+}
+
 static struct xdg_toplevel_listener const xdg_toplevel_listener = {
 	.configure = xdg_toplevel_configure_handler,
-	.close = NULL, // TODO
+	.close = xdg_toplevel_close_handler,
 };
 
 win_t* win_create(size_t x_res, size_t y_res, bool has_fb) {
@@ -370,15 +380,21 @@ int win_register_cb(win_t* win, win_cb_kind_t kind, uint64_t cb, uint64_t data) 
 }
 
 int win_loop(win_t* win) {
-	LOG_INFO("Start window loop")
+	LOG_INFO("Start window loop");
 
 	while (wl_display_dispatch(win->display) >= 0) {
 		// TODO not an actual draw loop
+
+		if (win->should_close) {
+			break;
+		}
 
 		if (call_cb(win, WIN_CB_KIND_DRAW) == 1) {
 			// TODO close window
 		}
 	}
+
+	LOG_SUCCESS("Window loop ended");
 
 	return 0;
 }

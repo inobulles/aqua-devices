@@ -29,6 +29,7 @@ typedef struct {
 	size_t x_res;
 	size_t y_res;
 	bool has_fb;
+	bool should_close;
 
 	// wayland stuff
 
