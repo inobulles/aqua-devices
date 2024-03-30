@@ -199,6 +199,10 @@ static void xdg_surface_configure_handler(void* data, struct xdg_surface* xdg_su
 	LOG_VERBOSE("Configuring window XDG surface");
 	xdg_surface_ack_configure(win->xdg_surface, serial);
 
+	if (win->custom_presenter) {
+		return;
+	}
+
 	struct wl_buffer* buffer = NULL;
 
 	if (draw_frame(win, &buffer) < 0) {
@@ -290,8 +294,13 @@ static struct wl_callback_listener const frame_listener = {
 	.done = frame_done_handler,
 };
 
-win_t* win_create(size_t x_res, size_t y_res, bool has_fb) {
-	LOG_INFO("Creating window with desired initial size %zux%zu (with%s a framebuffer)", x_res, y_res, has_fb ? "" : "out");
+char* unique; // KOS-set variable
+
+win_t* win_create(size_t x_res, size_t y_res, win_flag_t flags) {
+	bool const has_fb = flags & WIN_FLAG_WITH_FB;
+	bool const custom_presenter = flags & WIN_FLAG_CUSTOM_PRESENTER;
+
+	LOG_INFO("Creating window with desired initial size %zux%zu (with%s framebuffer, with%s custom presenter)", x_res, y_res, has_fb ? "" : "out", custom_presenter ? "" : "out");
 
 	win_t* const win = calloc(1, sizeof *win);
 	strcpy(win->aquabsd_black_win_signature, AQUABSD_BLACK_WIN_SIGNATURE);
@@ -304,6 +313,7 @@ win_t* win_create(size_t x_res, size_t y_res, bool has_fb) {
 	win->x_res = x_res;
 	win->y_res = y_res;
 	win->has_fb = has_fb;
+	win->custom_presenter = custom_presenter;
 
 	LOG_VERBOSE("Connecting to Wayland display");
 
@@ -383,16 +393,18 @@ win_t* win_create(size_t x_res, size_t y_res, bool has_fb) {
 	LOG_VERBOSE("Commit window surface");
 	wl_surface_commit(win->surface);
 
-	LOG_VERBOSE("Register a surface frame callback");
-	win->frame_cb = wl_surface_frame(win->surface);
+	if (!win->custom_presenter) {
+		LOG_VERBOSE("Register a surface frame callback");
+		win->frame_cb = wl_surface_frame(win->surface);
 
-	if (win->frame_cb == NULL) {
-		LOG_ERROR("Failed to register a surface frame callback");
-		win_destroy(win);
-		return NULL;
+		if (win->frame_cb == NULL) {
+			LOG_ERROR("Failed to register a surface frame callback");
+			win_destroy(win);
+			return NULL;
+		}
+
+		wl_callback_add_listener(win->frame_cb, &frame_listener, win);
 	}
-
-	wl_callback_add_listener(win->frame_cb, &frame_listener, win);
 
 	LOG_SUCCESS("Window created");
 
@@ -464,6 +476,10 @@ int win_loop(win_t* win) {
 		if (wl_display_dispatch(win->display) < 0) {
 			LOG_ERROR("Dispatch failure");
 			return -1;
+		}
+
+		if (win->custom_presenter && call_cb(win, WIN_CB_KIND_DRAW)) {
+			win->should_close = true;
 		}
 	}
 

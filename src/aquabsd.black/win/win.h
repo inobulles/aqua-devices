@@ -17,6 +17,12 @@ typedef enum {
 	WIN_CB_KIND_COUNT,
 } win_cb_kind_t;
 
+typedef enum {
+	WIN_FLAG_NONE = 0b00,
+	WIN_FLAG_WITH_FB = 0b01,
+	WIN_FLAG_CUSTOM_PRESENTER = 0b10,
+} win_flag_t;
+
 #define AQUABSD_BLACK_WIN_SIGNATURE "AQUABSD_BLACK"
 
 typedef struct {
@@ -29,6 +35,7 @@ typedef struct {
 	size_t x_res;
 	size_t y_res;
 	bool has_fb;
+	bool custom_presenter;
 	bool should_close;
 	uint32_t prev_frame_time;
 
@@ -60,7 +67,7 @@ typedef struct {
 	uint64_t cb_datas[WIN_CB_KIND_COUNT];
 } win_t;
 
-win_t* win_create(size_t x_res, size_t y_res, bool has_fb);
+win_t* win_create(size_t x_res, size_t y_res, win_flag_t flags);
 void win_destroy(win_t* win);
 
 int win_register_cb(win_t* win, win_cb_kind_t kind, uint64_t cb, uint64_t data);
