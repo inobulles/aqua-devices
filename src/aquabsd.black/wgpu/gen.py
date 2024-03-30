@@ -203,7 +203,7 @@ static int wgpu_init(void) {{
 	wgpu_device = query_device("aquabsd.black.wgpu");
 
 	if (wgpu_device == NO_DEVICE) {{
-		return -ERR_NO_DEVICE;
+		return ERR_NO_DEVICE;
 	}}
 
 	return SUCCESS;
