@@ -207,6 +207,28 @@ static struct xdg_surface_listener const xdg_surface_listener = {
 	.configure = xdg_surface_configure_handler,
 };
 
+static void xdg_toplevel_configure_handler(void* data, struct xdg_toplevel* xdg_toplevel, int32_t width, int32_t height, struct wl_array* states) {
+	(void) xdg_toplevel;
+	(void) states;
+
+	win_t* const win = data;
+
+	LOG_VERBOSE("Configuring window XDG toplevel with size %dx%d", width, height);
+
+	if (width <= 0 || height <= 0) {
+		LOG_WARN("Invalid window size %dx%d (the Wayland Book says the \"Compositor is deferring to us\", not exactly sure what is meant by that)", width, height);
+		return;
+	}
+
+	win->x_res = width;
+	win->y_res = height;
+}
+
+static struct xdg_toplevel_listener const xdg_toplevel_listener = {
+	.configure = xdg_toplevel_configure_handler,
+	.close = NULL, // TODO
+};
+
 win_t* win_create(size_t x_res, size_t y_res, bool has_fb) {
 	LOG_INFO("Creating window with desired initial size %zux%zu (with%s a framebuffer)", x_res, y_res, has_fb ? "" : "out");
 
@@ -286,6 +308,9 @@ win_t* win_create(size_t x_res, size_t y_res, bool has_fb) {
 		win_destroy(win);
 		return NULL;
 	}
+
+	LOG_VERBOSE("Adding listener to window XDG toplevel");
+	xdg_toplevel_add_listener(win->xdg_toplevel, &xdg_toplevel_listener, win);
 
 	LOG_VERBOSE("Commit window surface");
 	wl_surface_commit(win->surface);
