@@ -260,8 +260,11 @@ static void frame_done_handler(void* data, struct wl_callback* cb, uint32_t time
 
 	win_t* const win = data;
 
-	uint32_t const dt = time - win->prev_frame_time; // TODO only if prev_frame_time is 0
-	LOG_VERBOSE("New frame requested (dt = %u ms)", dt);
+	if (win->prev_frame_time) {
+		win->dt_ms = time - win->prev_frame_time;
+	}
+
+	LOG_VERBOSE("New frame requested (dt = %u ms)", win->dt_ms);
 
 	assert(cb == win->frame_cb);
 	wl_callback_destroy(cb);
@@ -490,7 +493,7 @@ int win_loop(win_t* win) {
 
 uint8_t* win_get_fb(win_t* win) {
 	if (!win->has_fb) {
-		LOG_ERROR("Window was not created with a framebuffer - did you mean to create the window with has_fb = true?");
+		LOG_ERROR("Window was not created with a framebuffer - did you mean to create the window with WIN_FLAG_WITH_FB?");
 		return NULL;
 	}
 
@@ -499,6 +502,14 @@ uint8_t* win_get_fb(win_t* win) {
 	}
 
 	return win->fb;
+}
+
+uint32_t win_get_dt_ms(win_t* win) {
+	if (win->custom_presenter) {
+		LOG_ERROR("Window was created with a custom presenter, the frame time is not available");
+	}
+
+	return win->dt_ms;
 }
 
 size_t win_get_x_res(win_t* win) {

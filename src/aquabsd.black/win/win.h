@@ -38,6 +38,7 @@ typedef struct {
 	bool custom_presenter;
 	bool should_close;
 	uint32_t prev_frame_time;
+	uint32_t dt_ms;
 
 	// wayland stuff
 
@@ -74,6 +75,8 @@ int win_register_cb(win_t* win, win_cb_kind_t kind, uint64_t cb, uint64_t data);
 int win_loop(win_t* win);
 
 uint8_t* win_get_fb(win_t* win);
+
+uint32_t win_get_dt_ms(win_t* win);
 
 size_t win_get_x_res(win_t* win);
 size_t win_get_y_res(win_t* win);

@@ -18,10 +18,12 @@ typedef enum {
 
 	CMD_GET_FB = 0x6662, // 'fb'
 
+	// window attribute commands
+
+	CMD_GET_DT_MS = 0x6474, // 'dt'
+
 	CMD_GET_X_RES = 0x7872, // 'xr'
 	CMD_GET_Y_RES = 0x7972, // 'yr'
-
-	// window attribute commands
 
 	CMD_SET_CAPTION = 0x7363, // 'sc'
 } cmd_t;
@@ -56,6 +58,10 @@ uint64_t send(uint16_t _cmd, void* data) {
 	case CMD_GET_FB:
 
 		return (uint64_t) win_get_fb((win_t*) args[0]);
+
+	case CMD_GET_DT_MS:
+
+		return (uint64_t) win_get_dt_ms((win_t*) args[0]);
 
 	case CMD_GET_X_RES:
 		
