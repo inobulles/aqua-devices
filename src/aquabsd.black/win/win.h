@@ -17,7 +17,13 @@ typedef enum {
 	WIN_CB_KIND_COUNT,
 } win_cb_kind_t;
 
+#define AQUABSD_BLACK_WIN_SIGNATURE "AQUABSD_BLACK"
+
 typedef struct {
+	// to discriminate between aquabsd.alps.win and aquabsd.black.win window objects
+
+	char aquabsd_black_win_signature[16];
+
 	// preferences
 
 	size_t x_res;

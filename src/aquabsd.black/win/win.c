@@ -211,6 +211,8 @@ win_t* win_create(size_t x_res, size_t y_res, bool has_fb) {
 	LOG_INFO("Creating window with desired initial size %zux%zu (with%s a framebuffer)", x_res, y_res, has_fb ? "" : "out");
 
 	win_t* const win = calloc(1, sizeof *win);
+
+	strcpy(win->aquabsd_black_win_signature, AQUABSD_BLACK_WIN_SIGNATURE);
 	win->shm_fd = -1;
 
 	if (win == NULL) {

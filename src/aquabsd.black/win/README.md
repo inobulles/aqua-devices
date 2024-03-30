@@ -18,6 +18,6 @@ TODO This should really automatically be done by Bob.
 
 ## Note on X11 support
 
-If you need to use X11, use `aquabsd.alps.win`.
+If you need to use X11, use `aquabsd.alps.win`, which still works perfectly well and is (almost) forward-compatible with `aquabsd.black.win`.
 The current implementation only supports Wayland.
 X11 support may come back in the future, but no promises ;)
