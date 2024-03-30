@@ -4,8 +4,8 @@ devset
 keysyms.xml
 keysymdef.h
 bin
-aquabsd.black/wgpu/wgpu.h
-aquabsd.black/wgpu/wgpu_types.h
+src/aquabsd.black/wgpu/wgpu.h
+src/aquabsd.black/wgpu/wgpu_types.h
 *.core
 compile_commands.json
 .cache
