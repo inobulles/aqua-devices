@@ -371,6 +371,15 @@ win_t* win_create(size_t x_res, size_t y_res, bool has_fb) {
 	LOG_VERBOSE("Adding listener to window XDG toplevel");
 	xdg_toplevel_add_listener(win->xdg_toplevel, &xdg_toplevel_listener, win);
 
+	if (unique == NULL) {
+		LOG_WARN("Unique variable not set");
+	}
+
+	else {
+		LOG_VERBOSE("Setting window XDG toplevel's ID to unique value (%s)", unique);
+		xdg_toplevel_set_app_id(win->xdg_toplevel, unique);
+	}
+
 	LOG_VERBOSE("Commit window surface");
 	wl_surface_commit(win->surface);
 
