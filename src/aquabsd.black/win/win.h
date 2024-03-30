@@ -7,16 +7,57 @@
 
 #include <wayland-client.h>
 
+#include "xdg-shell-client-protocol.h"
+
+#include <stdbool.h>
+
+typedef enum {
+	WIN_CB_KIND_DRAW,
+	WIN_CB_KIND_RESIZE,
+	WIN_CB_KIND_COUNT,
+} win_cb_kind_t;
+
 typedef struct {
+	// preferences
+
+	size_t width;
+	size_t height;
+	bool has_fb;
+
+	// wayland stuff
+
 	struct wl_display* display;
 	struct wl_registry* registry;
+	struct wl_surface* surface;
 
 	// these are objects filled in by registry events
 
 	struct wl_compositor* compositor;
+	struct wl_shm* shm;
+	struct xdg_wm_base* xdg_wm_base;
 
-	struct wl_surface* surface;
+	// XDG stuff
+
+	struct xdg_surface* xdg_surface;
+	struct xdg_toplevel* xdg_toplevel;
+
+	// if we have a framebuffer
+
+	int shm_fd;
+	struct wl_shm_pool* shm_pool;
+	struct wl_buffer* buffer;
+	uint8_t* fb;
+
+	// callbacks
+
+	uint64_t cbs[WIN_CB_KIND_COUNT];
+	uint64_t cb_datas[WIN_CB_KIND_COUNT];
 } win_t;
 
-win_t* win_create(size_t width, size_t height);
+win_t* win_create(size_t width, size_t height, bool has_fb);
 void win_destroy(win_t* win);
+
+int win_register_cb(win_t* win, win_cb_kind_t kind, uint64_t cb, uint64_t data);
+int win_loop(win_t* win);
+
+uint8_t* win_get_fb(win_t* win);

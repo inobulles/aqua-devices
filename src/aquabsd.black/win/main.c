@@ -8,7 +8,16 @@ typedef enum {
 
 	CMD_CREATE = 0x6377, // 'cw'
 	CMD_DESTROY = 0x6477, // 'dw'
+
+	// window event commands
+
+	CMD_REGISTER_CB = 0x7263, // 'rc'
+	CMD_LOOP = 0x6C6F, // 'lo'
 } cmd_t;
+
+uint64_t (*kos_query_device) (uint64_t, uint64_t name);
+void* (*kos_load_device_function) (uint64_t device, const char* name);
+uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
 
 uint64_t send(uint16_t _cmd, void* data) {
 	cmd_t const cmd = _cmd;
@@ -23,6 +32,15 @@ uint64_t send(uint16_t _cmd, void* data) {
 
 		win_destroy((win_t*) args[0]);
 		return 0;
+
+	case CMD_REGISTER_CB:
+
+		win_register_cb((win_t*) args[0], (win_cb_kind_t) args[1], args[2], args[3]);
+		return 0;
+
+	case CMD_LOOP:
+
+		return (uint64_t) win_loop((win_t*) args[0]);
 	}
 
 	return -1;

@@ -167,13 +167,50 @@ void win_destroy(win_t* win) {
 		wl_registry_destroy(win->registry);
 	}
 
-	if (win->compositor) {
-		wl_compositor_destroy(win->compositor);
-	}
-
 	if (win->surface) {
 		wl_surface_destroy(win->surface);
 	}
 
+	if (win->compositor) {
+		wl_compositor_destroy(win->compositor);
+	}
+
+	if (win->xdg_wm_base) {
+		xdg_wm_base_destroy(win->xdg_wm_base);
+	}
+
+	if (win->xdg_surface) {
+		xdg_surface_destroy(win->xdg_surface);
+	}
+
+	if (win->xdg_toplevel) {
+		xdg_toplevel_destroy(win->xdg_toplevel);
+	}
+
+	destroy_fb(win);
 	free(win);
+}
+
+int win_register_cb(win_t* win, win_cb_kind_t kind, uint64_t cb, uint64_t data) {
+	if (kind >= WIN_CB_KIND_COUNT) {
+		LOG_ERROR("Callback kind %d doesn't exist", kind);
+		return -1;
+	}
+
+	win->cbs[kind] = cb;
+	win->cb_datas[kind] = data;
+
+	return 0;
+}
+
+int win_loop(win_t* win) {
+	LOG_INFO("Start window loop")
+
+	while (wl_display_dispatch(win->display) >= 0) {
+		if (call_cb(win, WIN_CB_KIND_DRAW) == 1) {
+			// TODO close window
+		}
+	}
+
+	return 0;
 }
