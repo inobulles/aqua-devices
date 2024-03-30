@@ -35,14 +35,22 @@ static struct xdg_wm_base_listener const xdg_wm_base_listener = {
 	.ping = xdg_ping_handler,
 };
 
+// XXX we use compositor version 4 to get access to wl_surface_damage_buffer (wl_surface_damage is "effectively" deprecated)
+#define COMPOSITOR_VERSION 4
+
 static void global_registry_handler(void* data, struct wl_registry* registry, uint32_t name, char const* interface, uint32_t version) {
 	(void) version;
 
 	win_t* const win = data;
 
 	if (strcmp(interface, wl_compositor_interface.name) == 0) {
-		// XXX we use compositor version 4 to get access to wl_surface_damage_buffer (wl_surface_damage is deprecated)
-		win->compositor = wl_registry_bind(registry, name, &wl_compositor_interface, 4);
+		if (version < COMPOSITOR_VERSION) {
+			LOG_ERROR("Minium required compositor version is %d (version is %u)", COMPOSITOR_VERSION, version);
+		}
+
+		else {
+			win->compositor = wl_registry_bind(registry, name, &wl_compositor_interface, COMPOSITOR_VERSION);
+		}
 	}
 
 	else if (strcmp(interface, wl_shm_interface.name) == 0) {
