@@ -13,6 +13,10 @@ typedef enum {
 
 	CMD_REGISTER_CB = 0x7263, // 'rc'
 	CMD_LOOP = 0x6C6F, // 'lo'
+
+	// window framebuffer commands
+
+	CMD_GET_FB = 0x6662, // 'fb'
 } cmd_t;
 
 uint64_t (*kos_query_device) (uint64_t, uint64_t name);
@@ -26,7 +30,7 @@ uint64_t send(uint16_t _cmd, void* data) {
 	switch (cmd) {
 	case CMD_CREATE:
 
-		return (uint64_t) win_create(args[0], args[1]);
+		return (uint64_t) win_create(args[0], args[1], args[2]);
 
 	case CMD_DESTROY:
 
@@ -41,6 +45,10 @@ uint64_t send(uint16_t _cmd, void* data) {
 	case CMD_LOOP:
 
 		return (uint64_t) win_loop((win_t*) args[0]);
+
+	case CMD_GET_FB:
+
+		return (uint64_t) win_get_fb((win_t*) args[0]);
 	}
 
 	return -1;

@@ -77,15 +77,150 @@ static struct wl_registry_listener const registry_listener = {
 	.global_remove = global_registry_remove_handler,
 };
 
-win_t* win_create(size_t width, size_t height) {
-	LOG_INFO("Creating window with size %lux%lu", width, height);
+static void destroy_fb(win_t* win) {
+	if (win->shm_fd >= 0) {
+		close(win->shm_fd);
+		win->shm_fd = -1;
+	}
+
+	if (win->fb) {
+		munmap(win->fb, win->width * win->height * 4);
+		win->fb = NULL;
+	}
+
+	if (win->shm_pool) {
+		wl_shm_pool_destroy(win->shm_pool);
+		win->shm_pool = NULL;
+	}
+}
+
+static void buffer_release_handler(void* data, struct wl_buffer* buffer) {
+	(void) data;
+
+	wl_buffer_destroy(buffer);
+	LOG_VERBOSE("Buffer released");
+}
+
+static struct wl_buffer_listener const buffer_listener = {
+	.release = buffer_release_handler,
+};
+
+static void xdg_surface_configure_handler(void* data, struct xdg_surface* xdg_surface, uint32_t serial) {
+	(void) xdg_surface;
+
+	win_t* const win = data;
+
+	LOG_VERBOSE("Configuring window XDG surface");
+	xdg_surface_ack_configure(win->xdg_surface, serial);
+
+	if (!win->has_fb) {
+		goto done;
+	}
+
+	LOG_VERBOSE("Destroying previous framebuffer (if there is anything to clean up)");
+
+	destroy_fb(win);
+
+	LOG_VERBOSE("Creating framebuffer");
+
+	size_t const stride = win->width * 4;
+	size_t const size = win->height * stride;
+
+	char name[] = "/tmp/aquabsd.black.win.shm-XXXXXXX";
+	mktemp(name);
+
+	LOG_VERBOSE("Creating SHM file (%s)", name);
+
+	win->shm_fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
+
+	if (win->shm_fd < 0) {
+		LOG_ERROR("Failed to create SHM file");
+		return;
+	}
+
+	unlink(name);
+
+	LOG_VERBOSE("Truncating SHM file to %zu bytes", size);
+
+	// XXX the code example in the Wayland Book loops this in case of EINTR - how useful is that actually?
+
+	if (ftruncate(win->shm_fd, size) < 0) {
+		LOG_ERROR("Failed to truncate SHM file");
+		goto err_fb;
+	}
+
+	LOG_VERBOSE("Mapping SHM file to memory");
+
+	win->fb = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, win->shm_fd, 0);
+
+	if (win->fb == MAP_FAILED) {
+		LOG_ERROR("Failed to map SHM file to memory");
+		goto err_fb;
+	}
+
+	LOG_VERBOSE("Creating SHM pool");
+
+	win->shm_pool = wl_shm_create_pool(win->shm, win->shm_fd, size);
+
+	if (win->shm_pool == NULL) {
+		LOG_ERROR("Failed to create SHM pool");
+		goto err_fb;
+	}
+
+	LOG_VERBOSE("Creating frame buffer");
+	win->buffer = wl_shm_pool_create_buffer(win->shm_pool, 0, win->width, win->height, stride, WL_SHM_FORMAT_ARGB8888);
+
+	if (win->buffer == NULL) {
+		LOG_ERROR("Failed to create frame buffer");
+		goto err_fb;
+	}
+
+	LOG_VERBOSE("Cleaning up");
+
+	wl_shm_pool_destroy(win->shm_pool);
+	win->shm_pool = NULL;
+
+	close(win->shm_fd);
+	win->shm_fd = -1;
+
+	LOG_VERBOSE("Adding listener to frame buffer");
+
+	wl_buffer_add_listener(win->buffer, &buffer_listener, win);
+
+	LOG_VERBOSE("Attaching frame buffer to window surface");
+
+	wl_surface_attach(win->surface, win->buffer, 0, 0);
+	wl_surface_commit(win->surface);
+
+	goto done;
+
+err_fb:
+
+	destroy_fb(win);
+
+done:
+
+	call_cb(win, WIN_CB_KIND_RESIZE);
+}
+
+static struct xdg_surface_listener const xdg_surface_listener = {
+	.configure = xdg_surface_configure_handler,
+};
+
+win_t* win_create(size_t width, size_t height, bool has_fb) {
+	LOG_INFO("Creating window with desired initial size %zux%zu (with%s a framebuffer)", width, height, has_fb ? "" : "out");
 
 	win_t* const win = calloc(1, sizeof *win);
+	win->shm_fd = -1;
 
 	if (win == NULL) {
 		LOG_FATAL("calloc failed");
 		return NULL;
 	}
+
+	win->width = width;
+	win->height = height;
+	win->has_fb = has_fb;
 
 	LOG_VERBOSE("Connecting to Wayland display");
 
@@ -175,6 +310,10 @@ void win_destroy(win_t* win) {
 		wl_compositor_destroy(win->compositor);
 	}
 
+	if (win->shm) {
+		wl_shm_destroy(win->shm);
+	}
+
 	if (win->xdg_wm_base) {
 		xdg_wm_base_destroy(win->xdg_wm_base);
 	}
@@ -213,4 +352,17 @@ int win_loop(win_t* win) {
 	}
 
 	return 0;
+}
+
+uint8_t* win_get_fb(win_t* win) {
+	if (!win->has_fb) {
+		LOG_ERROR("Window was not created with a framebuffer - did you mean to create the window with has_fb = true?");
+		return NULL;
+	}
+
+	if (win->fb == NULL) {
+		LOG_WARN("No frame buffer yet - waiting for XDG surface configure event");
+	}
+
+	return win->fb;
 }
