@@ -66,7 +66,7 @@ for line in lines:
 	ret = "" if return_type == "void" else f"return ({return_type}) "
 
 	c_wrappers += f"""
-static {return_type} {name}({raw_args}) {{
+AQUA_C_FN {return_type} {name}({raw_args}) {{
 	struct {{
 		{args_struct};
 	}} {PACKED} const args = {{
@@ -199,7 +199,7 @@ lib_out = f"""// This Source Form is subject to the terms of the AQUA Software L
 
 static device_t wgpu_device = NO_DEVICE;
 
-static int wgpu_init(void) {{
+AQUA_C_FN int wgpu_init(void) {{
 	wgpu_device = query_device("aquabsd.black.wgpu");
 
 	if (wgpu_device == NO_DEVICE) {{
@@ -209,7 +209,7 @@ static int wgpu_init(void) {{
 	return SUCCESS;
 }}
 
-static WGPUSurface wgpu_surface_from_win(WGPUInstance instance, win_t* win) {{
+AQUA_C_FN WGPUSurface wgpu_surface_from_win(WGPUInstance instance, win_t* win) {{
 	struct {{
 		WGPUInstance instance;
 		void* win;
