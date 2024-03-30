@@ -84,7 +84,7 @@ static void destroy_fb(win_t* win) {
 	}
 
 	if (win->fb) {
-		munmap(win->fb, win->width * win->height * 4);
+		munmap(win->fb, win->x_res * win->y_res * 4);
 		win->fb = NULL;
 	}
 
@@ -123,8 +123,8 @@ static void xdg_surface_configure_handler(void* data, struct xdg_surface* xdg_su
 
 	LOG_VERBOSE("Creating framebuffer");
 
-	size_t const stride = win->width * 4;
-	size_t const size = win->height * stride;
+	size_t const stride = win->x_res * 4;
+	size_t const size = win->y_res * stride;
 
 	char name[] = "/tmp/aquabsd.black.win.shm-XXXXXXX";
 	mktemp(name);
@@ -168,7 +168,7 @@ static void xdg_surface_configure_handler(void* data, struct xdg_surface* xdg_su
 	}
 
 	LOG_VERBOSE("Creating frame buffer");
-	win->buffer = wl_shm_pool_create_buffer(win->shm_pool, 0, win->width, win->height, stride, WL_SHM_FORMAT_ARGB8888);
+	win->buffer = wl_shm_pool_create_buffer(win->shm_pool, 0, win->x_res, win->y_res, stride, WL_SHM_FORMAT_ARGB8888);
 
 	if (win->buffer == NULL) {
 		LOG_ERROR("Failed to create frame buffer");
@@ -207,8 +207,8 @@ static struct xdg_surface_listener const xdg_surface_listener = {
 	.configure = xdg_surface_configure_handler,
 };
 
-win_t* win_create(size_t width, size_t height, bool has_fb) {
-	LOG_INFO("Creating window with desired initial size %zux%zu (with%s a framebuffer)", width, height, has_fb ? "" : "out");
+win_t* win_create(size_t x_res, size_t y_res, bool has_fb) {
+	LOG_INFO("Creating window with desired initial size %zux%zu (with%s a framebuffer)", x_res, y_res, has_fb ? "" : "out");
 
 	win_t* const win = calloc(1, sizeof *win);
 	win->shm_fd = -1;
@@ -218,8 +218,8 @@ win_t* win_create(size_t width, size_t height, bool has_fb) {
 		return NULL;
 	}
 
-	win->width = width;
-	win->height = height;
+	win->x_res = x_res;
+	win->y_res = y_res;
 	win->has_fb = has_fb;
 
 	LOG_VERBOSE("Connecting to Wayland display");
@@ -346,6 +346,8 @@ int win_loop(win_t* win) {
 	LOG_INFO("Start window loop")
 
 	while (wl_display_dispatch(win->display) >= 0) {
+		// TODO not an actual draw loop
+
 		if (call_cb(win, WIN_CB_KIND_DRAW) == 1) {
 			// TODO close window
 		}
@@ -365,4 +367,12 @@ uint8_t* win_get_fb(win_t* win) {
 	}
 
 	return win->fb;
+}
+
+size_t win_get_x_res(win_t* win) {
+	return win->x_res;
+}
+
+size_t win_get_y_res(win_t* win) {
+	return win->y_res;
 }

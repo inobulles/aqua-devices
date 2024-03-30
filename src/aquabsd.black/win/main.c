@@ -17,6 +17,9 @@ typedef enum {
 	// window framebuffer commands
 
 	CMD_GET_FB = 0x6662, // 'fb'
+
+	CMD_GET_X_RES = 0x7872, // 'xr'
+	CMD_GET_Y_RES = 0x7972, // 'yr'
 } cmd_t;
 
 uint64_t (*kos_query_device) (uint64_t, uint64_t name);
@@ -49,6 +52,14 @@ uint64_t send(uint16_t _cmd, void* data) {
 	case CMD_GET_FB:
 
 		return (uint64_t) win_get_fb((win_t*) args[0]);
+
+	case CMD_GET_X_RES:
+		
+		return (uint64_t) win_get_x_res((win_t*) args[0]);
+
+	case CMD_GET_Y_RES:
+
+		return (uint64_t) win_get_y_res((win_t*) args[0]);
 	}
 
 	return -1;

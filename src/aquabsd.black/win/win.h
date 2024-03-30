@@ -20,8 +20,8 @@ typedef enum {
 typedef struct {
 	// preferences
 
-	size_t width;
-	size_t height;
+	size_t x_res;
+	size_t y_res;
 	bool has_fb;
 
 	// wayland stuff
@@ -54,10 +54,13 @@ typedef struct {
 	uint64_t cb_datas[WIN_CB_KIND_COUNT];
 } win_t;
 
-win_t* win_create(size_t width, size_t height, bool has_fb);
+win_t* win_create(size_t x_res, size_t y_res, bool has_fb);
 void win_destroy(win_t* win);
 
 int win_register_cb(win_t* win, win_cb_kind_t kind, uint64_t cb, uint64_t data);
 int win_loop(win_t* win);
 
 uint8_t* win_get_fb(win_t* win);
+
+size_t win_get_x_res(win_t* win);
+size_t win_get_y_res(win_t* win);
