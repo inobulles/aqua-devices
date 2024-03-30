@@ -378,3 +378,8 @@ size_t win_get_x_res(win_t* win) {
 size_t win_get_y_res(win_t* win) {
 	return win->y_res;
 }
+
+int win_set_caption(win_t* win, char const* caption) {
+	xdg_toplevel_set_title(win->xdg_toplevel, caption);
+	return 0;
+}

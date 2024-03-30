@@ -70,3 +70,5 @@ uint8_t* win_get_fb(win_t* win);
 
 size_t win_get_x_res(win_t* win);
 size_t win_get_y_res(win_t* win);
+
+int win_set_caption(win_t* win, char const* caption);
