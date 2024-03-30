@@ -5,9 +5,12 @@
 // if you need to update this, read the 'aqua-devices/aquabsd.black/wgpu/README.md' document
 
 #include <stdint.h>
+#include <string.h>
+
 #include "webgpu.h"
 
 #include <aquabsd.alps/win/public.h>
+#include <aquabsd.black/win/win.h>
 
 typedef enum {
 	CMD_SURFACE_FROM_WIN = 0x0000,
@@ -205,13 +208,13 @@ uint64_t (*kos_query_device) (uint64_t, uint64_t name);
 void* (*kos_load_device_function) (uint64_t device, const char* name);
 uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
 
-static uint64_t win_device = -1;
+static uint64_t aquabsd_alps_win_device = -1;
 
 int load(void) {
-	win_device = kos_query_device(0, (uint64_t) "aquabsd.alps.win");
+	aquabsd_alps_win_device = kos_query_device(0, (uint64_t) "aquabsd.alps.win");
 
-	if (win_device != (uint64_t) -1) {
-		aquabsd_alps_win_get_draw_win = kos_load_device_function(win_device, "get_draw_win");
+	if (aquabsd_alps_win_device != (uint64_t) -1) {
+		aquabsd_alps_win_get_draw_win = kos_load_device_function(aquabsd_alps_win_device, "get_draw_win");
 	}
 
 	return 0;
@@ -223,22 +226,49 @@ uint64_t send(uint16_t _cmd, void* data) {
 	if (cmd == CMD_SURFACE_FROM_WIN) {
 		struct {
 			WGPUInstance instance;
+			win_t* win;
+		} __attribute__((packed))* const aquabsd_black_win_args = data;
+
+		if (strcmp(aquabsd_black_win_args->win->aquabsd_black_win_signature, AQUABSD_BLACK_WIN_SIGNATURE) == 0) {
+			struct {
+				WGPUInstance instance;
+				win_t* win;
+			} __attribute__((packed))* const aquabsd_black_win_args = data;
+
+			WGPUSurfaceDescriptorFromWaylandSurface const descr_from_wayland = {
+				.chain = (WGPUChainedStruct const) {
+					.sType = WGPUSType_SurfaceDescriptorFromWaylandSurface,
+				},
+				.display = aquabsd_black_win_args->win->display,
+				.surface = aquabsd_black_win_args->win->surface,
+			};
+
+			WGPUSurfaceDescriptor const descr = {
+				.nextInChain = (WGPUChainedStruct const*) &descr_from_wayland,
+			};
+
+			WGPUSurface const surface = wgpuInstanceCreateSurface(aquabsd_black_win_args->instance, &descr);
+			return (uint64_t) surface;
+		}
+
+		struct {
+			WGPUInstance instance;
 			aquabsd_alps_win_t* win;
-		} __attribute__((packed))* const args = data;
+		} __attribute__((packed))* const aquabsd_alps_win_args = data;
 
 		WGPUSurfaceDescriptorFromXcbWindow const descr_from_xcb = {
 			.chain = (WGPUChainedStruct const) {
 				.sType = WGPUSType_SurfaceDescriptorFromXcbWindow,
 			},
-			.connection = args->win->connection,
-			.window = args->win->win,
+			.connection = aquabsd_alps_win_args->win->connection,
+			.window = aquabsd_alps_win_args->win->win,
 		};
 
 		WGPUSurfaceDescriptor const descr = {
 			.nextInChain = (WGPUChainedStruct const*) &descr_from_xcb,
 		};
 
-		WGPUSurface const surface = wgpuInstanceCreateSurface(args->instance, &descr);
+		WGPUSurface const surface = wgpuInstanceCreateSurface(aquabsd_alps_win_args->instance, &descr);
 		return (uint64_t) surface;
 	}
 	
