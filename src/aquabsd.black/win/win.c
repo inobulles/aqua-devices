@@ -41,7 +41,8 @@ static void global_registry_handler(void* data, struct wl_registry* registry, ui
 	win_t* const win = data;
 
 	if (strcmp(interface, wl_compositor_interface.name) == 0) {
-		win->compositor = wl_registry_bind(registry, name, &wl_compositor_interface, 1);
+		// XXX we use compositor version 4 to get access to wl_surface_damage_buffer (wl_surface_damage is deprecated)
+		win->compositor = wl_registry_bind(registry, name, &wl_compositor_interface, 4);
 	}
 
 	else if (strcmp(interface, wl_shm_interface.name) == 0) {
@@ -52,7 +53,6 @@ static void global_registry_handler(void* data, struct wl_registry* registry, ui
 		win->xdg_wm_base = wl_registry_bind(registry, name, &xdg_wm_base_interface, 1);
 
 		LOG_VERBOSE("Adding listener to XDG WM base");
-
 		xdg_wm_base_add_listener(win->xdg_wm_base, &xdg_wm_base_listener, win);
 	}
 
@@ -63,7 +63,7 @@ static void global_registry_handler(void* data, struct wl_registry* registry, ui
 
 	// XXX not ideal, but putting this after to not pollute the log
 
-	LOG_VERBOSE("Got registry event for %s", interface);
+	LOG_VERBOSE("Got registry event for %s (version %u)", interface, version);
 }
 
 static void global_registry_remove_handler(void* data, struct wl_registry* registry, uint32_t name) {
@@ -78,23 +78,6 @@ static struct wl_registry_listener const registry_listener = {
 	.global_remove = global_registry_remove_handler,
 };
 
-static void destroy_fb(win_t* win) {
-	if (win->shm_fd >= 0) {
-		close(win->shm_fd);
-		win->shm_fd = -1;
-	}
-
-	if (win->fb) {
-		munmap(win->fb, win->x_res * win->y_res * 4);
-		win->fb = NULL;
-	}
-
-	if (win->shm_pool) {
-		wl_shm_pool_destroy(win->shm_pool);
-		win->shm_pool = NULL;
-	}
-}
-
 static void buffer_release_handler(void* data, struct wl_buffer* buffer) {
 	(void) data;
 
@@ -106,21 +89,12 @@ static struct wl_buffer_listener const buffer_listener = {
 	.release = buffer_release_handler,
 };
 
-static void xdg_surface_configure_handler(void* data, struct xdg_surface* xdg_surface, uint32_t serial) {
-	(void) xdg_surface;
-
-	win_t* const win = data;
-
-	LOG_VERBOSE("Configuring window XDG surface");
-	xdg_surface_ack_configure(win->xdg_surface, serial);
-
+static int draw_frame(win_t* win, struct wl_buffer** buffer_ref) {
 	if (!win->has_fb) {
-		goto done;
+		return 0;
 	}
 
-	LOG_VERBOSE("Destroying previous framebuffer (if there is anything to clean up)");
-
-	destroy_fb(win);
+	int rv = -1;
 
 	LOG_VERBOSE("Creating framebuffer");
 
@@ -132,11 +106,11 @@ static void xdg_surface_configure_handler(void* data, struct xdg_surface* xdg_su
 
 	LOG_VERBOSE("Creating SHM file (%s)", name);
 
-	win->shm_fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
+	int const fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
 
-	if (win->shm_fd < 0) {
+	if (fd < 0) {
 		LOG_ERROR("Failed to create SHM file");
-		return;
+		goto err_shm_open;
 	}
 
 	unlink(name);
@@ -145,63 +119,89 @@ static void xdg_surface_configure_handler(void* data, struct xdg_surface* xdg_su
 
 	// XXX the code example in the Wayland Book loops this in case of EINTR - how useful is that actually?
 
-	if (ftruncate(win->shm_fd, size) < 0) {
+	if (ftruncate(fd, size) < 0) {
 		LOG_ERROR("Failed to truncate SHM file");
-		goto err_fb;
+		goto err_ftruncate;
 	}
 
 	LOG_VERBOSE("Mapping SHM file to memory");
 
-	win->fb = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, win->shm_fd, 0);
+	win->fb = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
 	if (win->fb == MAP_FAILED) {
 		LOG_ERROR("Failed to map SHM file to memory");
-		goto err_fb;
+		goto err_mmap;
 	}
 
 	LOG_VERBOSE("Creating SHM pool");
 
-	win->shm_pool = wl_shm_create_pool(win->shm, win->shm_fd, size);
+	struct wl_shm_pool* const pool = wl_shm_create_pool(win->shm, fd, size);
 
-	if (win->shm_pool == NULL) {
+	if (pool == NULL) {
 		LOG_ERROR("Failed to create SHM pool");
-		goto err_fb;
+		goto err_wl_shm_create_pool;
 	}
 
 	LOG_VERBOSE("Creating frame buffer");
-	win->buffer = wl_shm_pool_create_buffer(win->shm_pool, 0, win->x_res, win->y_res, stride, WL_SHM_FORMAT_ARGB8888);
 
-	if (win->buffer == NULL) {
+	struct wl_buffer* const buffer = wl_shm_pool_create_buffer(pool, 0, win->x_res, win->y_res, stride, WL_SHM_FORMAT_ARGB8888);
+	*buffer_ref = buffer;
+
+	if (buffer == NULL) {
 		LOG_ERROR("Failed to create frame buffer");
-		goto err_fb;
+		goto err_wl_shm_pool_create_buffer;
 	}
 
-	LOG_VERBOSE("Cleaning up");
-
-	wl_shm_pool_destroy(win->shm_pool);
-	win->shm_pool = NULL;
-
-	close(win->shm_fd);
-	win->shm_fd = -1;
-
 	LOG_VERBOSE("Adding listener to frame buffer");
+	wl_buffer_add_listener(buffer, &buffer_listener, win);
 
-	wl_buffer_add_listener(win->buffer, &buffer_listener, win);
+	LOG_VERBOSE("Calling draw callback");
 
-	LOG_VERBOSE("Attaching frame buffer to window surface");
+	if (call_cb(win, WIN_CB_KIND_DRAW)) {
+		LOG_INFO("Draw callback requested window to close");
+		win->should_close = true;
+	}
 
-	wl_surface_attach(win->surface, win->buffer, 0, 0);
+	rv = 0;
+
+err_wl_shm_pool_create_buffer:
+
+	wl_shm_pool_destroy(pool);
+
+err_wl_shm_create_pool:
+
+	munmap(win->fb, size);
+	win->fb = NULL;
+
+err_mmap:
+err_ftruncate:
+
+	close(fd);
+
+err_shm_open:
+
+	return rv;
+}
+
+static void xdg_surface_configure_handler(void* data, struct xdg_surface* xdg_surface, uint32_t serial) {
+	(void) xdg_surface;
+
+	win_t* const win = data;
+
+	LOG_VERBOSE("Configuring window XDG surface");
+	xdg_surface_ack_configure(win->xdg_surface, serial);
+
+	struct wl_buffer* buffer = NULL;
+
+	if (draw_frame(win, &buffer) < 0) {
+		LOG_ERROR("Failed to draw frame");
+		win->should_close = true;
+	}
+
+	LOG_VERBOSE("Submitting frame to window surface");
+
+	wl_surface_attach(win->surface, buffer, 0, 0);
 	wl_surface_commit(win->surface);
-
-	goto done;
-
-err_fb:
-
-	destroy_fb(win);
-
-done:
-
-	call_cb(win, WIN_CB_KIND_RESIZE);
 }
 
 static struct xdg_surface_listener const xdg_surface_listener = {
@@ -223,6 +223,8 @@ static void xdg_toplevel_configure_handler(void* data, struct xdg_toplevel* xdg_
 
 	win->x_res = width;
 	win->y_res = height;
+
+	call_cb(win, WIN_CB_KIND_RESIZE);
 }
 
 static void xdg_toplevel_close_handler(void* data, struct xdg_toplevel* xdg_toplevel) {
@@ -230,8 +232,7 @@ static void xdg_toplevel_close_handler(void* data, struct xdg_toplevel* xdg_topl
 
 	win_t* const win = data;
 
-	LOG_VERBOSE("Window closed");
-
+	LOG_INFO("Window closed");
 	win->should_close = true;
 }
 
@@ -240,34 +241,35 @@ static struct xdg_toplevel_listener const xdg_toplevel_listener = {
 	.close = xdg_toplevel_close_handler,
 };
 
+static struct wl_callback_listener const frame_listener;
+
 static void frame_done_handler(void* data, struct wl_callback* cb, uint32_t time) {
 	(void) time;
 
 	win_t* const win = data;
 
-	uint32_t const dt = time - win->prev_frame_time;
-	LOG_VERBOSE("New frame requested (dt = %g ms)", dt);
+	uint32_t const dt = time - win->prev_frame_time; // TODO only if prev_frame_time is 0
+	LOG_VERBOSE("New frame requested (dt = %u ms)", dt);
 
 	assert(cb == win->frame_cb);
 	wl_callback_destroy(cb);
 
-	// request another frame
+	LOG_VERBOSE("Requesting new frame to be drawn to the compositor after this one");
 
 	win->frame_cb = wl_surface_frame(win->surface);
-	static struct wl_callback_listener const frame_listener;
 	wl_callback_add_listener(win->frame_cb, &frame_listener, win);
 
-	// create frame
+	struct wl_buffer* buffer = NULL;
 
-	if (call_cb(win, WIN_CB_KIND_DRAW)) {
-		LOG_VERBOSE("Draw callback requested window to close");
+	if (draw_frame(win, &buffer) < 0) {
+		LOG_ERROR("Failed to draw frame");
 		win->should_close = true;
 		goto done;
 	}
 
-	// submit frame
+	LOG_VERBOSE("Submitting frame to window surface");
 
-	wl_surface_attach(win->surface, win->buffer, 0, 0);
+	wl_surface_attach(win->surface, buffer, 0, 0);
 	wl_surface_damage_buffer(win->surface, 0, 0, INT32_MAX, INT32_MAX);
 	wl_surface_commit(win->surface);
 
@@ -284,9 +286,7 @@ win_t* win_create(size_t x_res, size_t y_res, bool has_fb) {
 	LOG_INFO("Creating window with desired initial size %zux%zu (with%s a framebuffer)", x_res, y_res, has_fb ? "" : "out");
 
 	win_t* const win = calloc(1, sizeof *win);
-
 	strcpy(win->aquabsd_black_win_signature, AQUABSD_BLACK_WIN_SIGNATURE);
-	win->shm_fd = -1;
 
 	if (win == NULL) {
 		LOG_FATAL("calloc failed");
@@ -425,7 +425,6 @@ void win_destroy(win_t* win) {
 		xdg_toplevel_destroy(win->xdg_toplevel);
 	}
 
-	destroy_fb(win);
 	free(win);
 }
 
@@ -444,9 +443,10 @@ int win_register_cb(win_t* win, win_cb_kind_t kind, uint64_t cb, uint64_t data) 
 int win_loop(win_t* win) {
 	LOG_INFO("Start window loop");
 
-	while (wl_display_dispatch(win->display) >= 0) {
-		if (win->should_close) {
-			break;
+	while (!win->should_close) {
+		if (wl_display_dispatch(win->display) < 0) {
+			LOG_ERROR("Dispatch failure");
+			return -1;
 		}
 	}
 

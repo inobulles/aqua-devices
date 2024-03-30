@@ -52,9 +52,6 @@ typedef struct {
 
 	// if we have a framebuffer
 
-	int shm_fd;
-	struct wl_shm_pool* shm_pool;
-	struct wl_buffer* buffer;
 	uint8_t* fb;
 
 	// callbacks
