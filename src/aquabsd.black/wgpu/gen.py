@@ -7,8 +7,11 @@ AQUABSD_ALPS_WIN_DEVICE = "aquabsd.alps.win"
 AQUABSD_ALPS_WIN_DEVICE_HEADER_INCLUDE = "aquabsd.alps/win/public.h"
 AQUABSD_BLACK_WIN_DEVICE = "aquabsd.black.win"
 AQUABSD_BLACK_WIN_DEVICE_HEADER_INCLUDE = "aquabsd.black/win/win.h"
+AQUABSD_BLACK_WM_DEVICE = "aquabsd.black.wm"
+AQUABSD_BLACK_WM_DEVICE_HEADER_INCLUDE = "aquabsd.black/wm/wm.h"
 PACKED = "__attribute__((packed))"
 CMD_SURFACE_FROM_WIN = "0x0000"
+CMD_SURFACE_FROM_WM = "0x0001"
 CMD_WGPU_BASE = 0x1000
 
 with open("webgpu.h") as f:
@@ -96,9 +99,11 @@ dev_out = f"""// This Source Form is subject to the terms of the AQUA Software L
 
 #include <{AQUABSD_ALPS_WIN_DEVICE_HEADER_INCLUDE}>
 #include <{AQUABSD_BLACK_WIN_DEVICE_HEADER_INCLUDE}>
+#include <{AQUABSD_BLACK_WM_DEVICE_HEADER_INCLUDE}>
 
 typedef enum {{
 	CMD_SURFACE_FROM_WIN = {CMD_SURFACE_FROM_WIN},
+	CMD_SURFACE_FROM_WM = {CMD_SURFACE_FROM_WM},
 
 	// WebGPU commands
 
@@ -171,6 +176,28 @@ uint64_t send(uint16_t _cmd, void* data) {{
 		WGPUSurface const surface = wgpuInstanceCreateSurface(aquabsd_alps_win_args->instance, &descr);
 		return (uint64_t) surface;
 	}}
+
+	else if (cmd == CMD_SURFACE_FROM_WM) {{
+		struct {{
+			WGPUInstance instance;
+			wm_t* wm;
+		}} {PACKED}* const args = data;
+
+		WGPUSurfaceDescriptorFromDrmFd const descr_from_drm_fd = {{
+			.chain = (WGPUChainedStruct const) {{
+				.sType = WGPUSType_SurfaceDescriptorFromDrmFd,
+			}},
+			.drm_fd = args->wm->drm_fd,
+		}};
+
+		WGPUSurfaceDescriptor const descr = {{
+			.nextInChain = (WGPUChainedStruct const*) &descr_from_drm_fd,
+		}};
+
+		WGPUSurface const surface = wgpuInstanceCreateSurface(args->instance, &descr);
+		return (uint64_t) surface;
+	}}
+
 	{impls}
 	return -1;
 }}
