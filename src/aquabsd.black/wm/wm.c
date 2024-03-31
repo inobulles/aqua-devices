@@ -150,30 +150,36 @@ wm_t* wm_create(void) {
 	}
 
 	LOG_VERBOSE("Creating renderer");
-	wm->renderer = wlr_renderer_autocreate(wm->backend);
+	wm->wlr_renderer = wlr_renderer_autocreate(wm->backend);
 
-	if (wm->renderer == NULL) {
+	if (wm->wlr_renderer == NULL) {
 		FAIL("Failed to create renderer");
 	}
 
 	LOG_VERBOSE("Initializing renderer");
 
-	if (!wlr_renderer_init_wl_display(wm->renderer, wm->display)) {
+	if (!wlr_renderer_init_wl_display(wm->wlr_renderer, wm->display)) {
 		FAIL("Failed to initialize renderer");
 	}
 
 	LOG_VERBOSE("Creating wlroots allocator");
-	wm->allocator = wlr_allocator_autocreate(wm->backend, wm->renderer);
+	wm->allocator = wlr_allocator_autocreate(wm->backend, wm->wlr_renderer);
 
 	if (wm->allocator == NULL) {
 		FAIL("Failed to create wlroots allocator");
 	}
 
 	LOG_VERBOSE("Creating compositor (version 5)");
+	struct wlr_compositor* const compositor = wlr_compositor_create(wm->display, 5, wm->wlr_renderer);
 
-	if (wlr_compositor_create(wm->display, 5, wm->renderer) == NULL) {
+	if (compositor == NULL) {
 		FAIL("Failed to create compositor");
 	}
+
+	LOG_VERBOSE("Add listener for when new surfaces are available");
+
+	wm->new_surface.notify = new_toplevel;
+	wl_signal_add(&compositor->events.new_surface, &wm->new_surface);
 
 	LOG_VERBOSE("Creating subcompositor");
 
@@ -269,6 +275,22 @@ wm_t* wm_create(void) {
 	if (wm->seat == NULL) {
 		FAIL("Failed to create seat");
 	}
+
+	LOG_VERBOSE("Start backend");
+
+	if (!wlr_backend_start(wm->backend)) {
+		FAIL("Failed to start backend");
+	}
+
+	LOG_VERBOSE("Create surface");
+	wm->surface = wl_compositor_create_surface(wm->compositor);
+
+	if (wm->surface == NULL) {
+		FAIL("Failed to create surface");
+	}
+
+	LOG_VERBOSE("Create XDG surface");
+	wm->xdg_surface = wlr_xdg_surface_create(wm->xdg_shell, wm->surface);
 
 	LOG_VERBOSE("Add UNIX socket to the Wayland display");
 	char const* const sock = wl_display_add_socket_auto(wm->display);

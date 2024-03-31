@@ -5,6 +5,7 @@
 
 #include "common.h"
 
+#include <wayland-client.h>
 #include <wayland-server-core.h>
 
 #define WLR_USE_UNSTABLE 1 // TODO why does the header force me to define this?
@@ -20,11 +21,49 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/types/wlr_cursor.h>
 
+#include <aquabsd.black/win/win.h>
+
+#if defined(WM_WITH_RENDERER_WGPU)
+#include "renderers/wgpu.h"
+#endif
+
+typedef enum {
+	WM_RENDERER_KIND_NONE,
+	WM_RENDERER_KIND_WGPU,
+	// TODO WM_RENDERER_KIND_FB,
+	WM_RENDERER_KIND_COUNT,
+} wm_flags_t;
+
+typedef enum {
+	WM_CB_ADD_WINDOW,
+	WM_CB_REM_WINDOW,
+	WM_CB_COUNT,
+} wm_cb_t;
+
 typedef struct {
+	// wayland stuff
+
 	struct wl_display* display;
 	struct wl_event_loop* event_loop;
+	struct wl_compositor* compositor;
+
+	// renderer stuff
+
+	union {
+#if defined(WM_WITH_RENDERER_WGPU)
+		wm_renderer_wgpu_t wgpu;
+#endif
+	} renderer;
+
+	// surface stuff
+
+	struct wl_listener new_surface;
+	win_t win; // TODO have no clue how this is supposed to work
+
+	// wlroots stuff
+
 	struct wlr_backend* backend;
-	struct wlr_renderer* renderer;
+	struct wlr_renderer* wlr_renderer;
 	struct wlr_allocator* allocator;
 
 	// output layouts
@@ -59,9 +98,21 @@ typedef struct {
 	struct wlr_seat* seat;
 	struct wl_listener new_input;
 	struct wl_list keyboards;
+
+	// app client callbacks
+
+	uint64_t cbs[WM_CB_COUNT];
+	uint64_t cb_datas[WM_CB_COUNT];
 } wm_t;
 
-wm_t* wm_create(void);
+wm_t* wm_create(wm_renderer_kind_t renderer_kind);
 void wm_destroy(wm_t* wm);
 
+int wm_register_cb(wm_t* wm, win_cb_kind_t kind, uint64_t cb, uint64_t data);
 int wm_loop(wm_t* wm);
+
+// TODO should we refer to windows by struct wlr_xdg_toplevel* or by win_t*?
+
+size_t wm_get_win_x_res(wm_t* wm, struct wlr_xdg_toplevel* toplevel);
+size_t wm_get_win_y_res(wm_t* wm, struct wlr_xdg_toplevel* toplevel);
+uint8_t* wm_get_win_pixels(wm_t* wm, struct wlr_xdg_toplevel* toplevel);

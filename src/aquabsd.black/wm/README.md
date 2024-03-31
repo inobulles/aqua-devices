@@ -81,6 +81,24 @@ Actually it's being called in `Instance::create_surface` which makes a little mo
 I think we'll have to create a new member on `RawWindowHandle`/`RawDisplayHandle`, something like `RawDisplayHandle::PlatformDevice`, which would either correspond to a `EGLDeviceEXT` in the context of the HAL, and would correspond to the DRM device fd in the generic WebGPU context (i.e. when calling `wgpuInstanceCreateSurface`).
 
 In `wgpu-native`, we'd have a new `WGPUSType_SurfaceDescriptorFromDrmFd`, corresponding to `native::WGPUSurfaceDescriptorFromDrmFd`.
+The request would look like this:
+
+```c
+int const drm_fd = open_preferred_drm_fd(...);
+
+WGPUSurfaceDescriptorFromDrmFd const descr_from_drm_fd = {
+	.chain = (WGPUChainedStruct const) {
+		.sType = WGPUSType_SurfaceDescriptorFromDrmFd,
+	},
+	.fd = drm_fd,
+};
+
+WGPUSurfaceDescriptor const descr = {
+	.nextInChain = (WGPUChainedStruct const*) &descr_from_drm_fd,
+};
+
+WGPUSurface const surface = wgpuInstanceCreateSurface(instance, &descr);
+```
 
 ## Findings w.r.t. how to get textures working and whatnot
 
