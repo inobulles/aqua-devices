@@ -74,6 +74,14 @@ Here is what the wlroot's Vulkan renderer does:
 - `open_preferred_drm_fd` is in common with the GLES2 renderer.
 - The rest I don't know :P
 
+On the side of `wgpu`, ~I'm a little confused because it seems like `eglInitialize` is being called upon creation of a `WGPUInstance` (in `Instance::init` in `wgpu-hal/src/gles/egl.rs`).
+I would've expected this to be done when creating the `WGPUSurface`.~
+Actually it's being called in `Instance::create_surface` which makes a little more sense.
+
+I think we'll have to create a new member on `RawWindowHandle`/`RawDisplayHandle`, something like `RawDisplayHandle::PlatformDevice`, which would either correspond to a `EGLDeviceEXT` in the context of the HAL, and would correspond to the DRM device fd in the generic WebGPU context (i.e. when calling `wgpuInstanceCreateSurface`).
+
+In `wgpu-native`, we'd have a new `WGPUSType_SurfaceDescriptorFromDrmFd`, corresponding to `native::WGPUSurfaceDescriptorFromDrmFd`.
+
 ## Findings w.r.t. how to get textures working and whatnot
 
 Let's cave and purely use the OpenGL backend for WebGPU for now.
@@ -178,5 +186,6 @@ struct wlr_vk_texture {
 For GLES2, once we have our `struct wlr_gles2_texture`, we can just get its `tex` member and do as in `aquabsd.alps.ogl` with the `GL_OES_EGL_image_external` extension.
 
 Now "all" that's left to do is design the WebGPU extension 🥲
+And also make Naga support `texture_external`: <https://github.com/gfx-rs/wgpu/issues/4528>.
 
 Here seems to be more information <https://github.com/gfx-rs/wgpu/issues/2320>.
