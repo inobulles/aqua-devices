@@ -49,6 +49,31 @@ In [this experiment](https://octodon.social/@emersion/103300395120210509), power
 Like with macOS, Wayland provides a way to define ["opaque" regions](https://wayland-book.com/surfaces-in-depth/surface-regions.html) to localize blurring (I had already thought of doing this through the DWD protocol in `aquabsd.alps.wm` back when I wrote that).
 For now though, I think I'll stick to an effect similar to what I had in AQUA 2.X by sampling a blurred version of the wallpaper, and keeping proper blur strictly within the bounds of an application window.
 
+## Findings w.r.t. how we should go about creating WebGPU surfaces and adapters
+
+Just as `aquabsd.black.wgpu` currently has `CMD_SURFACE_FROM_WIN`, it should have `CMD_SURFACE_FROM_WM`, which returns a `WGPUSurface` created atop the WM's DRM device (which should already be determined when creating the WM I think, perhaps with a flag if I can imagine a case where you wouldn't want to do such).
+
+Here is what wlroot's GLES2 renderer does:
+
+- `open_preferred_drm_fd`: Quite simple, find the file descriptor of the preferred DRM device.
+- `wlr_gles2_renderer_create_with_drm_fd` is then called to create the GLES2 renderer on that DRM device.
+- That then calls `wlr_egl_create_with_drm_fd`, which creates the EGL context atop that DRM device.
+- `egl_create` checks for a bunch of extensions then calls `eglBindAPI(EGL_OPENGL_ES_API)`.
+- Back in `wlr_egl_create_with_drm_fd`, we check for `EXT_platform_device`. If it's not available, we fall back on `KHR_platform_gbm`, but on my system it is, so we'll just ignore that for now.
+- `get_egl_device_from_drm_fd` is then called which uses `eglQueryDevicesEXT` (`EGL_EXT_device_enumeration`, returns `EGLDeviceEXT[]`) to enumerate all the devices.
+- `drmGetDevice` is used to get a `drmDevice` from the DRM fd.
+- The device list gotten from `eglQueryDevicesEXT` is traversed to try to match the `drmDevice`.
+- For each `EGLDeviceEXT`, the `drmDevice` is traversed to see if a render node matches it's name.
+- Now we have our `EGLDeviceEXT`, `egl_init` is called.
+- The main thing here is the `eglGetPlatformDisplayEXT(EGL_PLATFORM_DEVICE_EXT, remote_display, display_attribs)` call (where `remote_display` is the `EGLDeviceEXT` we found in the previous step), which simply returns an `EGLDisplay`, which we can continue setting up like we normally would with EGL.
+- The rest is completely standard EGL setup (with `eglInitialize(EGLDisplay)` etc etc).
+- Back in `wlr_gles2_renderer_create_with_drm_fd`, we make the EGL context current and are off to the races with OpenGL setup :)
+
+Here is what the wlroot's Vulkan renderer does:
+
+- `open_preferred_drm_fd` is in common with the GLES2 renderer.
+- The rest I don't know :P
+
 ## Findings w.r.t. how to get textures working and whatnot
 
 Let's cave and purely use the OpenGL backend for WebGPU for now.
@@ -153,3 +178,5 @@ struct wlr_vk_texture {
 For GLES2, once we have our `struct wlr_gles2_texture`, we can just get its `tex` member and do as in `aquabsd.alps.ogl` with the `GL_OES_EGL_image_external` extension.
 
 Now "all" that's left to do is design the WebGPU extension 🥲
+
+Here seems to be more information <https://github.com/gfx-rs/wgpu/issues/2320>.
