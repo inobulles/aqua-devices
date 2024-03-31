@@ -20,7 +20,7 @@ There's not much documentation for this 😄
 But you can simply use [Meson](https://mesonbuild.com/) as such:
 
 ```console
-git clone https://github.com/gfx-rs/webgpu-native --depth 1 --branch main
+git clone https://github.com/gfx-rs/wgpu-native --depth 1 --branch main
 cd webgpu-native
 meson setup build
 cd build
