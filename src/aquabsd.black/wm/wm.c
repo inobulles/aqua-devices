@@ -113,7 +113,7 @@ static void new_input(struct wl_listener* listener, void* data) {
 	LOG_FATAL("TODO");
 }
 
-wm_t* wm_create(void) {
+wm_t* wm_create(wm_flag_t flags) {
 	LOG_INFO("Creating WM");
 
 	wm_t* const wm = calloc(1, sizeof *wm);

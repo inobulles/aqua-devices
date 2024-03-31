@@ -23,16 +23,10 @@
 
 #include <aquabsd.black/win/win.h>
 
-#if defined(WM_WITH_RENDERER_WGPU)
-#include "renderers/wgpu.h"
-#endif
-
 typedef enum {
-	WM_RENDERER_KIND_NONE,
-	WM_RENDERER_KIND_WGPU,
-	// TODO WM_RENDERER_KIND_FB,
-	WM_RENDERER_KIND_COUNT,
-} wm_flags_t;
+	WM_FLAG_NONE = 0,
+	WM_FLAG_POPULATE_DRM_FD = 1 << 0,
+} wm_flag_t;
 
 typedef enum {
 	WM_CB_ADD_WINDOW,
@@ -41,19 +35,15 @@ typedef enum {
 } wm_cb_t;
 
 typedef struct {
+	// optional stuff
+
+	int drm_fd;
+
 	// wayland stuff
 
 	struct wl_display* display;
 	struct wl_event_loop* event_loop;
 	struct wl_compositor* compositor;
-
-	// renderer stuff
-
-	union {
-#if defined(WM_WITH_RENDERER_WGPU)
-		wm_renderer_wgpu_t wgpu;
-#endif
-	} renderer;
 
 	// surface stuff
 
@@ -105,7 +95,7 @@ typedef struct {
 	uint64_t cb_datas[WM_CB_COUNT];
 } wm_t;
 
-wm_t* wm_create(wm_renderer_kind_t renderer_kind);
+wm_t* wm_create(wm_flag_t flags);
 void wm_destroy(wm_t* wm);
 
 int wm_register_cb(wm_t* wm, win_cb_kind_t kind, uint64_t cb, uint64_t data);
