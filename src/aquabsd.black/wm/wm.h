@@ -32,12 +32,13 @@ typedef enum {
 	WM_CB_ADD_WINDOW,
 	WM_CB_REM_WINDOW,
 	WM_CB_COUNT,
-} wm_cb_t;
+} wm_cb_kind_t;
 
 typedef struct {
-	// optional stuff
+	// DRM stuff
 
 	int drm_fd;
+	bool own_drm_fd;
 
 	// wayland stuff
 
@@ -98,7 +99,7 @@ typedef struct {
 wm_t* wm_create(wm_flag_t flags);
 void wm_destroy(wm_t* wm);
 
-int wm_register_cb(wm_t* wm, win_cb_kind_t kind, uint64_t cb, uint64_t data);
+int wm_register_cb(wm_t* wm, wm_cb_kind_t kind, uint64_t cb, uint64_t data);
 int wm_loop(wm_t* wm);
 
 // TODO should we refer to windows by struct wlr_xdg_toplevel* or by win_t*?

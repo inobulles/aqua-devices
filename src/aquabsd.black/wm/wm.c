@@ -1,13 +1,16 @@
 // This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
 // Copyright (c) 2024 Aymeric Wibo
 
-// a lot of this code is based on the tinywl reference compositor:
+// a lot of this code is based on the tinywl reference compositor and the "simple.c" example:
 // https://gitlab.freedesktop.org/wlroots/wlroots/-/blob/master/tinywl
+// https://gitlab.freedesktop.org/wlroots/wlroots/-/blob/master/examples/simple.c
 
 #include "wm.h"
+#include "drm.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 static void wlr_log_cb(enum wlr_log_importance importance, char const* fmt, va_list args) {
 	char* msg;
@@ -131,6 +134,13 @@ wm_t* wm_create(wm_flag_t flags) {
 		wm_destroy(wm); \
 		return NULL; \
 	} while (0)
+
+	wm->drm_fd = -1;
+
+	if (flags & WM_FLAG_POPULATE_DRM_FD) {
+		LOG_VERBOSE("Populating DRM FD");
+		wm->drm_fd = open_preferred_drm_fd(wm, &wm->drm_fd, &wm->own_drm_fd);
+	}
 
 	LOG_VERBOSE("Creating the Wayland display");
 	wm->display = wl_display_create();
@@ -282,6 +292,7 @@ wm_t* wm_create(wm_flag_t flags) {
 		FAIL("Failed to start backend");
 	}
 
+	/*
 	LOG_VERBOSE("Create surface");
 	wm->surface = wl_compositor_create_surface(wm->compositor);
 
@@ -291,6 +302,7 @@ wm_t* wm_create(wm_flag_t flags) {
 
 	LOG_VERBOSE("Create XDG surface");
 	wm->xdg_surface = wlr_xdg_surface_create(wm->xdg_shell, wm->surface);
+	*/
 
 	LOG_VERBOSE("Add UNIX socket to the Wayland display");
 	char const* const sock = wl_display_add_socket_auto(wm->display);
@@ -315,6 +327,10 @@ wm_t* wm_create(wm_flag_t flags) {
 }
 
 void wm_destroy(wm_t* wm) {
+	if (wm->drm_fd >= 0 && wm->own_drm_fd) {
+		close(wm->drm_fd);
+	}
+
 	if (wm->display != NULL) {
 		wl_display_destroy(wm->display);
 	}
