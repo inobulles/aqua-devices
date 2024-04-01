@@ -247,6 +247,20 @@ AQUA_C_FN WGPUSurface wgpu_surface_from_win(WGPUInstance instance, win_t* win) {
 
 	return (WGPUSurface) send_device(wgpu_device, {CMD_SURFACE_FROM_WIN}, (void*) &args);
 }}
+
+#if defined(AQUABSD_BLACK_WM)
+AQUA_C_FN WGPUSurface wgpu_surface_from_wm(WGPUInstance instance, wm_t* wm) {{
+	struct {{
+		WGPUInstance instance;
+		void* wm;
+	}} {PACKED} const args = {{
+		.instance = instance,
+		.wm = (void*) wm->internal_wm,
+	}};
+
+	return (WGPUSurface) send_device(wgpu_device, {CMD_SURFACE_FROM_WM}, (void*) &args);
+}}
+#endif
 {c_wrappers}"""
 
 with open("wgpu.h", "w") as f:
