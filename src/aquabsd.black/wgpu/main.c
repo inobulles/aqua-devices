@@ -295,7 +295,6 @@ uint64_t send(uint16_t _cmd, void* data) {
 		return (uint64_t) surface;
 	}
 
-	
 	else if (cmd == CMD_wgpuCreateInstance) {
 		struct {
 			WGPU_NULLABLE WGPUInstanceDescriptor const * descriptor;

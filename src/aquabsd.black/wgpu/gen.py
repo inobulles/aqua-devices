@@ -197,7 +197,6 @@ uint64_t send(uint16_t _cmd, void* data) {{
 		WGPUSurface const surface = wgpuInstanceCreateSurface(args->instance, &descr);
 		return (uint64_t) surface;
 	}}
-
 	{impls}
 	return -1;
 }}

@@ -63,6 +63,11 @@ typedef struct {
 	struct wl_list outputs;
 	struct wl_listener new_output;
 
+	// input methods
+
+	struct wl_list inputs;
+	struct wl_listener new_input;
+
 	// scene graph
 
 	struct wlr_scene* scene;
@@ -87,7 +92,6 @@ typedef struct {
 	// seat stuff
 
 	struct wlr_seat* seat;
-	struct wl_listener new_input;
 	struct wl_list keyboards;
 
 	// app client callbacks

@@ -156,34 +156,54 @@ wm_t* wm_create(wm_flag_t flags) {
 
 	if (flags & WM_FLAG_POPULATE_DRM_FD) {
 		LOG_VERBOSE("Populating DRM fd");
-		wm->drm_fd = open_preferred_drm_fd(wm, &wm->drm_fd, &wm->own_drm_fd);
 
-		if (wm->drm_fd < 0) {
+		if (open_preferred_drm_fd(wm, &wm->drm_fd, &wm->own_drm_fd) < 0) {
 			FAIL("Failed to populate DRM fd");
 		}
 
 		LOG_INFO("Got DRM fd %d", wm->drm_fd);
 	}
 
-	LOG_VERBOSE("Creating renderer");
-	wm->wlr_renderer = wlr_renderer_autocreate(wm->backend);
+	// LOG_VERBOSE("Creating renderer");
+	// wm->wlr_renderer = wlr_renderer_autocreate(wm->backend);
 
-	if (wm->wlr_renderer == NULL) {
-		FAIL("Failed to create renderer");
+	// if (wm->wlr_renderer == NULL) {
+	// 	FAIL("Failed to create renderer");
+	// }
+
+	// LOG_VERBOSE("Initializing renderer");
+
+	// if (!wlr_renderer_init_wl_display(wm->wlr_renderer, wm->display)) {
+	// 	FAIL("Failed to initialize renderer");
+	// }
+
+	// LOG_VERBOSE("Creating wlroots allocator");
+	// wm->allocator = wlr_allocator_autocreate(wm->backend, wm->wlr_renderer);
+
+	// if (wm->allocator == NULL) {
+	// 	FAIL("Failed to create wlroots allocator");
+	// }
+
+	LOG_VERBOSE("Add listener for when new outputs are available");
+
+	wl_list_init(&wm->outputs);
+	wm->new_output.notify = new_output;
+	wl_signal_add(&wm->backend->events.new_output, &wm->new_output);
+
+	LOG_VERBOSE("Add listener for when new input methods are available");
+
+	wl_list_init(&wm->inputs);
+	wm->new_input.notify = new_input;
+	wl_signal_add(&wm->backend->events.new_input, &wm->new_input);
+
+	LOG_VERBOSE("Start backend");
+
+	if (!wlr_backend_start(wm->backend)) {
+		FAIL("Failed to start backend");
 	}
 
-	LOG_VERBOSE("Initializing renderer");
-
-	if (!wlr_renderer_init_wl_display(wm->wlr_renderer, wm->display)) {
-		FAIL("Failed to initialize renderer");
-	}
-
-	LOG_VERBOSE("Creating wlroots allocator");
-	wm->allocator = wlr_allocator_autocreate(wm->backend, wm->wlr_renderer);
-
-	if (wm->allocator == NULL) {
-		FAIL("Failed to create wlroots allocator");
-	}
+	LOG_FATAL("TODO the actual compositing part");
+	return wm;
 
 	LOG_VERBOSE("Creating compositor (version 5)");
 	struct wlr_compositor* const compositor = wlr_compositor_create(wm->display, 5, wm->wlr_renderer);
@@ -215,12 +235,6 @@ wm_t* wm_create(wm_flag_t flags) {
 	if (wm->output_layout == NULL) {
 		FAIL("Failed to create output layout");
 	}
-
-	LOG_VERBOSE("Add listener for when new outputs are available");
-
-	wl_list_init(&wm->outputs);
-	wm->new_output.notify = new_output;
-	wl_signal_add(&wm->backend->events.new_output, &wm->new_output);
 
 	LOG_VERBOSE("Create scene graph");
 	wm->scene = wlr_scene_create();
@@ -279,18 +293,15 @@ wm_t* wm_create(wm_flag_t flags) {
 	wm->cursor_frame.notify = cursor_frame;
 	wl_signal_add(&wm->cursor->events.frame, &wm->cursor_frame);
 
-	LOG_VERBOSE("Add listener for new inputs methods");
-
-	wl_list_init(&wm->keyboards);
-	wm->new_input.notify = new_input;
-	wl_signal_add(&wm->backend->events.new_input, &wm->new_input);
-
 	LOG_VERBOSE("Create new seat");
 	wm->seat = wlr_seat_create(wm->display, "seat0");
 
 	if (wm->seat == NULL) {
 		FAIL("Failed to create seat");
 	}
+
+	LOG_FATAL("STOP HERE FOR NOW");
+	return wm;
 
 	LOG_VERBOSE("Start backend");
 
