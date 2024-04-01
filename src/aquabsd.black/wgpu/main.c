@@ -284,7 +284,7 @@ uint64_t send(uint16_t _cmd, void* data) {
 			.chain = (WGPUChainedStruct const) {
 				.sType = WGPUSType_SurfaceDescriptorFromDrmFd,
 			},
-			.drm_fd = args->wm->drm_fd,
+			.fd = args->wm->drm_fd,
 		};
 
 		WGPUSurfaceDescriptor const descr = {
