@@ -19,6 +19,7 @@ cc.add_opt("-Wextra")
 cc.add_opt("-Werror")
 cc.add_opt("-g")
 
+cc.add_lib("libdrm")
 cc.add_lib("pixman-1")
 
 var src = File.list(".")
