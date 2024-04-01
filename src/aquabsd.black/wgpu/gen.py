@@ -216,10 +216,6 @@ lib_out = f"""// This Source Form is subject to the terms of the AQUA Software L
 
 #pragma once
 
-#if !defined(AQUABSD_ALPS_WIN) && !defined(AQUABSD_BLACK_WIN)
-#error "You must first either include <aquabsd/alps/win.h> or <aquabsd/black/win.h> before including <aquabsd/black/wgpu.h>"
-#endif
-
 #include <root.h>
 
 #include "wgpu_types.h"
@@ -236,6 +232,7 @@ AQUA_C_FN int wgpu_init(void) {{
 	return SUCCESS;
 }}
 
+#if defined(AQUABSD_ALPS_WIN) || defined(AQUABSD_BLACK_WIN)
 AQUA_C_FN WGPUSurface wgpu_surface_from_win(WGPUInstance instance, win_t* win) {{
 	struct {{
 		WGPUInstance instance;
@@ -247,6 +244,7 @@ AQUA_C_FN WGPUSurface wgpu_surface_from_win(WGPUInstance instance, win_t* win) {
 
 	return (WGPUSurface) send_device(wgpu_device, {CMD_SURFACE_FROM_WIN}, (void*) &args);
 }}
+#endif
 
 #if defined(AQUABSD_BLACK_WM)
 AQUA_C_FN WGPUSurface wgpu_surface_from_wm(WGPUInstance instance, wm_t* wm) {{
