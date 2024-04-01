@@ -29,9 +29,10 @@ typedef enum {
 } wm_flag_t;
 
 typedef enum {
-	WM_CB_ADD_WINDOW,
-	WM_CB_REM_WINDOW,
-	WM_CB_COUNT,
+	WM_CB_KIND_DRAW,
+	WM_CB_KIND_ADD_WINDOW,
+	WM_CB_KIND_REM_WINDOW,
+	WM_CB_KIND_COUNT,
 } wm_cb_kind_t;
 
 typedef struct {
@@ -99,8 +100,8 @@ typedef struct {
 
 	// app client callbacks
 
-	uint64_t cbs[WM_CB_COUNT];
-	uint64_t cb_datas[WM_CB_COUNT];
+	uint64_t cbs[WM_CB_KIND_COUNT];
+	uint64_t cb_datas[WM_CB_KIND_COUNT];
 } wm_t;
 
 wm_t* wm_create(wm_flag_t flags);

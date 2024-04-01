@@ -7,6 +7,7 @@
 
 #include "wm.h"
 #include "drm.h"
+#include "renderer.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,11 +54,63 @@ static void setup_logging(void) {
 	logging_set_up = true;
 }
 
-static void new_output(struct wl_listener* listener, void* data) {
+typedef struct {
+	wm_t* wm;
+	struct wlr_output* output;
+	struct wl_listener frame;
+	struct wl_listener destroy;
+} output_t;
+
+static void output_frame_notify(struct wl_listener* listener, void* data) {
 	(void) listener;
 	(void) data;
 
 	LOG_FATAL("TODO");
+}
+
+static void output_remove_notify(struct wl_listener* listener, void* data) {
+	(void) data;
+
+	output_t* const output = wl_container_of(listener, output, destroy);
+
+	wl_list_remove(&output->frame.link);
+	wl_list_remove(&output->destroy.link);
+
+	free(output);
+}
+
+static void new_output(struct wl_listener* listener, void* data) {
+	struct wlr_output* const output = data;
+	wm_t* const wm = wl_container_of(listener, wm, new_output);
+
+	LOG_FATAL("TODO");
+
+	wlr_output_init_render(output, wm->allocator, wm->wlr_renderer);
+
+	output_t* const my_output = calloc(1, sizeof *output);
+
+	my_output->wm = wm;
+	my_output->output = output;
+
+	wl_signal_add(&output->events.frame, &my_output->frame);
+	my_output->frame.notify = output_frame_notify;
+
+	wl_signal_add(&output->events.destroy, &my_output->destroy);
+	my_output->destroy.notify = output_remove_notify;
+
+	struct wlr_output_state state;
+
+	wlr_output_state_init(&state);
+	wlr_output_state_set_enabled(&state, true);
+
+	struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
+
+	if (mode != NULL) {
+		wlr_output_state_set_mode(&state, mode);
+	}
+
+	wlr_output_commit_state(output, &state);
+	wlr_output_state_finish(&state);
 }
 
 static void new_toplevel(struct wl_listener* listener, void* data) {
@@ -161,28 +214,29 @@ wm_t* wm_create(wm_flag_t flags) {
 			FAIL("Failed to populate DRM fd");
 		}
 
-		LOG_INFO("Got DRM fd %d", wm->drm_fd);
+		LOG_INFO("Got DRM fd (%d)", wm->drm_fd);
 	}
 
-	// LOG_VERBOSE("Creating renderer");
-	// wm->wlr_renderer = wlr_renderer_autocreate(wm->backend);
+	LOG_VERBOSE("Creating renderer");
+	wm->wlr_renderer = renderer_create(wm);
 
-	// if (wm->wlr_renderer == NULL) {
-	// 	FAIL("Failed to create renderer");
-	// }
+	if (wm->wlr_renderer == NULL) {
+		FAIL("Failed to create renderer");
+	}
 
+	// don't think this is necessary per se, simple.c doesn't do it at least
 	// LOG_VERBOSE("Initializing renderer");
 
 	// if (!wlr_renderer_init_wl_display(wm->wlr_renderer, wm->display)) {
 	// 	FAIL("Failed to initialize renderer");
 	// }
 
-	// LOG_VERBOSE("Creating wlroots allocator");
-	// wm->allocator = wlr_allocator_autocreate(wm->backend, wm->wlr_renderer);
+	LOG_VERBOSE("Creating wlroots allocator");
+	wm->allocator = wlr_allocator_autocreate(wm->backend, wm->wlr_renderer);
 
-	// if (wm->allocator == NULL) {
-	// 	FAIL("Failed to create wlroots allocator");
-	// }
+	if (wm->allocator == NULL) {
+		FAIL("Failed to create wlroots allocator");
+	}
 
 	LOG_VERBOSE("Add listener for when new outputs are available");
 
@@ -196,11 +250,18 @@ wm_t* wm_create(wm_flag_t flags) {
 	wm->new_input.notify = new_input;
 	wl_signal_add(&wm->backend->events.new_input, &wm->new_input);
 
-	LOG_VERBOSE("Start backend");
+	LOG_VERBOSE("Start backend (current EGLDisplay: %p)", eglGetCurrentDisplay());
 
 	if (!wlr_backend_start(wm->backend)) {
+		// LOG_ERROR("Failed to start backend");
+		// return -1;
+
 		FAIL("Failed to start backend");
 	}
+
+	LOG_INFO("Start the main loop");
+
+	wl_display_run(wm->display);
 
 	LOG_FATAL("TODO the actual compositing part");
 	return wm;
@@ -373,6 +434,8 @@ int wm_register_cb(wm_t* wm, wm_cb_kind_t kind, uint64_t cb, uint64_t data) {
 
 	return -1;
 }
+
+#include <EGL/egl.h>
 
 int wm_loop(wm_t* wm) {
 	LOG_INFO("Starting WM loop");
