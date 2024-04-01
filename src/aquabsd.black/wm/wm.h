@@ -51,6 +51,9 @@ typedef struct {
 	struct wl_listener new_surface;
 	win_t win; // TODO have no clue how this is supposed to work
 
+	size_t x_res;
+	size_t y_res;
+
 	// wlroots stuff
 
 	struct wlr_backend* backend;
@@ -105,6 +108,9 @@ void wm_destroy(wm_t* wm);
 
 int wm_register_cb(wm_t* wm, wm_cb_kind_t kind, uint64_t cb, uint64_t data);
 int wm_loop(wm_t* wm);
+
+size_t wm_get_x_res(wm_t* wm);
+size_t wm_get_y_res(wm_t* wm);
 
 // TODO should we refer to windows by struct wlr_xdg_toplevel* or by win_t*?
 

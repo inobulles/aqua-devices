@@ -13,6 +13,11 @@ typedef enum {
 
 	CMD_REGISTER_CB = 0x7263, // 'rc'
 	CMD_LOOP = 0x6C6F, // 'lo'
+
+	// WM attribute commands
+
+	CMD_GET_X_RES = 0x7872, // 'xr'
+	CMD_GET_Y_RES = 0x7972, // 'yr'
 } cmd_t;
 
 uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
@@ -39,6 +44,14 @@ uint64_t send(uint16_t _cmd, void* data) {
 	case CMD_LOOP:
 		
 		return (uint64_t) wm_loop((wm_t*) args[0]);
+
+	case CMD_GET_X_RES:
+
+		return (uint64_t) wm_get_x_res((wm_t*) args[0]);
+
+	case CMD_GET_Y_RES:
+
+		return (uint64_t) wm_get_y_res((wm_t*) args[0]);
 	}
 
 	return -1;

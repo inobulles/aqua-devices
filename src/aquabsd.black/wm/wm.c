@@ -383,3 +383,11 @@ int wm_loop(wm_t* wm) {
 
 	return 0;
 }
+
+size_t wm_get_x_res(wm_t* wm) {
+	return wm->x_res;
+}
+
+size_t wm_get_y_res(wm_t* wm) {
+	return wm->y_res;
+}
