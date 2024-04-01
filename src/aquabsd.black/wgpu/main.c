@@ -350,6 +350,7 @@ uint64_t send(uint16_t _cmd, void* data) {
 	}
 
 	else if (cmd == CMD_wgpuAdapterRequestAdapterInfo) {
+		/*
 		struct {
 			WGPUAdapter adapter;
 			WGPUAdapterRequestAdapterInfoCallback callback;
@@ -357,6 +358,7 @@ uint64_t send(uint16_t _cmd, void* data) {
 		} __attribute__((packed))* const args = data;
 
 		wgpuAdapterRequestAdapterInfo(args->adapter, args->callback, args->userdata);
+		*/
 	}
 
 	else if (cmd == CMD_wgpuAdapterRequestDevice) {
@@ -1089,12 +1091,14 @@ uint64_t send(uint16_t _cmd, void* data) {
 	}
 
 	else if (cmd == CMD_wgpuInstanceHasWGSLLanguageFeature) {
+		/*
 		struct {
 			WGPUInstance instance;
 			WGPUWGSLFeatureName feature;
 		} __attribute__((packed))* const args = data;
 
 		return (uint64_t) wgpuInstanceHasWGSLLanguageFeature(args->instance, args->feature);
+		*/
 	}
 
 	else if (cmd == CMD_wgpuInstanceProcessEvents) {
@@ -1811,12 +1815,14 @@ uint64_t send(uint16_t _cmd, void* data) {
 	}
 
 	else if (cmd == CMD_wgpuSurfaceSetLabel) {
+		/*
 		struct {
 			WGPUSurface surface;
 			char const * label;
 		} __attribute__((packed))* const args = data;
 
 		wgpuSurfaceSetLabel(args->surface, args->label);
+		*/
 	}
 
 	else if (cmd == CMD_wgpuSurfaceUnconfigure) {
