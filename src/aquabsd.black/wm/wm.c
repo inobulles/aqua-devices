@@ -348,6 +348,15 @@ void wm_destroy(wm_t* wm) {
 	free(wm);
 }
 
+int wm_register_cb(wm_t* wm, wm_cb_kind_t kind, uint64_t cb, uint64_t data) {
+	(void) wm;
+	(void) kind;
+	(void) cb;
+	(void) data;
+
+	return -1;
+}
+
 int wm_loop(wm_t* wm) {
 	LOG_INFO("Starting WM loop");
 

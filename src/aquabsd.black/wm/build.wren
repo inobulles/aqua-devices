@@ -31,7 +31,7 @@ src
 // create dynamic library
 
 var linker = Linker.new()
-linker.link(src.toList, ["m", "wayland-client"], "aquabsd.black.wm.vdev", true)
+linker.link(src.toList, ["m", "wayland-client", "drm", "wlroots"], "aquabsd.black.wm.vdev", true)
 
 // TODO testing
 
