@@ -35,7 +35,7 @@ static bool check_ext(char const* haystack, char const* needle) {
 	return false;
 }
 
-static char const* egl_error_str(void) {
+char const* egl_error_str(void) {
 	EGLint const error = eglGetError();
 
 #define ERROR_CASE(error) \
@@ -203,16 +203,37 @@ int egl_from_drm_fd(renderer_t* renderer) {
 	}
 
 	LOG_INFO("EGL display extensions: %s", display_extensions);
+	LOG_VERBOSE("Check for EGL_KHR_no_config_context or EGL_MESA_configless_context"); // for EGL_NO_CONFIG_KHR
+
+	if (
+		!check_ext(display_extensions, "EGL_KHR_no_config_context") &&
+		!check_ext(display_extensions, "EGL_MESA_configless_context")
+	) {
+		LOG_ERROR("EGL_KHR_no_config_context or EGL_MESA_configless_context is not supported");
+		goto err_egl_ext_platform_base;
+	}
 
 	// TODO here, in wlroots/render/egl.c:egl_init_display, the chosen device is checked for software rendering
 	// this is done with eglQueryDeviceStringEXT(..., EGL_EXTENSIONS) and checking if EGL_MESA_device_software is a device extension
 	// we should warn the user if this is the case
 
+	LOG_VERBOSE("Create EGL context");
+	EGLContext const context = eglCreateContext(display, EGL_NO_CONFIG_KHR, EGL_NO_CONTEXT, NULL);
+
+	// TODO request high priority context if EGL_IMG_context_priority is supported and we're running as the DRM master
+
+	if (context == EGL_NO_CONTEXT) {
+		LOG_ERROR("Failed to create EGL context: %s", egl_error_str());
+		goto err_egl_create_context;
+	}
+
 	renderer->egl_device = chosen_egl_device;
 	renderer->egl_display = display;
+	renderer->egl_context = context;
 
 	rv = 0;
 
+err_egl_create_context:
 err_display_extensions:
 err_egl_initialize:
 err_egl_get_platform_display:

@@ -175,10 +175,20 @@ struct wlr_renderer* renderer_create(wm_t* wm) {
 	// equivalent to wlroots/src/render/egl.c:init_dmabuf_formats
 	// TODO currently just hardcoded
 
+	LOG_VERBOSE("Adding XR24 format to render formats (TODO)");
+
 	uint32_t const XR24 = 0x34325258;
 	uint64_t const modifiers = 0x020000001046BB04;
 
 	wlr_drm_format_set_add(&renderer->dmabuf_render_formats, XR24, modifiers);
+
+	LOG_VERBOSE("Making EGL context current");
+
+	if (!eglMakeCurrent(renderer->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, renderer->egl_context)) {
+		LOG_ERROR("Failed to make EGL context current: %s", egl_error_str());
+		free(renderer);
+		return NULL;
+	}
 
 	return &renderer->wlr_renderer;
 }

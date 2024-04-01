@@ -5,4 +5,5 @@
 
 #include "renderer.h"
 
+char const* egl_error_str(void);
 int egl_from_drm_fd(renderer_t* renderer);
