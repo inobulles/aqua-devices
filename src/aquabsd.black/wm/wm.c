@@ -38,7 +38,7 @@ static void wlr_log_cb(enum wlr_log_importance importance, char const* fmt, va_l
 		lvl = UMBER_LVL_WARN;
 	}
 
-	umber_log(lvl, UMBER_COMPONENT, "wlroots", "wlroots", 0, msg);
+	umber_log(lvl, UMBER_COMPONENT, "wlroots", "wlroots", 69, msg);
 	free(msg);
 }
 
@@ -135,13 +135,6 @@ wm_t* wm_create(wm_flag_t flags) {
 		return NULL; \
 	} while (0)
 
-	wm->drm_fd = -1;
-
-	if (flags & WM_FLAG_POPULATE_DRM_FD) {
-		LOG_VERBOSE("Populating DRM FD");
-		wm->drm_fd = open_preferred_drm_fd(wm, &wm->drm_fd, &wm->own_drm_fd);
-	}
-
 	LOG_VERBOSE("Creating the Wayland display");
 	wm->display = wl_display_create();
 
@@ -157,6 +150,19 @@ wm_t* wm_create(wm_flag_t flags) {
 
 	if (wm->backend == NULL) {
 		FAIL("Failed to create backend");
+	}
+
+	wm->drm_fd = -1;
+
+	if (flags & WM_FLAG_POPULATE_DRM_FD) {
+		LOG_VERBOSE("Populating DRM fd");
+		wm->drm_fd = open_preferred_drm_fd(wm, &wm->drm_fd, &wm->own_drm_fd);
+
+		if (wm->drm_fd < 0) {
+			FAIL("Failed to populate DRM fd");
+		}
+
+		LOG_INFO("Got DRM fd %d", wm->drm_fd);
 	}
 
 	LOG_VERBOSE("Creating renderer");
