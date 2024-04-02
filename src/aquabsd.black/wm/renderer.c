@@ -13,6 +13,8 @@
 
 #include <libdrm/drm_fourcc.h>
 
+#include <GLES2/gl2.h>
+
 // TODO error handling
 
 static renderer_t* get_renderer(struct wlr_renderer* wlr_renderer) {
@@ -189,6 +191,13 @@ struct wlr_renderer* renderer_create(wm_t* wm) {
 		free(renderer);
 		return NULL;
 	}
+
+	LOG_VERBOSE("OpenGL should be available by now, listing information");
+
+	LOG_INFO("OpenGL version: %s", glGetString(GL_VERSION));
+	LOG_INFO("OpenGL vendor: %s", glGetString(GL_VENDOR));
+	LOG_INFO("OpenGL renderer: %s", glGetString(GL_RENDERER));
+	LOG_INFO("OpenGL extensions: %s", glGetString(GL_EXTENSIONS));
 
 	return &renderer->wlr_renderer;
 }
