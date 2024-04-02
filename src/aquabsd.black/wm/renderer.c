@@ -80,58 +80,66 @@ static struct wlr_render_pass* begin_buffer_pass(struct wlr_renderer* wlr_render
 	// XXX here, GLES2 does gles2_buffer_get_or_create
 	// this does some stuff with EGL which should probably be in wgpu when swapping buffers or something
 
+	eglMakeCurrent(renderer->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, renderer->egl_context);
+
+	// TODO fix up all this error handling!
+
 	struct wlr_dmabuf_attributes dmabuf = {0};
 
 	if (!wlr_buffer_get_dmabuf(wlr_buffer, &dmabuf)) {
 		goto error_buffer;
 	}
 
-	EGLDisplay const display = eglGetCurrentDisplay();
+	bool const modifiers =
+		dmabuf.modifier != DRM_FORMAT_MOD_INVALID &&
+		dmabuf.modifier != DRM_FORMAT_MOD_LINEAR;
 
-	size_t attrib_size = 8;
-	EGLint attribs[64] = { // XXX arbitrary size which hopefully is enough :)
+	assert(modifiers); // TODO what to do when no modifiers?
+
+	LOG_INFO("Got %dx%d DMA-BUF buffer with %d planes (with%s modifiers)", dmabuf.width, dmabuf.height, dmabuf.n_planes, modifiers ? "" : "out");
+
+	EGLint attribs[] = {
 		EGL_WIDTH, dmabuf.width,
 		EGL_HEIGHT, dmabuf.height,
 		EGL_LINUX_DRM_FOURCC_EXT, dmabuf.format,
 		EGL_IMAGE_PRESERVED_KHR, EGL_TRUE,
+
+	dmabuf.n_planes < 1 ? EGL_NONE :
+		EGL_DMA_BUF_PLANE0_FD_EXT, dmabuf.fd[0],
+		EGL_DMA_BUF_PLANE0_OFFSET_EXT, dmabuf.offset[0],
+		EGL_DMA_BUF_PLANE0_PITCH_EXT, dmabuf.stride[0],
+		EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT, dmabuf.modifier & 0xFFFFFFFF,
+		EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT, dmabuf.modifier >> 32,
+
+	dmabuf.n_planes < 2 ? EGL_NONE :
+		EGL_DMA_BUF_PLANE1_FD_EXT, dmabuf.fd[1],
+		EGL_DMA_BUF_PLANE1_OFFSET_EXT, dmabuf.offset[1],
+		EGL_DMA_BUF_PLANE1_PITCH_EXT, dmabuf.stride[1],
+		EGL_DMA_BUF_PLANE1_MODIFIER_LO_EXT, dmabuf.modifier & 0xFFFFFFFF,
+		EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT, dmabuf.modifier >> 32,
+
+	dmabuf.n_planes < 3 ? EGL_NONE :
+		EGL_DMA_BUF_PLANE2_FD_EXT, dmabuf.fd[2],
+		EGL_DMA_BUF_PLANE2_OFFSET_EXT, dmabuf.offset[2],
+		EGL_DMA_BUF_PLANE2_PITCH_EXT, dmabuf.stride[2],
+		EGL_DMA_BUF_PLANE2_MODIFIER_LO_EXT, dmabuf.modifier & 0xFFFFFFFF,
+		EGL_DMA_BUF_PLANE2_MODIFIER_HI_EXT, dmabuf.modifier >> 32,
+
+	dmabuf.n_planes < 4 ? EGL_NONE :
+		EGL_DMA_BUF_PLANE3_FD_EXT, dmabuf.fd[3],
+		EGL_DMA_BUF_PLANE3_OFFSET_EXT, dmabuf.offset[3],
+		EGL_DMA_BUF_PLANE3_PITCH_EXT, dmabuf.stride[3],
+		EGL_DMA_BUF_PLANE3_MODIFIER_LO_EXT, dmabuf.modifier & 0xFFFFFFFF,
+		EGL_DMA_BUF_PLANE3_MODIFIER_HI_EXT, dmabuf.modifier >> 32,
+
+		EGL_NONE
 	};
 
-	EGLint const fd_delta = EGL_DMA_BUF_PLANE1_FD_EXT - EGL_DMA_BUF_PLANE0_FD_EXT;
-	EGLint const offset_delta = EGL_DMA_BUF_PLANE1_OFFSET_EXT - EGL_DMA_BUF_PLANE0_OFFSET_EXT;
-	EGLint const pitch_delta = EGL_DMA_BUF_PLANE1_PITCH_EXT - EGL_DMA_BUF_PLANE0_PITCH_EXT;
-	EGLint const mod_lo_delta = EGL_DMA_BUF_PLANE1_MODIFIER_LO_EXT - EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT;
-	EGLint const mod_hi_delta = EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT - EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT;
-
-	for (size_t i = 0; i < (size_t) dmabuf.n_planes; i++) {
-		attribs[attrib_size++] = EGL_DMA_BUF_PLANE0_FD_EXT + i * fd_delta;
-		attribs[attrib_size++] = dmabuf.fd[i];
-
-		attribs[attrib_size++] = EGL_DMA_BUF_PLANE0_OFFSET_EXT + i * offset_delta;
-		attribs[attrib_size++] = dmabuf.offset[i];
-
-		attribs[attrib_size++] = EGL_DMA_BUF_PLANE0_PITCH_EXT + i * pitch_delta;
-		attribs[attrib_size++] = dmabuf.stride[i];
-
-		// XXX egl->has_modifiers
-		if (true || dmabuf.modifier == DRM_FORMAT_MOD_INVALID) {
-			continue;
-		}
-
-		attribs[attrib_size++] = EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT + i * mod_lo_delta;
-		attribs[attrib_size++] = dmabuf.modifier & 0xFFFFFFFF;
-
-		attribs[attrib_size++] = EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT + i * mod_hi_delta;
-		attribs[attrib_size++] = dmabuf.modifier >> 32;
-	}
-
-	attribs[attrib_size] = EGL_NONE;
-	assert(attrib_size < sizeof attribs / sizeof *attribs);
-
 	PFNEGLCREATEIMAGEKHRPROC const eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
-	EGLImage const image = eglCreateImageKHR(display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, attribs);
+	EGLImage const image = eglCreateImageKHR(renderer->egl_display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, attribs);
 
 	if (image == EGL_NO_IMAGE_KHR) {
-		LOG_FATAL("Oh no!");
+		LOG_FATAL("Oh no! %s", egl_error_str());
 		goto error_buffer;
 	}
 
@@ -176,6 +184,7 @@ struct wlr_renderer* renderer_create(wm_t* wm) {
 	// get render formats
 	// equivalent to wlroots/src/render/egl.c:init_dmabuf_formats
 	// TODO currently just hardcoded
+	// also we just assume support for EGL DMA-BUF format modifiers - check this (see egl->has_modifiers)
 
 	LOG_VERBOSE("Adding XR24 format to render formats (TODO)");
 
