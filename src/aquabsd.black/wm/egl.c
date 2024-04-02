@@ -84,7 +84,7 @@ int egl_from_drm_fd(renderer_t* renderer) {
 
 	if (!check_ext(client_extensions, "EGL_EXT_device_enumeration")) {
 		LOG_ERROR("EGL_EXT_device_enumeration is not supported");
-		goto err_missing_extension;
+		goto err_missing_client_extension;
 	}
 
 	LOG_VERBOSE("Check for EGL_EXT_device_query");
@@ -92,7 +92,7 @@ int egl_from_drm_fd(renderer_t* renderer) {
 
 	if (!check_ext(client_extensions, "EGL_EXT_device_query")) {
 		LOG_ERROR("EGL_EXT_device_query is not supported");
-		goto err_missing_extension;
+		goto err_missing_client_extension;
 	}
 
 	LOG_VERBOSE("Check for EGL_EXT_platform_base");
@@ -100,15 +100,7 @@ int egl_from_drm_fd(renderer_t* renderer) {
 
 	if (!check_ext(client_extensions, "EGL_EXT_platform_base")) {
 		LOG_ERROR("EGL_EXT_platform_base is not supported");
-		goto err_missing_extension;
-	}
-
-	LOG_VERBOSE("Check for EGL_EXT_image_dma_buf_import");
-	// for eglCreateImageKHR
-
-	if (!check_ext(client_extensions, "EGL_EXT_image_dma_buf_import")) {
-		LOG_ERROR("EGL_EXT_image_dma_buf_import is not supported");
-		goto err_missing_extension;
+		goto err_missing_client_extension;
 	}
 
 	LOG_VERBOSE("Get list of EGLDeviceEXT's");
@@ -214,14 +206,24 @@ int egl_from_drm_fd(renderer_t* renderer) {
 	}
 
 	LOG_INFO("EGL display extensions: %s", display_extensions);
-	LOG_VERBOSE("Check for EGL_KHR_no_config_context or EGL_MESA_configless_context"); // for EGL_NO_CONFIG_KHR
+
+	LOG_VERBOSE("Check for EGL_KHR_no_config_context or EGL_MESA_configless_context");
+	// for EGL_NO_CONFIG_KHR
 
 	if (
 		!check_ext(display_extensions, "EGL_KHR_no_config_context") &&
 		!check_ext(display_extensions, "EGL_MESA_configless_context")
 	) {
 		LOG_ERROR("EGL_KHR_no_config_context or EGL_MESA_configless_context is not supported");
-		goto err_egl_ext_platform_base;
+		goto err_missing_display_extension;
+	}
+
+	LOG_VERBOSE("Check for EGL_EXT_image_dma_buf_import");
+	// for eglCreateImageKHR
+
+	if (!check_ext(display_extensions, "EGL_EXT_image_dma_buf_import")) {
+		LOG_ERROR("EGL_EXT_image_dma_buf_import is not supported");
+		goto err_missing_display_extension;
 	}
 
 	// TODO here, in wlroots/render/egl.c:egl_init_display, the chosen device is checked for software rendering
@@ -245,7 +247,7 @@ int egl_from_drm_fd(renderer_t* renderer) {
 	rv = 0;
 
 err_egl_create_context:
-err_egl_ext_platform_base:
+err_missing_display_extension:
 err_display_extensions:
 err_egl_initialize:
 err_egl_get_platform_display:
@@ -259,7 +261,7 @@ err_egl_query_devices_ext_for_realsies:
 	free(egl_devices);
 
 err_egl_query_devices_ext_count:
-err_missing_extension:
+err_missing_client_extension:
 err_client_extensions:
 
 	return rv;
