@@ -14,6 +14,7 @@
 #include <libdrm/drm_fourcc.h>
 
 #include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
 
 // TODO error handling
 
@@ -87,7 +88,7 @@ static struct wlr_render_pass* begin_buffer_pass(struct wlr_renderer* wlr_render
 	struct wlr_dmabuf_attributes dmabuf = {0};
 
 	if (!wlr_buffer_get_dmabuf(wlr_buffer, &dmabuf)) {
-		goto error_buffer;
+		LOG_FATAL("Oh no! Couldn't get DMA-BUF");
 	}
 
 	bool const modifiers =
@@ -146,6 +147,26 @@ static struct wlr_render_pass* begin_buffer_pass(struct wlr_renderer* wlr_render
 error_buffer: {}
 
 	// XXX here, GLES2 does begin_gles2_buffer_pass
+	// this is super temporary stuff just for testing
+
+	GLuint rbo, fbo;
+
+	PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC const glEGLImageTargetRenderbufferStorageOES = (void*) eglGetProcAddress("glEGLImageTargetRenderbufferStorageOES");
+
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glEGLImageTargetRenderbufferStorageOES(GL_RENDERBUFFER, image);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		LOG_FATAL("Oh no! Framebuffer is not complete");
+	}
+
+	LOG_FATAL("Framebuffer is complete");
 
 	renderpass_t* const renderpass = calloc(1, sizeof *renderpass);
 
@@ -155,7 +176,7 @@ error_buffer: {}
 	wlr_render_pass_init(&renderpass->base, &renderpass_impl);
 	wlr_buffer_lock(wlr_buffer);
 
-	return NULL;
+	return &renderpass->base;
 }
 
 static struct wlr_renderer_impl const renderer_impl = {
