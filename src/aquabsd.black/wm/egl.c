@@ -80,24 +80,35 @@ int egl_from_drm_fd(renderer_t* renderer) {
 	LOG_INFO("EGL client extensions: %s", client_extensions);
 
 	LOG_VERBOSE("Check for EGL_EXT_device_enumeration");
+	// for eglQueryDevicesEXT
 
 	if (!check_ext(client_extensions, "EGL_EXT_device_enumeration")) {
 		LOG_ERROR("EGL_EXT_device_enumeration is not supported");
-		goto err_egl_ext_device_enumeration;
+		goto err_missing_extension;
 	}
 
 	LOG_VERBOSE("Check for EGL_EXT_device_query");
+	// for eglQueryDeviceStringEXT
 
 	if (!check_ext(client_extensions, "EGL_EXT_device_query")) {
 		LOG_ERROR("EGL_EXT_device_query is not supported");
-		goto err_egl_ext_device_enumeration;
+		goto err_missing_extension;
 	}
 
 	LOG_VERBOSE("Check for EGL_EXT_platform_base");
+	// for eglGetPlatformDisplayEXT
 
 	if (!check_ext(client_extensions, "EGL_EXT_platform_base")) {
 		LOG_ERROR("EGL_EXT_platform_base is not supported");
-		goto err_egl_ext_platform_base;
+		goto err_missing_extension;
+	}
+
+	LOG_VERBOSE("Check for EGL_EXT_image_dma_buf_import");
+	// for eglCreateImageKHR
+
+	if (!check_ext(client_extensions, "EGL_EXT_image_dma_buf_import")) {
+		LOG_ERROR("EGL_EXT_image_dma_buf_import is not supported");
+		goto err_missing_extension;
 	}
 
 	LOG_VERBOSE("Get list of EGLDeviceEXT's");
@@ -234,6 +245,7 @@ int egl_from_drm_fd(renderer_t* renderer) {
 	rv = 0;
 
 err_egl_create_context:
+err_egl_ext_platform_base:
 err_display_extensions:
 err_egl_initialize:
 err_egl_get_platform_display:
@@ -247,8 +259,7 @@ err_egl_query_devices_ext_for_realsies:
 	free(egl_devices);
 
 err_egl_query_devices_ext_count:
-err_egl_ext_platform_base:
-err_egl_ext_device_enumeration:
+err_missing_extension:
 err_client_extensions:
 
 	return rv;
