@@ -230,8 +230,14 @@ int egl_from_drm_fd(renderer_t* renderer) {
 	// this is done with eglQueryDeviceStringEXT(..., EGL_EXTENSIONS) and checking if EGL_MESA_device_software is a device extension
 	// we should warn the user if this is the case
 
+	EGLint const context_attribs[] = {
+		EGL_CONTEXT_MAJOR_VERSION, 3,
+		EGL_CONTEXT_MINOR_VERSION, 0,
+		EGL_NONE
+	};
+
 	LOG_VERBOSE("Create EGL context");
-	EGLContext const context = eglCreateContext(display, EGL_NO_CONFIG_KHR, EGL_NO_CONTEXT, NULL);
+	EGLContext const context = eglCreateContext(display, EGL_NO_CONFIG_KHR, EGL_NO_CONTEXT, context_attribs);
 
 	// TODO request high priority context if EGL_IMG_context_priority is supported and we're running as the DRM master
 
