@@ -1,6 +1,7 @@
 # This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
 # Copyright (c) 2024 Aymeric Wibo
 
+import os
 from datetime import datetime
 
 AQUABSD_ALPS_WIN_DEVICE = "aquabsd.alps.win"
@@ -258,6 +259,9 @@ AQUA_C_FN WGPUDevice wgpu_device_from_wm(WGPUInstance instance, wm_t* wm) {{
 }}
 #endif
 {c_wrappers}"""
+
+if not os.path.exists("c-lib"):
+	os.mkdir("c-lib")
 
 with open("c-lib/wgpu.h", "w") as f:
 	f.write(lib_out)
