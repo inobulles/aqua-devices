@@ -15,8 +15,11 @@ CMD_SURFACE_FROM_WIN = "0x0000"
 CMD_DEVICE_FROM_WM = "0x0001"
 CMD_WGPU_BASE = 0x1000
 
-with open("webgpu.h") as f:
-	lines = map(str.rstrip, f.readlines())
+with open("ffi/webgpu.h") as f:
+	*lines, = map(str.rstrip, f.readlines())
+
+with open("ffi/wgpu.h") as f:
+	lines += [*map(str.rstrip, f.readlines())]
 
 count = CMD_WGPU_BASE
 
@@ -27,6 +30,9 @@ c_types = ""
 c_wrappers = ""
 
 for line in lines:
+	if line.startswith("#include \""):
+		continue
+
 	if not line.startswith("WGPU_EXPORT "):
 		c_types += line + "\n"
 		continue
@@ -96,7 +102,7 @@ dev_out = f"""// This Source Form is subject to the terms of the AQUA Software L
 #include <stdint.h>
 #include <string.h>
 
-#include "webgpu.h"
+#include "ffi/wgpu.h"
 
 #include <{AQUABSD_ALPS_WIN_DEVICE_HEADER_INCLUDE}>
 #include <{AQUABSD_BLACK_WIN_DEVICE_HEADER_INCLUDE}>
