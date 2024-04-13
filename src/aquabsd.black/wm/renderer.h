@@ -23,3 +23,8 @@ typedef struct {
 
 struct wlr_renderer* renderer_create(wm_t* wm);
 // TODO void renderer_destroy(struct wlr_renderer* renderer);
+
+static inline renderer_t* wm_renderer_container(struct wlr_renderer* wlr_renderer) {
+	renderer_t* const renderer = wl_container_of(wlr_renderer, renderer, wlr_renderer);
+	return renderer;
+}

@@ -18,13 +18,8 @@
 
 // TODO error handling
 
-static renderer_t* get_renderer(struct wlr_renderer* wlr_renderer) {
-	renderer_t* const renderer = wl_container_of(wlr_renderer, renderer, wlr_renderer);
-	return renderer;
-}
-
 static int get_drm_fd(struct wlr_renderer* wlr_renderer) {
-	renderer_t* const renderer = get_renderer(wlr_renderer);
+	renderer_t* const renderer = wm_renderer_container(wlr_renderer);
 	return renderer->wm->drm_fd;
 }
 
@@ -34,7 +29,7 @@ static uint32_t get_render_buffer_caps(struct wlr_renderer* wlr_renderer) {
 }
 
 static struct wlr_drm_format_set const* get_render_formats(struct wlr_renderer* wlr_renderer) {
-	renderer_t* const renderer = get_renderer(wlr_renderer);
+	renderer_t* const renderer = wm_renderer_container(wlr_renderer);
 	return &renderer->dmabuf_render_formats;
 }
 
@@ -70,7 +65,7 @@ static struct wlr_render_pass_impl const renderpass_impl = {
 };
 
 static struct wlr_render_pass* begin_buffer_pass(struct wlr_renderer* wlr_renderer, struct wlr_buffer* wlr_buffer, struct wlr_buffer_pass_options const* options) {
-	renderer_t* const renderer = get_renderer(wlr_renderer);
+	renderer_t* const renderer = wm_renderer_container(wlr_renderer);
 	wm_t* const wm = renderer->wm;
 
 	(void) options;
@@ -187,7 +182,7 @@ static struct wlr_renderer_impl const renderer_impl = {
 };
 
 struct wlr_renderer* renderer_create(wm_t* wm) {
-	// TODO in the future this should support Vulkan too (and especially)!
+	// TODO in the future this should support Vulkan too (and especially!)
 	// because right now it's capping WebGPU to just OpenGL adapters
 
 	renderer_t* const renderer = calloc(1, sizeof *renderer);
