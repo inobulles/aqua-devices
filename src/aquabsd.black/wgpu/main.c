@@ -7,15 +7,17 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "webgpu.h"
+#include "ffi/wgpu.h"
 
 #include <aquabsd.alps/win/public.h>
 #include <aquabsd.black/win/win.h>
 #include <aquabsd.black/wm/wm.h>
+#include <aquabsd.black/wm/renderer.h>
 
 typedef enum {
 	CMD_SURFACE_FROM_WIN = 0x0000,
-	CMD_SURFACE_FROM_WM = 0x0001,
+	CMD_DEVICE_FROM_WM = 0x0001,
+	CMD_DEVICE_DEFAULT_FRAMEBUFFER = 0x0002,
 
 	// WebGPU commands
 
@@ -25,185 +27,182 @@ typedef enum {
 	CMD_wgpuAdapterGetLimits = 0x1003,
 	CMD_wgpuAdapterGetProperties = 0x1004,
 	CMD_wgpuAdapterHasFeature = 0x1005,
-	CMD_wgpuAdapterRequestAdapterInfo = 0x1006,
-	CMD_wgpuAdapterRequestDevice = 0x1007,
-	CMD_wgpuAdapterReference = 0x1008,
-	CMD_wgpuAdapterRelease = 0x1009,
-	CMD_wgpuBindGroupSetLabel = 0x100a,
-	CMD_wgpuBindGroupReference = 0x100b,
-	CMD_wgpuBindGroupRelease = 0x100c,
-	CMD_wgpuBindGroupLayoutSetLabel = 0x100d,
-	CMD_wgpuBindGroupLayoutReference = 0x100e,
-	CMD_wgpuBindGroupLayoutRelease = 0x100f,
-	CMD_wgpuBufferDestroy = 0x1010,
-	CMD_wgpuBufferGetConstMappedRange = 0x1011,
-	CMD_wgpuBufferGetMapState = 0x1012,
-	CMD_wgpuBufferGetMappedRange = 0x1013,
-	CMD_wgpuBufferGetSize = 0x1014,
-	CMD_wgpuBufferGetUsage = 0x1015,
-	CMD_wgpuBufferMapAsync = 0x1016,
-	CMD_wgpuBufferSetLabel = 0x1017,
-	CMD_wgpuBufferUnmap = 0x1018,
-	CMD_wgpuBufferReference = 0x1019,
-	CMD_wgpuBufferRelease = 0x101a,
-	CMD_wgpuCommandBufferSetLabel = 0x101b,
-	CMD_wgpuCommandBufferReference = 0x101c,
-	CMD_wgpuCommandBufferRelease = 0x101d,
-	CMD_wgpuCommandEncoderBeginComputePass = 0x101e,
-	CMD_wgpuCommandEncoderBeginRenderPass = 0x101f,
-	CMD_wgpuCommandEncoderClearBuffer = 0x1020,
-	CMD_wgpuCommandEncoderCopyBufferToBuffer = 0x1021,
-	CMD_wgpuCommandEncoderCopyBufferToTexture = 0x1022,
-	CMD_wgpuCommandEncoderCopyTextureToBuffer = 0x1023,
-	CMD_wgpuCommandEncoderCopyTextureToTexture = 0x1024,
-	CMD_wgpuCommandEncoderFinish = 0x1025,
-	CMD_wgpuCommandEncoderInsertDebugMarker = 0x1026,
-	CMD_wgpuCommandEncoderPopDebugGroup = 0x1027,
-	CMD_wgpuCommandEncoderPushDebugGroup = 0x1028,
-	CMD_wgpuCommandEncoderResolveQuerySet = 0x1029,
-	CMD_wgpuCommandEncoderSetLabel = 0x102a,
-	CMD_wgpuCommandEncoderWriteTimestamp = 0x102b,
-	CMD_wgpuCommandEncoderReference = 0x102c,
-	CMD_wgpuCommandEncoderRelease = 0x102d,
-	CMD_wgpuComputePassEncoderDispatchWorkgroups = 0x102e,
-	CMD_wgpuComputePassEncoderDispatchWorkgroupsIndirect = 0x102f,
-	CMD_wgpuComputePassEncoderEnd = 0x1030,
-	CMD_wgpuComputePassEncoderInsertDebugMarker = 0x1031,
-	CMD_wgpuComputePassEncoderPopDebugGroup = 0x1032,
-	CMD_wgpuComputePassEncoderPushDebugGroup = 0x1033,
-	CMD_wgpuComputePassEncoderSetBindGroup = 0x1034,
-	CMD_wgpuComputePassEncoderSetLabel = 0x1035,
-	CMD_wgpuComputePassEncoderSetPipeline = 0x1036,
-	CMD_wgpuComputePassEncoderReference = 0x1037,
-	CMD_wgpuComputePassEncoderRelease = 0x1038,
-	CMD_wgpuComputePipelineGetBindGroupLayout = 0x1039,
-	CMD_wgpuComputePipelineSetLabel = 0x103a,
-	CMD_wgpuComputePipelineReference = 0x103b,
-	CMD_wgpuComputePipelineRelease = 0x103c,
-	CMD_wgpuDeviceCreateBindGroup = 0x103d,
-	CMD_wgpuDeviceCreateBindGroupLayout = 0x103e,
-	CMD_wgpuDeviceCreateBuffer = 0x103f,
-	CMD_wgpuDeviceCreateCommandEncoder = 0x1040,
-	CMD_wgpuDeviceCreateComputePipeline = 0x1041,
-	CMD_wgpuDeviceCreateComputePipelineAsync = 0x1042,
-	CMD_wgpuDeviceCreatePipelineLayout = 0x1043,
-	CMD_wgpuDeviceCreateQuerySet = 0x1044,
-	CMD_wgpuDeviceCreateRenderBundleEncoder = 0x1045,
-	CMD_wgpuDeviceCreateRenderPipeline = 0x1046,
-	CMD_wgpuDeviceCreateRenderPipelineAsync = 0x1047,
-	CMD_wgpuDeviceCreateSampler = 0x1048,
-	CMD_wgpuDeviceCreateShaderModule = 0x1049,
-	CMD_wgpuDeviceCreateTexture = 0x104a,
-	CMD_wgpuDeviceDestroy = 0x104b,
-	CMD_wgpuDeviceEnumerateFeatures = 0x104c,
-	CMD_wgpuDeviceGetLimits = 0x104d,
-	CMD_wgpuDeviceGetQueue = 0x104e,
-	CMD_wgpuDeviceHasFeature = 0x104f,
-	CMD_wgpuDevicePopErrorScope = 0x1050,
-	CMD_wgpuDevicePushErrorScope = 0x1051,
-	CMD_wgpuDeviceSetLabel = 0x1052,
-	CMD_wgpuDeviceSetUncapturedErrorCallback = 0x1053,
-	CMD_wgpuDeviceReference = 0x1054,
-	CMD_wgpuDeviceRelease = 0x1055,
-	CMD_wgpuInstanceCreateSurface = 0x1056,
-	CMD_wgpuInstanceHasWGSLLanguageFeature = 0x1057,
-	CMD_wgpuInstanceProcessEvents = 0x1058,
-	CMD_wgpuInstanceRequestAdapter = 0x1059,
-	CMD_wgpuInstanceReference = 0x105a,
-	CMD_wgpuInstanceRelease = 0x105b,
-	CMD_wgpuPipelineLayoutSetLabel = 0x105c,
-	CMD_wgpuPipelineLayoutReference = 0x105d,
-	CMD_wgpuPipelineLayoutRelease = 0x105e,
-	CMD_wgpuQuerySetDestroy = 0x105f,
-	CMD_wgpuQuerySetGetCount = 0x1060,
-	CMD_wgpuQuerySetGetType = 0x1061,
-	CMD_wgpuQuerySetSetLabel = 0x1062,
-	CMD_wgpuQuerySetReference = 0x1063,
-	CMD_wgpuQuerySetRelease = 0x1064,
-	CMD_wgpuQueueOnSubmittedWorkDone = 0x1065,
-	CMD_wgpuQueueSetLabel = 0x1066,
-	CMD_wgpuQueueSubmit = 0x1067,
-	CMD_wgpuQueueWriteBuffer = 0x1068,
-	CMD_wgpuQueueWriteTexture = 0x1069,
-	CMD_wgpuQueueReference = 0x106a,
-	CMD_wgpuQueueRelease = 0x106b,
-	CMD_wgpuRenderBundleSetLabel = 0x106c,
-	CMD_wgpuRenderBundleReference = 0x106d,
-	CMD_wgpuRenderBundleRelease = 0x106e,
-	CMD_wgpuRenderBundleEncoderDraw = 0x106f,
-	CMD_wgpuRenderBundleEncoderDrawIndexed = 0x1070,
-	CMD_wgpuRenderBundleEncoderDrawIndexedIndirect = 0x1071,
-	CMD_wgpuRenderBundleEncoderDrawIndirect = 0x1072,
-	CMD_wgpuRenderBundleEncoderFinish = 0x1073,
-	CMD_wgpuRenderBundleEncoderInsertDebugMarker = 0x1074,
-	CMD_wgpuRenderBundleEncoderPopDebugGroup = 0x1075,
-	CMD_wgpuRenderBundleEncoderPushDebugGroup = 0x1076,
-	CMD_wgpuRenderBundleEncoderSetBindGroup = 0x1077,
-	CMD_wgpuRenderBundleEncoderSetIndexBuffer = 0x1078,
-	CMD_wgpuRenderBundleEncoderSetLabel = 0x1079,
-	CMD_wgpuRenderBundleEncoderSetPipeline = 0x107a,
-	CMD_wgpuRenderBundleEncoderSetVertexBuffer = 0x107b,
-	CMD_wgpuRenderBundleEncoderReference = 0x107c,
-	CMD_wgpuRenderBundleEncoderRelease = 0x107d,
-	CMD_wgpuRenderPassEncoderBeginOcclusionQuery = 0x107e,
-	CMD_wgpuRenderPassEncoderDraw = 0x107f,
-	CMD_wgpuRenderPassEncoderDrawIndexed = 0x1080,
-	CMD_wgpuRenderPassEncoderDrawIndexedIndirect = 0x1081,
-	CMD_wgpuRenderPassEncoderDrawIndirect = 0x1082,
-	CMD_wgpuRenderPassEncoderEnd = 0x1083,
-	CMD_wgpuRenderPassEncoderEndOcclusionQuery = 0x1084,
-	CMD_wgpuRenderPassEncoderExecuteBundles = 0x1085,
-	CMD_wgpuRenderPassEncoderInsertDebugMarker = 0x1086,
-	CMD_wgpuRenderPassEncoderPopDebugGroup = 0x1087,
-	CMD_wgpuRenderPassEncoderPushDebugGroup = 0x1088,
-	CMD_wgpuRenderPassEncoderSetBindGroup = 0x1089,
-	CMD_wgpuRenderPassEncoderSetBlendConstant = 0x108a,
-	CMD_wgpuRenderPassEncoderSetIndexBuffer = 0x108b,
-	CMD_wgpuRenderPassEncoderSetLabel = 0x108c,
-	CMD_wgpuRenderPassEncoderSetPipeline = 0x108d,
-	CMD_wgpuRenderPassEncoderSetScissorRect = 0x108e,
-	CMD_wgpuRenderPassEncoderSetStencilReference = 0x108f,
-	CMD_wgpuRenderPassEncoderSetVertexBuffer = 0x1090,
-	CMD_wgpuRenderPassEncoderSetViewport = 0x1091,
-	CMD_wgpuRenderPassEncoderReference = 0x1092,
-	CMD_wgpuRenderPassEncoderRelease = 0x1093,
-	CMD_wgpuRenderPipelineGetBindGroupLayout = 0x1094,
-	CMD_wgpuRenderPipelineSetLabel = 0x1095,
-	CMD_wgpuRenderPipelineReference = 0x1096,
-	CMD_wgpuRenderPipelineRelease = 0x1097,
-	CMD_wgpuSamplerSetLabel = 0x1098,
-	CMD_wgpuSamplerReference = 0x1099,
-	CMD_wgpuSamplerRelease = 0x109a,
-	CMD_wgpuShaderModuleGetCompilationInfo = 0x109b,
-	CMD_wgpuShaderModuleSetLabel = 0x109c,
-	CMD_wgpuShaderModuleReference = 0x109d,
-	CMD_wgpuShaderModuleRelease = 0x109e,
-	CMD_wgpuSurfaceConfigure = 0x109f,
-	CMD_wgpuSurfaceGetCapabilities = 0x10a0,
-	CMD_wgpuSurfaceGetCurrentTexture = 0x10a1,
-	CMD_wgpuSurfaceGetPreferredFormat = 0x10a2,
-	CMD_wgpuSurfacePresent = 0x10a3,
-	CMD_wgpuSurfaceSetLabel = 0x10a4,
-	CMD_wgpuSurfaceUnconfigure = 0x10a5,
-	CMD_wgpuSurfaceReference = 0x10a6,
-	CMD_wgpuSurfaceRelease = 0x10a7,
-	CMD_wgpuSurfaceCapabilitiesFreeMembers = 0x10a8,
-	CMD_wgpuTextureCreateView = 0x10a9,
-	CMD_wgpuTextureDestroy = 0x10aa,
-	CMD_wgpuTextureGetDepthOrArrayLayers = 0x10ab,
-	CMD_wgpuTextureGetDimension = 0x10ac,
-	CMD_wgpuTextureGetFormat = 0x10ad,
-	CMD_wgpuTextureGetHeight = 0x10ae,
-	CMD_wgpuTextureGetMipLevelCount = 0x10af,
-	CMD_wgpuTextureGetSampleCount = 0x10b0,
-	CMD_wgpuTextureGetUsage = 0x10b1,
-	CMD_wgpuTextureGetWidth = 0x10b2,
-	CMD_wgpuTextureSetLabel = 0x10b3,
-	CMD_wgpuTextureReference = 0x10b4,
-	CMD_wgpuTextureRelease = 0x10b5,
-	CMD_wgpuTextureViewSetLabel = 0x10b6,
-	CMD_wgpuTextureViewReference = 0x10b7,
-	CMD_wgpuTextureViewRelease = 0x10b8,
+	CMD_wgpuAdapterRequestDevice = 0x1006,
+	CMD_wgpuAdapterReference = 0x1007,
+	CMD_wgpuAdapterRelease = 0x1008,
+	CMD_wgpuBindGroupSetLabel = 0x1009,
+	CMD_wgpuBindGroupReference = 0x100a,
+	CMD_wgpuBindGroupRelease = 0x100b,
+	CMD_wgpuBindGroupLayoutSetLabel = 0x100c,
+	CMD_wgpuBindGroupLayoutReference = 0x100d,
+	CMD_wgpuBindGroupLayoutRelease = 0x100e,
+	CMD_wgpuBufferDestroy = 0x100f,
+	CMD_wgpuBufferGetConstMappedRange = 0x1010,
+	CMD_wgpuBufferGetMapState = 0x1011,
+	CMD_wgpuBufferGetMappedRange = 0x1012,
+	CMD_wgpuBufferGetSize = 0x1013,
+	CMD_wgpuBufferGetUsage = 0x1014,
+	CMD_wgpuBufferMapAsync = 0x1015,
+	CMD_wgpuBufferSetLabel = 0x1016,
+	CMD_wgpuBufferUnmap = 0x1017,
+	CMD_wgpuBufferReference = 0x1018,
+	CMD_wgpuBufferRelease = 0x1019,
+	CMD_wgpuCommandBufferSetLabel = 0x101a,
+	CMD_wgpuCommandBufferReference = 0x101b,
+	CMD_wgpuCommandBufferRelease = 0x101c,
+	CMD_wgpuCommandEncoderBeginComputePass = 0x101d,
+	CMD_wgpuCommandEncoderBeginRenderPass = 0x101e,
+	CMD_wgpuCommandEncoderClearBuffer = 0x101f,
+	CMD_wgpuCommandEncoderCopyBufferToBuffer = 0x1020,
+	CMD_wgpuCommandEncoderCopyBufferToTexture = 0x1021,
+	CMD_wgpuCommandEncoderCopyTextureToBuffer = 0x1022,
+	CMD_wgpuCommandEncoderCopyTextureToTexture = 0x1023,
+	CMD_wgpuCommandEncoderFinish = 0x1024,
+	CMD_wgpuCommandEncoderInsertDebugMarker = 0x1025,
+	CMD_wgpuCommandEncoderPopDebugGroup = 0x1026,
+	CMD_wgpuCommandEncoderPushDebugGroup = 0x1027,
+	CMD_wgpuCommandEncoderResolveQuerySet = 0x1028,
+	CMD_wgpuCommandEncoderSetLabel = 0x1029,
+	CMD_wgpuCommandEncoderWriteTimestamp = 0x102a,
+	CMD_wgpuCommandEncoderReference = 0x102b,
+	CMD_wgpuCommandEncoderRelease = 0x102c,
+	CMD_wgpuComputePassEncoderDispatchWorkgroups = 0x102d,
+	CMD_wgpuComputePassEncoderDispatchWorkgroupsIndirect = 0x102e,
+	CMD_wgpuComputePassEncoderEnd = 0x102f,
+	CMD_wgpuComputePassEncoderInsertDebugMarker = 0x1030,
+	CMD_wgpuComputePassEncoderPopDebugGroup = 0x1031,
+	CMD_wgpuComputePassEncoderPushDebugGroup = 0x1032,
+	CMD_wgpuComputePassEncoderSetBindGroup = 0x1033,
+	CMD_wgpuComputePassEncoderSetLabel = 0x1034,
+	CMD_wgpuComputePassEncoderSetPipeline = 0x1035,
+	CMD_wgpuComputePassEncoderReference = 0x1036,
+	CMD_wgpuComputePassEncoderRelease = 0x1037,
+	CMD_wgpuComputePipelineGetBindGroupLayout = 0x1038,
+	CMD_wgpuComputePipelineSetLabel = 0x1039,
+	CMD_wgpuComputePipelineReference = 0x103a,
+	CMD_wgpuComputePipelineRelease = 0x103b,
+	CMD_wgpuDeviceCreateBindGroup = 0x103c,
+	CMD_wgpuDeviceCreateBindGroupLayout = 0x103d,
+	CMD_wgpuDeviceCreateBuffer = 0x103e,
+	CMD_wgpuDeviceCreateCommandEncoder = 0x103f,
+	CMD_wgpuDeviceCreateComputePipeline = 0x1040,
+	CMD_wgpuDeviceCreateComputePipelineAsync = 0x1041,
+	CMD_wgpuDeviceCreatePipelineLayout = 0x1042,
+	CMD_wgpuDeviceCreateQuerySet = 0x1043,
+	CMD_wgpuDeviceCreateRenderBundleEncoder = 0x1044,
+	CMD_wgpuDeviceCreateRenderPipeline = 0x1045,
+	CMD_wgpuDeviceCreateRenderPipelineAsync = 0x1046,
+	CMD_wgpuDeviceCreateSampler = 0x1047,
+	CMD_wgpuDeviceCreateShaderModule = 0x1048,
+	CMD_wgpuDeviceCreateTexture = 0x1049,
+	CMD_wgpuDeviceDestroy = 0x104a,
+	CMD_wgpuDeviceEnumerateFeatures = 0x104b,
+	CMD_wgpuDeviceGetLimits = 0x104c,
+	CMD_wgpuDeviceGetQueue = 0x104d,
+	CMD_wgpuDeviceHasFeature = 0x104e,
+	CMD_wgpuDevicePopErrorScope = 0x104f,
+	CMD_wgpuDevicePushErrorScope = 0x1050,
+	CMD_wgpuDeviceSetLabel = 0x1051,
+	CMD_wgpuDeviceSetUncapturedErrorCallback = 0x1052,
+	CMD_wgpuDeviceReference = 0x1053,
+	CMD_wgpuDeviceRelease = 0x1054,
+	CMD_wgpuInstanceCreateSurface = 0x1055,
+	CMD_wgpuInstanceProcessEvents = 0x1056,
+	CMD_wgpuInstanceRequestAdapter = 0x1057,
+	CMD_wgpuInstanceReference = 0x1058,
+	CMD_wgpuInstanceRelease = 0x1059,
+	CMD_wgpuPipelineLayoutSetLabel = 0x105a,
+	CMD_wgpuPipelineLayoutReference = 0x105b,
+	CMD_wgpuPipelineLayoutRelease = 0x105c,
+	CMD_wgpuQuerySetDestroy = 0x105d,
+	CMD_wgpuQuerySetGetCount = 0x105e,
+	CMD_wgpuQuerySetGetType = 0x105f,
+	CMD_wgpuQuerySetSetLabel = 0x1060,
+	CMD_wgpuQuerySetReference = 0x1061,
+	CMD_wgpuQuerySetRelease = 0x1062,
+	CMD_wgpuQueueOnSubmittedWorkDone = 0x1063,
+	CMD_wgpuQueueSetLabel = 0x1064,
+	CMD_wgpuQueueSubmit = 0x1065,
+	CMD_wgpuQueueWriteBuffer = 0x1066,
+	CMD_wgpuQueueWriteTexture = 0x1067,
+	CMD_wgpuQueueReference = 0x1068,
+	CMD_wgpuQueueRelease = 0x1069,
+	CMD_wgpuRenderBundleSetLabel = 0x106a,
+	CMD_wgpuRenderBundleReference = 0x106b,
+	CMD_wgpuRenderBundleRelease = 0x106c,
+	CMD_wgpuRenderBundleEncoderDraw = 0x106d,
+	CMD_wgpuRenderBundleEncoderDrawIndexed = 0x106e,
+	CMD_wgpuRenderBundleEncoderDrawIndexedIndirect = 0x106f,
+	CMD_wgpuRenderBundleEncoderDrawIndirect = 0x1070,
+	CMD_wgpuRenderBundleEncoderFinish = 0x1071,
+	CMD_wgpuRenderBundleEncoderInsertDebugMarker = 0x1072,
+	CMD_wgpuRenderBundleEncoderPopDebugGroup = 0x1073,
+	CMD_wgpuRenderBundleEncoderPushDebugGroup = 0x1074,
+	CMD_wgpuRenderBundleEncoderSetBindGroup = 0x1075,
+	CMD_wgpuRenderBundleEncoderSetIndexBuffer = 0x1076,
+	CMD_wgpuRenderBundleEncoderSetLabel = 0x1077,
+	CMD_wgpuRenderBundleEncoderSetPipeline = 0x1078,
+	CMD_wgpuRenderBundleEncoderSetVertexBuffer = 0x1079,
+	CMD_wgpuRenderBundleEncoderReference = 0x107a,
+	CMD_wgpuRenderBundleEncoderRelease = 0x107b,
+	CMD_wgpuRenderPassEncoderBeginOcclusionQuery = 0x107c,
+	CMD_wgpuRenderPassEncoderDraw = 0x107d,
+	CMD_wgpuRenderPassEncoderDrawIndexed = 0x107e,
+	CMD_wgpuRenderPassEncoderDrawIndexedIndirect = 0x107f,
+	CMD_wgpuRenderPassEncoderDrawIndirect = 0x1080,
+	CMD_wgpuRenderPassEncoderEnd = 0x1081,
+	CMD_wgpuRenderPassEncoderEndOcclusionQuery = 0x1082,
+	CMD_wgpuRenderPassEncoderExecuteBundles = 0x1083,
+	CMD_wgpuRenderPassEncoderInsertDebugMarker = 0x1084,
+	CMD_wgpuRenderPassEncoderPopDebugGroup = 0x1085,
+	CMD_wgpuRenderPassEncoderPushDebugGroup = 0x1086,
+	CMD_wgpuRenderPassEncoderSetBindGroup = 0x1087,
+	CMD_wgpuRenderPassEncoderSetBlendConstant = 0x1088,
+	CMD_wgpuRenderPassEncoderSetIndexBuffer = 0x1089,
+	CMD_wgpuRenderPassEncoderSetLabel = 0x108a,
+	CMD_wgpuRenderPassEncoderSetPipeline = 0x108b,
+	CMD_wgpuRenderPassEncoderSetScissorRect = 0x108c,
+	CMD_wgpuRenderPassEncoderSetStencilReference = 0x108d,
+	CMD_wgpuRenderPassEncoderSetVertexBuffer = 0x108e,
+	CMD_wgpuRenderPassEncoderSetViewport = 0x108f,
+	CMD_wgpuRenderPassEncoderReference = 0x1090,
+	CMD_wgpuRenderPassEncoderRelease = 0x1091,
+	CMD_wgpuRenderPipelineGetBindGroupLayout = 0x1092,
+	CMD_wgpuRenderPipelineSetLabel = 0x1093,
+	CMD_wgpuRenderPipelineReference = 0x1094,
+	CMD_wgpuRenderPipelineRelease = 0x1095,
+	CMD_wgpuSamplerSetLabel = 0x1096,
+	CMD_wgpuSamplerReference = 0x1097,
+	CMD_wgpuSamplerRelease = 0x1098,
+	CMD_wgpuShaderModuleGetCompilationInfo = 0x1099,
+	CMD_wgpuShaderModuleSetLabel = 0x109a,
+	CMD_wgpuShaderModuleReference = 0x109b,
+	CMD_wgpuShaderModuleRelease = 0x109c,
+	CMD_wgpuSurfaceConfigure = 0x109d,
+	CMD_wgpuSurfaceGetCapabilities = 0x109e,
+	CMD_wgpuSurfaceGetCurrentTexture = 0x109f,
+	CMD_wgpuSurfaceGetPreferredFormat = 0x10a0,
+	CMD_wgpuSurfacePresent = 0x10a1,
+	CMD_wgpuSurfaceUnconfigure = 0x10a2,
+	CMD_wgpuSurfaceReference = 0x10a3,
+	CMD_wgpuSurfaceRelease = 0x10a4,
+	CMD_wgpuSurfaceCapabilitiesFreeMembers = 0x10a5,
+	CMD_wgpuTextureCreateView = 0x10a6,
+	CMD_wgpuTextureDestroy = 0x10a7,
+	CMD_wgpuTextureGetDepthOrArrayLayers = 0x10a8,
+	CMD_wgpuTextureGetDimension = 0x10a9,
+	CMD_wgpuTextureGetFormat = 0x10aa,
+	CMD_wgpuTextureGetHeight = 0x10ab,
+	CMD_wgpuTextureGetMipLevelCount = 0x10ac,
+	CMD_wgpuTextureGetSampleCount = 0x10ad,
+	CMD_wgpuTextureGetUsage = 0x10ae,
+	CMD_wgpuTextureGetWidth = 0x10af,
+	CMD_wgpuTextureSetLabel = 0x10b0,
+	CMD_wgpuTextureReference = 0x10b1,
+	CMD_wgpuTextureRelease = 0x10b2,
+	CMD_wgpuTextureViewSetLabel = 0x10b3,
+	CMD_wgpuTextureViewReference = 0x10b4,
+	CMD_wgpuTextureViewRelease = 0x10b5,
 } cmd_t;
 
 uint64_t (*kos_query_device) (uint64_t, uint64_t name);
@@ -274,27 +273,28 @@ uint64_t send(uint16_t _cmd, void* data) {
 		return (uint64_t) surface;
 	}
 
-	else if (cmd == CMD_SURFACE_FROM_WM) {
+	else if (cmd == CMD_DEVICE_FROM_WM) {
 		struct {
 			WGPUInstance instance;
 			wm_t* wm;
 		} __attribute__((packed))* const args = data;
 
-		WGPUSurfaceDescriptorFromDrmFd const descr_from_drm_fd = {
-			.chain = (WGPUChainedStruct const) {
-				.sType = WGPUSType_SurfaceDescriptorFromDrmFd,
-			},
-			.fd = args->wm->drm_fd,
-		};
+		renderer_t* const renderer = wm_renderer_container(args->wm->wlr_renderer);
+		WGPUDevice const device = wgpuInstanceDeviceFromEGL(args->instance, NULL, renderer->egl_get_proc_addr);
 
-		WGPUSurfaceDescriptor const descr = {
-			.nextInChain = (WGPUChainedStruct const*) &descr_from_drm_fd,
-		};
-
-		WGPUSurface const surface = wgpuInstanceCreateSurface(args->instance, &descr);
-		return (uint64_t) surface;
+		return (uint64_t) device;
 	}
 
+	else if (cmd == CMD_DEVICE_DEFAULT_FRAMEBUFFER) {
+		struct {
+			WGPUDevice device;
+			WGPUTextureDescriptor const* descriptor;
+		} __attribute__((packed))* const args = data;
+
+		WGPUTexture const texture = wgpuDeviceDefaultFramebuffer(args->device, args->descriptor);
+		return (uint64_t) texture;
+	}
+	
 	else if (cmd == CMD_wgpuCreateInstance) {
 		struct {
 			WGPU_NULLABLE WGPUInstanceDescriptor const * descriptor;
@@ -346,18 +346,6 @@ uint64_t send(uint16_t _cmd, void* data) {
 		} __attribute__((packed))* const args = data;
 
 		return (uint64_t) wgpuAdapterHasFeature(args->adapter, args->feature);
-	}
-
-	else if (cmd == CMD_wgpuAdapterRequestAdapterInfo) {
-		/*
-		struct {
-			WGPUAdapter adapter;
-			WGPUAdapterRequestAdapterInfoCallback callback;
-			WGPU_NULLABLE void * userdata;
-		} __attribute__((packed))* const args = data;
-
-		wgpuAdapterRequestAdapterInfo(args->adapter, args->callback, args->userdata);
-		*/
 	}
 
 	else if (cmd == CMD_wgpuAdapterRequestDevice) {
@@ -1089,17 +1077,6 @@ uint64_t send(uint16_t _cmd, void* data) {
 		return (uint64_t) wgpuInstanceCreateSurface(args->instance, args->descriptor);
 	}
 
-	else if (cmd == CMD_wgpuInstanceHasWGSLLanguageFeature) {
-		/*
-		struct {
-			WGPUInstance instance;
-			WGPUWGSLFeatureName feature;
-		} __attribute__((packed))* const args = data;
-
-		return (uint64_t) wgpuInstanceHasWGSLLanguageFeature(args->instance, args->feature);
-		*/
-	}
-
 	else if (cmd == CMD_wgpuInstanceProcessEvents) {
 		struct {
 			WGPUInstance instance;
@@ -1811,17 +1788,6 @@ uint64_t send(uint16_t _cmd, void* data) {
 		} __attribute__((packed))* const args = data;
 
 		wgpuSurfacePresent(args->surface);
-	}
-
-	else if (cmd == CMD_wgpuSurfaceSetLabel) {
-		/*
-		struct {
-			WGPUSurface surface;
-			char const * label;
-		} __attribute__((packed))* const args = data;
-
-		wgpuSurfaceSetLabel(args->surface, args->label);
-		*/
 	}
 
 	else if (cmd == CMD_wgpuSurfaceUnconfigure) {
