@@ -72,11 +72,26 @@ typedef struct {
 	struct wl_listener destroy;
 } output_t;
 
+#include <GLES2/gl2.h>
+
 static void output_frame_notify(struct wl_listener* listener, void* data) {
-	(void) listener;
 	(void) data;
 
-	LOG_FATAL("TODO");
+	output_t* const my_output = wl_container_of(listener, my_output, frame);
+	wm_t* const wm = my_output->wm;
+	struct wlr_output* const wlr_output = my_output->output;
+
+	struct wlr_output_state state;
+	wlr_output_state_init(&state);
+
+	struct wlr_render_pass* pass = wlr_output_begin_render_pass(wlr_output, &state, NULL, NULL);
+
+	call_cb(wm, WM_CB_KIND_DRAW);
+	glFlush();
+
+	wlr_render_pass_submit(pass);
+	wlr_output_commit_state(wlr_output, &state);
+	wlr_output_state_finish(&state);
 }
 
 static void output_remove_notify(struct wl_listener* listener, void* data) {
