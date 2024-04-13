@@ -285,10 +285,6 @@ wm_t* wm_create(wm_flag_t flags) {
 		FAIL("Failed to start backend");
 	}
 
-	LOG_INFO("Start the main loop");
-
-	wl_display_run(wm->display);
-
 	LOG_FATAL("TODO the actual compositing part");
 	return wm;
 
