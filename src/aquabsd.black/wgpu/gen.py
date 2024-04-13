@@ -1,5 +1,5 @@
 # This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
-# Copyright (c) 2023 Aymeric Wibo
+# Copyright (c) 2024 Aymeric Wibo
 
 from datetime import datetime
 
@@ -9,9 +9,10 @@ AQUABSD_BLACK_WIN_DEVICE = "aquabsd.black.win"
 AQUABSD_BLACK_WIN_DEVICE_HEADER_INCLUDE = "aquabsd.black/win/win.h"
 AQUABSD_BLACK_WM_DEVICE = "aquabsd.black.wm"
 AQUABSD_BLACK_WM_DEVICE_HEADER_INCLUDE = "aquabsd.black/wm/wm.h"
+AQUABSD_BLACK_WM_DEVICE_RENDERER_HEADER_INCLUDE = "aquabsd.black/wm/renderer.h"
 PACKED = "__attribute__((packed))"
 CMD_SURFACE_FROM_WIN = "0x0000"
-CMD_SURFACE_FROM_WM = "0x0001"
+CMD_DEVICE_FROM_WM = "0x0001"
 CMD_WGPU_BASE = 0x1000
 
 with open("webgpu.h") as f:
@@ -100,10 +101,11 @@ dev_out = f"""// This Source Form is subject to the terms of the AQUA Software L
 #include <{AQUABSD_ALPS_WIN_DEVICE_HEADER_INCLUDE}>
 #include <{AQUABSD_BLACK_WIN_DEVICE_HEADER_INCLUDE}>
 #include <{AQUABSD_BLACK_WM_DEVICE_HEADER_INCLUDE}>
+#include <{AQUABSD_BLACK_WM_DEVICE_RENDERER_HEADER_INCLUDE}>
 
 typedef enum {{
 	CMD_SURFACE_FROM_WIN = {CMD_SURFACE_FROM_WIN},
-	CMD_SURFACE_FROM_WM = {CMD_SURFACE_FROM_WM},
+	CMD_DEVICE_FROM_WM = {CMD_DEVICE_FROM_WM},
 
 	// WebGPU commands
 
@@ -177,25 +179,16 @@ uint64_t send(uint16_t _cmd, void* data) {{
 		return (uint64_t) surface;
 	}}
 
-	else if (cmd == CMD_SURFACE_FROM_WM) {{
+	else if (cmd == CMD_DEVICE_FROM_WM) {{
 		struct {{
 			WGPUInstance instance;
 			wm_t* wm;
 		}} {PACKED}* const args = data;
 
-		WGPUSurfaceDescriptorFromDrmFd const descr_from_drm_fd = {{
-			.chain = (WGPUChainedStruct const) {{
-				.sType = WGPUSType_SurfaceDescriptorFromDrmFd,
-			}},
-			.fd = args->wm->drm_fd,
-		}};
+		renderer_t* const renderer = wm_renderer_container(args->wm->wlr_renderer);
+		WGPUDevice const device = wgpuInstanceDeviceFromEGL(args->instance, NULL, renderer->egl_get_proc_addr);
 
-		WGPUSurfaceDescriptor const descr = {{
-			.nextInChain = (WGPUChainedStruct const*) &descr_from_drm_fd,
-		}};
-
-		WGPUSurface const surface = wgpuInstanceCreateSurface(args->instance, &descr);
-		return (uint64_t) surface;
+		return (uint64_t) device;
 	}}
 	{impls}
 	return -1;
@@ -246,7 +239,7 @@ AQUA_C_FN WGPUSurface wgpu_surface_from_win(WGPUInstance instance, win_t* win) {
 #endif
 
 #if defined(AQUABSD_BLACK_WM)
-AQUA_C_FN WGPUSurface wgpu_surface_from_wm(WGPUInstance instance, wm_t* wm) {{
+AQUA_C_FN WGPUDevice wgpu_device_from_wm(WGPUInstance instance, wm_t* wm) {{
 	struct {{
 		WGPUInstance instance;
 		void* wm;
@@ -255,7 +248,7 @@ AQUA_C_FN WGPUSurface wgpu_surface_from_wm(WGPUInstance instance, wm_t* wm) {{
 		.wm = (void*) wm->internal_wm,
 	}};
 
-	return (WGPUSurface) send_device(wgpu_device, {CMD_SURFACE_FROM_WM}, (void*) &args);
+	return (WGPUDevice) send_device(wgpu_device, {CMD_DEVICE_FROM_WM}, (void*) &args);
 }}
 #endif
 {c_wrappers}"""
