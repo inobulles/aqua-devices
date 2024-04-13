@@ -259,8 +259,8 @@ AQUA_C_FN WGPUDevice wgpu_device_from_wm(WGPUInstance instance, wm_t* wm) {{
 #endif
 {c_wrappers}"""
 
-with open("wgpu.h", "w") as f:
+with open("c-lib/wgpu.h", "w") as f:
 	f.write(lib_out)
 
-with open("wgpu_types.h", "w") as f:
+with open("c-lib/wgpu_types.h", "w") as f:
 	f.write(c_types)
