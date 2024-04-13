@@ -16,6 +16,14 @@ CMD_SURFACE_FROM_WIN = "0x0000"
 CMD_DEVICE_FROM_WM = "0x0001"
 CMD_WGPU_BASE = 0x1000
 
+# WebGPU commands in the spec which aren't yet implemented by wgpu-native
+
+WGPU_BLACKLIST = (
+	"wgpuAdapterRequestAdapterInfo",
+	"wgpuInstanceHasWGSLLanguageFeature",
+	"wgpuSurfaceSetLabel",
+)
+
 with open("ffi/webgpu.h") as f:
 	*lines, = map(str.rstrip, f.readlines())
 
@@ -41,6 +49,9 @@ for line in lines:
 	type_and_name, args = line.split('(')
 	_, *return_type, name = type_and_name.split()
 	return_type = ' '.join(return_type)
+
+	if name in WGPU_BLACKLIST:
+		continue
 
 	raw_args = args.split(')')[0]
 	args = raw_args.split(", ")
