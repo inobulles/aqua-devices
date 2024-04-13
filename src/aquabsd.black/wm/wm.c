@@ -13,6 +13,17 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+static int call_cb(wm_t* wm, wm_cb_kind_t kind) {
+	uint64_t cb = wm->cbs[kind];
+	uint64_t param = wm->cb_datas[kind];
+
+	if (!cb) {
+		return -1;
+	}
+
+	return kos_callback(cb, 2, (uint64_t) wm, param);
+}
+
 static void wlr_log_cb(enum wlr_log_importance importance, char const* fmt, va_list args) {
 	char* msg;
 	vasprintf(&msg, fmt, args);
@@ -427,12 +438,15 @@ void wm_destroy(wm_t* wm) {
 }
 
 int wm_register_cb(wm_t* wm, wm_cb_kind_t kind, uint64_t cb, uint64_t data) {
-	(void) wm;
-	(void) kind;
-	(void) cb;
-	(void) data;
+	if (kind >= WIN_CB_KIND_COUNT) {
+		LOG_ERROR("Callback kind %d doesn't exist", kind);
+		return -1;
+	}
 
-	return -1;
+	wm->cbs[kind] = cb;
+	wm->cb_datas[kind] = data;
+
+	return 0;
 }
 
 #include <EGL/egl.h>
