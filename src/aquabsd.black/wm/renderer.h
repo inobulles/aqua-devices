@@ -19,6 +19,7 @@ typedef struct {
 	EGLDeviceEXT egl_device;
 	EGLDisplay egl_display;
 	EGLContext egl_context;
+	void* egl_get_proc_addr;
 } renderer_t;
 
 struct wlr_renderer* renderer_create(wm_t* wm);

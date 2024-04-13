@@ -246,9 +246,12 @@ int egl_from_drm_fd(renderer_t* renderer) {
 		goto err_egl_create_context;
 	}
 
+	eglMakeCurrent(display, NULL, NULL, context);
+
 	renderer->egl_device = chosen_egl_device;
 	renderer->egl_display = display;
 	renderer->egl_context = context;
+	renderer->egl_get_proc_addr = eglGetProcAddress;
 
 	rv = 0;
 
