@@ -161,12 +161,8 @@ error_buffer: {}
 		LOG_FATAL("Oh no! Framebuffer is not complete");
 	}
 
-	LOG_FATAL("Framebuffer is complete");
-
-	glClearColor(1.0, 0.0, 1.0, 1.0);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glFlush();
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	LOG_FATAL("Framebuffer is complete (%d)", fbo);
+	renderer->rbo = rbo;
 
 	renderpass_t* const renderpass = calloc(1, sizeof *renderpass);
 
@@ -175,7 +171,6 @@ error_buffer: {}
 
 	wlr_render_pass_init(&renderpass->base, &renderpass_impl);
 	wlr_buffer_lock(wlr_buffer);
-	wlr_buffer_unlock(wlr_buffer);
 
 	return &renderpass->base;
 }

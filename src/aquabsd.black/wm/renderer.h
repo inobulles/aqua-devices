@@ -8,6 +8,8 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
+#include <GLES2/gl2.h>
+
 typedef struct {
 	struct wlr_renderer wlr_renderer;
 
@@ -20,6 +22,10 @@ typedef struct {
 	EGLDisplay egl_display;
 	EGLContext egl_context;
 	void* egl_get_proc_addr;
+
+	// OpenGL stuff
+
+	GLuint rbo;
 } renderer_t;
 
 struct wlr_renderer* renderer_create(wm_t* wm);

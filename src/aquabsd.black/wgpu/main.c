@@ -17,7 +17,7 @@
 typedef enum {
 	CMD_SURFACE_FROM_WIN = 0x0000,
 	CMD_DEVICE_FROM_WM = 0x0001,
-	CMD_DEVICE_DEFAULT_FRAMEBUFFER = 0x0002,
+	CMD_DEVICE_TEXTURE_FROM_WM = 0x0002,
 
 	// WebGPU commands
 
@@ -285,13 +285,14 @@ uint64_t send(uint16_t _cmd, void* data) {
 		return (uint64_t) device;
 	}
 
-	else if (cmd == CMD_DEVICE_DEFAULT_FRAMEBUFFER) {
+	else if (cmd == CMD_DEVICE_TEXTURE_FROM_WM) {
 		struct {
 			WGPUDevice device;
-			WGPUTextureDescriptor const* descriptor;
+			wm_t* wm;
 		} __attribute__((packed))* const args = data;
 
-		WGPUTexture const texture = wgpuDeviceDefaultFramebuffer(args->device, args->descriptor);
+		renderer_t* const renderer = wm_renderer_container(args->wm->wlr_renderer);
+		WGPUTexture const texture = wgpuDeviceTextureFromRenderbuffer(args->device, renderer->rbo);
 		return (uint64_t) texture;
 	}
 	

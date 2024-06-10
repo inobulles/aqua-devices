@@ -14,7 +14,7 @@ AQUABSD_BLACK_WM_DEVICE_RENDERER_HEADER_INCLUDE = "aquabsd.black/wm/renderer.h"
 PACKED = "__attribute__((packed))"
 CMD_SURFACE_FROM_WIN = "0x0000"
 CMD_DEVICE_FROM_WM = "0x0001"
-CMD_DEVICE_DEFAULT_FRAMEBUFFER = "0x0002"
+CMD_DEVICE_TEXTURE_FROM_WM = "0x0002"
 CMD_WGPU_BASE = 0x1000
 
 # WebGPU commands in the spec which aren't yet implemented by wgpu-native
@@ -125,7 +125,7 @@ dev_out = f"""// This Source Form is subject to the terms of the AQUA Software L
 typedef enum {{
 	CMD_SURFACE_FROM_WIN = {CMD_SURFACE_FROM_WIN},
 	CMD_DEVICE_FROM_WM = {CMD_DEVICE_FROM_WM},
-	CMD_DEVICE_DEFAULT_FRAMEBUFFER = {CMD_DEVICE_DEFAULT_FRAMEBUFFER},
+	CMD_DEVICE_TEXTURE_FROM_WM = {CMD_DEVICE_TEXTURE_FROM_WM},
 
 	// WebGPU commands
 
@@ -211,13 +211,14 @@ uint64_t send(uint16_t _cmd, void* data) {{
 		return (uint64_t) device;
 	}}
 
-	else if (cmd == CMD_DEVICE_DEFAULT_FRAMEBUFFER) {{
+	else if (cmd == CMD_DEVICE_TEXTURE_FROM_WM) {{
 		struct {{
 			WGPUDevice device;
-			WGPUTextureDescriptor const* descriptor;
+			wm_t* wm;
 		}} {PACKED}* const args = data;
 
-		WGPUTexture const texture = wgpuDeviceDefaultFramebuffer(args->device, args->descriptor);
+		renderer_t* const renderer = wm_renderer_container(args->wm->wlr_renderer);
+		WGPUTexture const texture = wgpuDeviceTextureFromRenderbuffer(args->device, renderer->rbo);
 		return (uint64_t) texture;
 	}}
 	{impls}
@@ -281,16 +282,16 @@ AQUA_C_FN WGPUDevice wgpu_device_from_wm(WGPUInstance instance, wm_t* wm) {{
 	return (WGPUDevice) send_device(wgpu_device, {CMD_DEVICE_FROM_WM}, (void*) &args);
 }}
 
-AQUA_C_FN WGPUTexture wgpu_device_default_framebuffer(WGPUDevice device, WGPUTextureDescriptor const* descriptor) {{
+AQUA_C_FN WGPUTexture wgpu_device_texture_from_wm(WGPUDevice device, wm_t* wm) {{
 	struct {{
 		WGPUDevice device;
-		WGPUTextureDescriptor const* descriptor;
+		void* wm;
 	}} {PACKED} const args = {{
 		.device = device,
-		.descriptor = descriptor,
+		.wm = (void*) wm->internal_wm,
 	}};
 
-	return (WGPUTexture) send_device(wgpu_device, {CMD_DEVICE_DEFAULT_FRAMEBUFFER}, (void*) &args);
+	return (WGPUTexture) send_device(wgpu_device, {CMD_DEVICE_TEXTURE_FROM_WM}, (void*) &args);
 }}
 #endif
 {c_wrappers}"""
