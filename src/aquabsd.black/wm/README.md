@@ -47,7 +47,7 @@ In [this experiment](https://octodon.social/@emersion/103300395120210509), power
 ### Opaque regions
 
 Like with macOS, Wayland provides a way to define ["opaque" regions](https://wayland-book.com/surfaces-in-depth/surface-regions.html) to localize blurring (I had already thought of doing this through the DWD protocol in `aquabsd.alps.wm` back when I wrote that).
-For now though, I think I'll stick to an effect similar to what I had in AQUA 2.X by sampling a blurred version of the wallpaper, and keeping proper blur strictly within the bounds of an application window.
+For now though, I think I'll stick to an effect similar to what I had in AQUA 2.X by sampling a blurred version of the wallpaper in the UI device which will utilize WebGPU, and keeping proper blur strictly within the bounds of an application window.
 
 ## Findings w.r.t. how we should go about creating WebGPU surfaces and adapters
 
@@ -207,3 +207,23 @@ Now "all" that's left to do is design the WebGPU extension 🥲
 And also make Naga support `texture_external`: <https://github.com/gfx-rs/wgpu/issues/4528>.
 
 Here seems to be more information <https://github.com/gfx-rs/wgpu/issues/2320>.
+
+### Update as of 10/06/2024
+
+All is working now and with only two functions added to WebGPU: first, `wgpuInstanceDeviceFromEGL`, which creates a device from an instance forcing the use of the EGL backend.
+It simply takes in a `getProcAddress` function (as that's what's needed for the EGL backend in `wgpu`).
+
+Second, `wgpuDeviceTextureFromRenderbuffer`, which takes in an OpenGL RBO (TODO: should this function be called `wgpuDeviceTextureFromOGLRenderbuffer` instead?) and creates a texture from that that can be used to draw on by the client.
+A WebGPU texture isn't really a texture in the OpenGL sense in that it can either wrap around a native texture or a native renderbuffer.
+In that sense it's more like the equivalent to an FBO.
+
+What's left now is to understand how the swapchain works and how wlroots does all this while creating only 3 buffers (as of when I'm writing this, .wm just creates a new buffer for every frame, which is obviously not ideal).
+
+My guess is that these 3 buffers are part of the swapchain and they are shifted around somehow, but so far I don't really understand the wlroots code that does this.
+What I have gotten so far is this:
+
+- `gles2_begin_buffer_pass` is the entry to the renderer. It starts by setting the EGL context current, and then "gets or creates" a `struct wlr_gles2_buffer ` with `gles2_buffer_get_or_create`. Then, it actually begins the pass by calling `begin_gles2_buffer_pass`.
+- `gles2_buffer_get_or_create` uses this `wlr_addon` system that I haven't yet taken the time to understand and that doesn't seem to be documented anywhere. Anyway, if a buffer is "found" (?) in there, it's returned straight away, and otherwise, the whole getting of a DMA-BUF and `EGLImage` creation process is run. Once that's done, it's added to a list of buffers on the renderer and some addon thing is "initialized" idk.
+- `begin_gles2_buffer_pass` calls `gles2_buffer_get_fbo`, which just returns the current FBO if the buffer object has one and otherwise creates the RBO/FBO and attaches the RBO to the RBO.
+
+Now I really don't understand where the swapchain thing fits into here, but the first step would be to understand the whole addon thing :)
