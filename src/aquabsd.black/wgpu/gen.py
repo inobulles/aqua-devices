@@ -229,6 +229,10 @@ uint64_t send(uint16_t _cmd, void* data) {{
 with open("main.c", "w") as f:
 	f.write(dev_out)
 
+# Compile device as a sanity check.
+
+os.system("DEVSET_INC_PATH=../.. bob build")
+
 # C library source
 
 lib_out = f"""// This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
