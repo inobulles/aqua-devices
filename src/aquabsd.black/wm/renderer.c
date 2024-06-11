@@ -64,22 +64,9 @@ static struct wlr_render_pass_impl const renderpass_impl = {
 	.add_texture = renderpass_add_texture,
 };
 
-static struct wlr_render_pass* begin_buffer_pass(struct wlr_renderer* wlr_renderer, struct wlr_buffer* wlr_buffer, struct wlr_buffer_pass_options const* options) {
-	renderer_t* const renderer = wm_renderer_container(wlr_renderer);
-	wm_t* const wm = renderer->wm;
+int x=  0;
 
-	(void) options;
-
-	wm->x_res = wlr_buffer->width;
-	wm->y_res = wlr_buffer->height;
-
-	// XXX here, GLES2 does gles2_buffer_get_or_create
-	// this does some stuff with EGL which should probably be in wgpu when swapping buffers or something
-
-	eglMakeCurrent(renderer->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, renderer->egl_context);
-
-	// TODO fix up all this error handling!
-
+static void get_buffer(renderer_t* renderer, struct wlr_buffer* wlr_buffer) {
 	struct wlr_dmabuf_attributes dmabuf = {0};
 
 	if (!wlr_buffer_get_dmabuf(wlr_buffer, &dmabuf)) {
@@ -141,28 +128,39 @@ static struct wlr_render_pass* begin_buffer_pass(struct wlr_renderer* wlr_render
 
 error_buffer: {}
 
-	// XXX here, GLES2 does begin_gles2_buffer_pass
-	// this is super temporary stuff just for testing
-
-	GLuint rbo, fbo;
-
 	PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC const glEGLImageTargetRenderbufferStorageOES = (void*) eglGetProcAddress("glEGLImageTargetRenderbufferStorageOES");
 
-	glGenRenderbuffers(1, &rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glGenRenderbuffers(1, &renderer->rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, renderer->rbo);
 	glEGLImageTargetRenderbufferStorageOES(GL_RENDERBUFFER, image);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-	glGenFramebuffers(1, &fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo);
+	glGenFramebuffers(1, &renderer->fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, renderer->fbo);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, renderer->rbo);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		LOG_FATAL("Oh no! Framebuffer is not complete");
 	}
+}
 
-	LOG_FATAL("Framebuffer is complete (%d)", fbo);
-	renderer->rbo = rbo;
+static struct wlr_render_pass* begin_buffer_pass(struct wlr_renderer* wlr_renderer, struct wlr_buffer* wlr_buffer, struct wlr_buffer_pass_options const* options) {
+	renderer_t* const renderer = wm_renderer_container(wlr_renderer);
+	wm_t* const wm = renderer->wm;
+
+	(void) options;
+
+	wm->x_res = wlr_buffer->width;
+	wm->y_res = wlr_buffer->height;
+
+	// XXX here, GLES2 does gles2_buffer_get_or_create
+	// this does some stuff with EGL which should probably be in wgpu when swapping buffers or something
+
+	eglMakeCurrent(renderer->egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, renderer->egl_context);
+
+	// TODO fix up all this error handling!
+
+	get_buffer(renderer, wlr_buffer);
 
 	renderpass_t* const renderpass = calloc(1, sizeof *renderpass);
 

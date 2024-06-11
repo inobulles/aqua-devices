@@ -25,6 +25,7 @@ typedef struct {
 
 	// OpenGL stuff
 
+	GLuint fbo;
 	GLuint rbo;
 } renderer_t;
 
