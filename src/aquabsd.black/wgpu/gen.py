@@ -1,18 +1,35 @@
 # This Source Form is subject to the terms of the AQUA Software License, v. 1.0.
-# Copyright (c) 2023 Aymeric Wibo
+# Copyright (c) 2024 Aymeric Wibo
 
+import os
 from datetime import datetime
 
 AQUABSD_ALPS_WIN_DEVICE = "aquabsd.alps.win"
 AQUABSD_ALPS_WIN_DEVICE_HEADER_INCLUDE = "aquabsd.alps/win/public.h"
 AQUABSD_BLACK_WIN_DEVICE = "aquabsd.black.win"
 AQUABSD_BLACK_WIN_DEVICE_HEADER_INCLUDE = "aquabsd.black/win/win.h"
+AQUABSD_BLACK_WM_DEVICE = "aquabsd.black.wm"
+AQUABSD_BLACK_WM_DEVICE_HEADER_INCLUDE = "aquabsd.black/wm/wm.h"
+AQUABSD_BLACK_WM_DEVICE_RENDERER_HEADER_INCLUDE = "aquabsd.black/wm/renderer.h"
 PACKED = "__attribute__((packed))"
 CMD_SURFACE_FROM_WIN = "0x0000"
+CMD_DEVICE_FROM_WM = "0x0001"
+CMD_DEVICE_TEXTURE_FROM_WM = "0x0002"
 CMD_WGPU_BASE = 0x1000
 
-with open("webgpu.h") as f:
-	lines = map(str.rstrip, f.readlines())
+# WebGPU commands in the spec which aren't yet implemented by wgpu-native
+
+WGPU_BLACKLIST = (
+	"wgpuAdapterRequestAdapterInfo",
+	"wgpuInstanceHasWGSLLanguageFeature",
+	"wgpuSurfaceSetLabel",
+)
+
+with open("ffi/webgpu.h") as f:
+	*lines, = map(str.rstrip, f.readlines())
+
+with open("ffi/wgpu.h") as f:
+	lines += [*map(str.rstrip, f.readlines())]
 
 count = CMD_WGPU_BASE
 
@@ -23,6 +40,9 @@ c_types = ""
 c_wrappers = ""
 
 for line in lines:
+	if line.startswith("#include \""):
+		continue
+
 	if not line.startswith("WGPU_EXPORT "):
 		c_types += line + "\n"
 		continue
@@ -30,6 +50,9 @@ for line in lines:
 	type_and_name, args = line.split('(')
 	_, *return_type, name = type_and_name.split()
 	return_type = ' '.join(return_type)
+
+	if name in WGPU_BLACKLIST:
+		continue
 
 	raw_args = args.split(')')[0]
 	args = raw_args.split(", ")
@@ -92,13 +115,17 @@ dev_out = f"""// This Source Form is subject to the terms of the AQUA Software L
 #include <stdint.h>
 #include <string.h>
 
-#include "webgpu.h"
+#include "ffi/wgpu.h"
 
 #include <{AQUABSD_ALPS_WIN_DEVICE_HEADER_INCLUDE}>
 #include <{AQUABSD_BLACK_WIN_DEVICE_HEADER_INCLUDE}>
+#include <{AQUABSD_BLACK_WM_DEVICE_HEADER_INCLUDE}>
+#include <{AQUABSD_BLACK_WM_DEVICE_RENDERER_HEADER_INCLUDE}>
 
 typedef enum {{
 	CMD_SURFACE_FROM_WIN = {CMD_SURFACE_FROM_WIN},
+	CMD_DEVICE_FROM_WM = {CMD_DEVICE_FROM_WM},
+	CMD_DEVICE_TEXTURE_FROM_WM = {CMD_DEVICE_TEXTURE_FROM_WM},
 
 	// WebGPU commands
 
@@ -171,6 +198,29 @@ uint64_t send(uint16_t _cmd, void* data) {{
 		WGPUSurface const surface = wgpuInstanceCreateSurface(aquabsd_alps_win_args->instance, &descr);
 		return (uint64_t) surface;
 	}}
+
+	else if (cmd == CMD_DEVICE_FROM_WM) {{
+		struct {{
+			WGPUInstance instance;
+			wm_t* wm;
+		}} {PACKED}* const args = data;
+
+		renderer_t* const renderer = wm_renderer_container(args->wm->wlr_renderer);
+		WGPUDevice const device = wgpuInstanceDeviceFromEGL(args->instance, NULL, renderer->egl_get_proc_addr);
+
+		return (uint64_t) device;
+	}}
+
+	else if (cmd == CMD_DEVICE_TEXTURE_FROM_WM) {{
+		struct {{
+			WGPUDevice device;
+			wm_t* wm;
+		}} {PACKED}* const args = data;
+
+		renderer_t* const renderer = wm_renderer_container(args->wm->wlr_renderer);
+		WGPUTexture const texture = wgpuDeviceTextureFromRenderbuffer(args->device, renderer->rbo);
+		return (uint64_t) texture;
+	}}
 	{impls}
 	return -1;
 }}
@@ -178,6 +228,10 @@ uint64_t send(uint16_t _cmd, void* data) {{
 
 with open("main.c", "w") as f:
 	f.write(dev_out)
+
+# Compile device as a sanity check.
+
+os.system("DEVSET_INC_PATH=../.. bob build")
 
 # C library source
 
@@ -188,10 +242,6 @@ lib_out = f"""// This Source Form is subject to the terms of the AQUA Software L
 // if you need to update this, read the 'aqua-devices/aquabsd.black/wgpu/README.md' document
 
 #pragma once
-
-#if !defined(AQUABSD_ALPS_WIN) && !defined(AQUABSD_BLACK_WIN)
-#error "You must first either include <aquabsd/alps/win.h> or <aquabsd/black/win.h> before including <aquabsd/black/wgpu.h>"
-#endif
 
 #include <root.h>
 
@@ -209,6 +259,7 @@ AQUA_C_FN int wgpu_init(void) {{
 	return SUCCESS;
 }}
 
+#if defined(AQUABSD_ALPS_WIN) || defined(AQUABSD_BLACK_WIN)
 AQUA_C_FN WGPUSurface wgpu_surface_from_win(WGPUInstance instance, win_t* win) {{
 	struct {{
 		WGPUInstance instance;
@@ -220,10 +271,40 @@ AQUA_C_FN WGPUSurface wgpu_surface_from_win(WGPUInstance instance, win_t* win) {
 
 	return (WGPUSurface) send_device(wgpu_device, {CMD_SURFACE_FROM_WIN}, (void*) &args);
 }}
+#endif
+
+#if defined(AQUABSD_BLACK_WM)
+AQUA_C_FN WGPUDevice wgpu_device_from_wm(WGPUInstance instance, wm_t* wm) {{
+	struct {{
+		WGPUInstance instance;
+		void* wm;
+	}} {PACKED} const args = {{
+		.instance = instance,
+		.wm = (void*) wm->internal_wm,
+	}};
+
+	return (WGPUDevice) send_device(wgpu_device, {CMD_DEVICE_FROM_WM}, (void*) &args);
+}}
+
+AQUA_C_FN WGPUTexture wgpu_device_texture_from_wm(WGPUDevice device, wm_t* wm) {{
+	struct {{
+		WGPUDevice device;
+		void* wm;
+	}} {PACKED} const args = {{
+		.device = device,
+		.wm = (void*) wm->internal_wm,
+	}};
+
+	return (WGPUTexture) send_device(wgpu_device, {CMD_DEVICE_TEXTURE_FROM_WM}, (void*) &args);
+}}
+#endif
 {c_wrappers}"""
 
-with open("wgpu.h", "w") as f:
+if not os.path.exists("c-lib"):
+	os.mkdir("c-lib")
+
+with open("c-lib/wgpu.h", "w") as f:
 	f.write(lib_out)
 
-with open("wgpu_types.h", "w") as f:
+with open("c-lib/wgpu_types.h", "w") as f:
 	f.write(c_types)

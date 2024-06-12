@@ -4,7 +4,7 @@
 #include "win.h"
 
 typedef enum {
-	// window creation/deletion commands
+	// window creation/destruction commands
 
 	CMD_CREATE = 0x6377, // 'cw'
 	CMD_DESTROY = 0x6477, // 'dw'
@@ -28,8 +28,6 @@ typedef enum {
 	CMD_SET_CAPTION = 0x7363, // 'sc'
 } cmd_t;
 
-uint64_t (*kos_query_device) (uint64_t, uint64_t name);
-void* (*kos_load_device_function) (uint64_t device, const char* name);
 uint64_t (*kos_callback) (uint64_t callback, int argument_count, ...);
 
 uint64_t send(uint16_t _cmd, void* data) {
