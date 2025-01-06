@@ -309,7 +309,7 @@ win_t* win_create(size_t x_res, size_t y_res, win_flag_t flags) {
 	strcpy(win->aquabsd_black_win_signature, AQUABSD_BLACK_WIN_SIGNATURE);
 
 	if (win == NULL) {
-		LOG_FATAL("calloc failed");
+		LOG_FATAL("Window object allocation failed");
 		return NULL;
 	}
 
